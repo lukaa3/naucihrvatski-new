@@ -1,8 +1,8 @@
 {
   "name": "naucihrvatski-new",
   "compatibility_date": "2026-08-31",
-  "main": "_worker.js",
-  "observability": { "enabled": true },
+"main": "server.js",
+"observability": { "enabled": true },
   "assets": {
     "directory": ".",
     "binding": "ASSETS"
