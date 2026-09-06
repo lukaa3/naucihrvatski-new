@@ -154,6 +154,25 @@ td.hr{font-family:var(--display);font-size:17px;font-weight:600}
 td.cs{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--brass);white-space:nowrap}
 .tblwrap{overflow-x:auto}
 
+/* ---------- practical lessons ---------- */
+.skillcard{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--deep-2);
+  border:1px solid var(--line);border-radius:var(--r);padding:15px 18px;margin-bottom:9px;transition:.15s}
+.skillcard:hover{border-color:var(--brass);transform:translateX(3px)}
+.skillcard .num{flex:none;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:15px;font-weight:700;border:2px solid var(--line-2);color:var(--stone-dim)}
+.skillcard.done .num{background:var(--olive);border-color:var(--olive);color:#05132B}
+.skillcard .t{font-family:var(--display);font-size:19px;font-weight:700;display:block;line-height:1.2}
+.skillcard .s{font-size:12.5px;color:var(--stone-dim)}
+
+.dlg{display:grid;gap:9px;margin-top:4px}
+.dline{display:flex;gap:11px;align-items:flex-start}
+.dline .who{flex:none;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:11px;font-weight:700;background:var(--deep-3);color:var(--brass);margin-top:2px}
+.dline.b .who{background:rgba(224,54,47,.2);color:var(--madder)}
+.dline .say{flex:1;min-width:0}
+.dline .cro{font-family:var(--display);font-size:17.5px;line-height:1.4}
+.dline .eng{font-size:13px;color:var(--stone-dim);font-style:italic}
+
 /* ---------- unit list ---------- */
 .unit{
   display:flex;align-items:center;gap:16px;width:100%;text-align:left;
@@ -322,7 +341,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "6.1";
+const VERSION = "7.0";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -1317,6 +1336,673 @@ const PACKS = [
 ];
 
 
+/* ============================================================
+   PRACTICAL LESSONS — what to actually say, situation by situation.
+   Grammar lives in the Grammar tab. This is speaking.
+   ============================================================ */
+const SKILLS = [
+{
+  id:"s1", title:"Meeting someone new", sub:"Upoznavanje",
+  goal:"Get from hello to a real conversation with a stranger, and know when to use ti or vi.",
+  dialogue:[
+    ["A","Bok! Ti si Marko, zar ne?","Hi! You're Marko, right?"],
+    ["B","Jesam. A ti si?","I am. And you are?"],
+    ["A","Ja sam Luka. Drago mi je.","I'm Luka. Nice to meet you."],
+    ["B","Također. Odakle si?","You too. Where are you from?"],
+    ["A","Iz Amerike, ali baka mi je Hrvatica.","From America, but my grandma is Croatian."],
+    ["B","Fakat? Zato govoriš hrvatski!","Really? That's why you speak Croatian!"],
+    ["A","Malo. Još učim.","A little. I'm still learning."]
+  ],
+  blocks:[
+    {h:"Opening", lines:[
+      ["Bok, ja sam…","Hi, I'm…"],
+      ["Kako se zoveš?","What's your name? (ti)"],
+      ["Kako se zovete?","What's your name? (vi)"],
+      ["Drago mi je.","Nice to meet you."],
+      ["Također.","You too."],
+      ["Ti si…, zar ne?","You're…, right?"]
+    ]},
+    {h:"Where you're from", lines:[
+      ["Odakle si?","Where are you from?"],
+      ["Ja sam iz Amerike.","I'm from America."],
+      ["Živim u New Yorku.","I live in New York."],
+      ["Prvi put sam u Hrvatskoj.","It's my first time in Croatia."],
+      ["Obitelj mi je iz Dalmacije.","My family is from Dalmatia."]
+    ]},
+    {h:"About your Croatian", lines:[
+      ["Govorim malo hrvatski.","I speak a little Croatian."],
+      ["Učim već godinu dana.","I've been learning for a year."],
+      ["Oprosti, još učim.","Sorry, I'm still learning."],
+      ["Možeš li govoriti sporije?","Could you speak more slowly?"],
+      ["Kako se kaže … na hrvatskom?","How do you say … in Croatian?"]
+    ]},
+    {h:"Keeping it going", lines:[
+      ["Što radiš?","What do you do?"],
+      ["Studiram.","I'm a student."],
+      ["Idem još u školu.","I'm still in school."],
+      ["Čime se baviš?","What are you into?"],
+      ["Bilo mi je drago!","It was nice meeting you!"]
+    ]}
+  ],
+  tips:"<b>ti or vi?</b> Someone your own age at a party gets <b>ti</b> straight away. An adult you've just been introduced to gets <b>vi</b> until they say <em>možemo na ti</em> — we can switch. If you're unsure, use <b>vi</b>; nobody has ever been offended by being treated politely.<br><br><b>Say you're learning early.</b> <em>Oprosti, još učim</em> resets everyone's expectations and Croatians almost always slow down and help. People are genuinely delighted that a foreigner is trying.",
+  drills:[
+    {t:"type",q:"Introduce yourself: Hi, I'm Luka.",a:["bok ja sam luka","bok, ja sam luka"],e:"Bok, ja sam Luka."},
+    {t:"mc",q:"You're introduced to a friend's mother. Which do you use?",o:["Kako se zoveš?","Kako se zovete?","Tko si ti?","Što je ime?"],a:1,e:"An older adult gets vi."},
+    {t:"type",q:"Say: I speak a little Croatian.",a:["govorim malo hrvatski"],e:"Govorim malo hrvatski."},
+    {t:"type",q:"Ask: Where are you from? (informal)",a:["odakle si"],e:"Odakle si?"},
+    {t:"mc",q:"Someone says 'Drago mi je.' Best reply?",o:["Hvala","Također","Molim","Doviđenja"],a:1,e:"Također — you too."},
+    {t:"type",q:"Ask someone to speak more slowly (informal).",a:["možeš li govoriti sporije","mozes li govoriti sporije"],e:"Možeš li govoriti sporije?"}
+  ]
+},
+{
+  id:"s2", title:"In a café", sub:"U kafiću",
+  goal:"Order, pay, and handle the whole café ritual — which in Croatia is a serious institution.",
+  dialogue:[
+    ["K","Izvolite?","What can I get you?"],
+    ["A","Htio bih jednu kavu s mlijekom, molim.","I'd like a coffee with milk, please."],
+    ["K","Može. Još nešto?","Sure. Anything else?"],
+    ["A","Imate li nešto slatko?","Do you have anything sweet?"],
+    ["K","Imamo kolače i sladoled.","We have cakes and ice cream."],
+    ["A","Onda jedan kolač, hvala.","One cake then, thanks."],
+    ["K","Odmah.","Right away."],
+    ["A","Račun, molim vas.","The bill, please."]
+  ],
+  blocks:[
+    {h:"Ordering", lines:[
+      ["Htio bih… / Htjela bih…","I'd like… (m / f)"],
+      ["Molim vas jednu kavu.","One coffee, please."],
+      ["Za mene…","For me…"],
+      ["Isto, molim.","The same, please."],
+      ["Bez šećera, molim.","Without sugar, please."],
+      ["Može li s mlijekom?","Could I have it with milk?"]
+    ]},
+    {h:"Asking about the menu", lines:[
+      ["Što preporučujete?","What do you recommend?"],
+      ["Imate li…?","Do you have…?"],
+      ["Što je to?","What is that?"],
+      ["Je li to ljuto?","Is that spicy?"],
+      ["Jelovnik, molim.","The menu, please."]
+    ]},
+    {h:"Paying", lines:[
+      ["Račun, molim vas.","The bill, please."],
+      ["Koliko je?","How much is it?"],
+      ["Mogu li karticom?","Can I pay by card?"],
+      ["Gotovinom.","Cash."],
+      ["Zajedno ili odvojeno?","Together or separately?"],
+      ["Zadržite ostatak.","Keep the change."]
+    ]},
+    {h:"What the waiter says", lines:[
+      ["Izvolite?","What can I get you?"],
+      ["Još nešto?","Anything else?"],
+      ["Odmah.","Right away."],
+      ["Dobar tek!","Enjoy your meal!"],
+      ["Je li sve u redu?","Is everything alright?"]
+    ]}
+  ],
+  tips:"<b>Coffee is not a drink, it's a meeting.</b> <em>Idemo na kavu</em> means let's spend an hour talking. Nobody is in a hurry, and the waiter will not bring your bill until you ask — that isn't bad service, it's them not rushing you.<br><br><b>Say Htio bih, not Hoću.</b> Both are correct, but <em>hoću kavu</em> lands like <em>give me a coffee</em>. One word changes how you come across.<br><br><b>Izvolite</b> is worth knowing in both directions: the waiter says it to mean <em>what would you like</em>, and also when handing you something, meaning <em>here you go</em>.",
+  drills:[
+    {t:"type",q:"Order politely (male): I'd like a coffee with milk.",a:["htio bih kavu s mlijekom","htio bih jednu kavu s mlijekom"],e:"Htio bih kavu s mlijekom."},
+    {t:"type",q:"Ask for the bill.",a:["račun molim vas","racun molim vas","račun molim"],e:"Račun, molim vas."},
+    {t:"mc",q:"The waiter says 'Izvolite?' — what's being asked?",o:["Is everything ok?","What would you like?","Do you want the bill?","Are you leaving?"],a:1,e:"Izvolite invites your order."},
+    {t:"type",q:"Ask: What do you recommend?",a:["što preporučujete","sto preporucujete"],e:"Što preporučujete?"},
+    {t:"mc",q:"Which sounds polite ordering?",o:["Hoću kavu.","Daj kavu.","Htio bih kavu.","Kava."],a:2,e:"The conditional softens the request."},
+    {t:"type",q:"Ask: Can I pay by card?",a:["mogu li karticom","mogu li platiti karticom"],e:"Mogu li karticom?"}
+  ]
+},
+{
+  id:"s3", title:"Asking questions", sub:"Kako pitati",
+  goal:"Ask about anything — the single fastest way to keep talking when your vocabulary runs out.",
+  dialogue:[
+    ["A","Oprostite, gdje je kolodvor?","Excuse me, where is the station?"],
+    ["B","Ravno pa lijevo. Deset minuta pješke.","Straight, then left. Ten minutes on foot."],
+    ["A","Koliko daleko je to?","How far is that?"],
+    ["B","Blizu, ne brinite.","Close, don't worry."],
+    ["A","A kada polazi vlak za Split?","And when does the train to Split leave?"],
+    ["B","To ne znam. Pitajte na blagajni.","That I don't know. Ask at the ticket office."],
+    ["A","Hvala vam puno!","Thank you very much!"]
+  ],
+  blocks:[
+    {h:"The question words", lines:[
+      ["Tko?","Who?"],["Što?","What?"],["Gdje?","Where?"],["Kamo?","Where to?"],
+      ["Odakle?","Where from?"],["Kada?","When?"],["Kako?","How?"],["Zašto?","Why?"],
+      ["Koliko?","How much / many?"],["Koji?","Which?"],["Čiji?","Whose?"]
+    ]},
+    {h:"Questions you'll ask daily", lines:[
+      ["Gdje je…?","Where is…?"],
+      ["Koliko košta?","How much does it cost?"],
+      ["Što znači to?","What does that mean?"],
+      ["Kako se kaže…?","How do you say…?"],
+      ["Imate li…?","Do you have…?"],
+      ["Možete li mi pomoći?","Can you help me?"],
+      ["U koliko sati?","At what time?"],
+      ["Je li ovo…?","Is this…?"]
+    ]},
+    {h:"Getting someone's attention", lines:[
+      ["Oprostite…","Excuse me… (vi)"],
+      ["Oprosti…","Excuse me… (ti)"],
+      ["Smijem li pitati?","May I ask?"],
+      ["Imate li trenutak?","Do you have a moment?"]
+    ]},
+    {h:"When you don't understand the answer", lines:[
+      ["Ne razumijem.","I don't understand."],
+      ["Možete li ponoviti?","Could you repeat that?"],
+      ["Sporije, molim vas.","Slower, please."],
+      ["Kako se to piše?","How is that spelled?"],
+      ["Možete li napisati?","Could you write it down?"]
+    ]}
+  ],
+  tips:"<b>Questions buy you time.</b> When you can't say what you mean, ask something instead. The other person talks, you listen, and the conversation survives. Learners who ask a lot progress much faster than learners who wait until they can speak perfectly.<br><br><b>Two ways to make a yes/no question:</b> put <em>li</em> after the verb — <em>Imate li kruha?</em> — or just raise your voice at the end: <em>Imate kruha?</em> Both are used constantly.<br><br><b>Always start with Oprostite</b> when stopping a stranger. Diving straight into your question sounds abrupt.",
+  drills:[
+    {t:"type",q:"Ask: Where is the station?",a:["gdje je kolodvor"],e:"Gdje je kolodvor?"},
+    {t:"type",q:"Ask: How much does it cost?",a:["koliko košta","koliko kosta"],e:"Koliko košta?"},
+    {t:"mc",q:"You want to stop a stranger. Start with:",o:["Bok!","Oprostite…","Hej!","Molim?"],a:1,e:"Oprostite is the polite opener."},
+    {t:"type",q:"Ask: What does that mean?",a:["što znači to","sto znaci to","što to znači"],e:"Što znači to?"},
+    {t:"mc",q:"'Kamo ideš?' asks:",o:["Where are you?","Where are you from?","Where are you going?","How are you?"],a:2,e:"Kamo = where to."},
+    {t:"type",q:"Ask someone to repeat (formal).",a:["možete li ponoviti","mozete li ponoviti"],e:"Možete li ponoviti?"}
+  ]
+},
+{
+  id:"s4", title:"Shopping and prices", sub:"Kupovina",
+  goal:"Buy anything: markets, shops, sizes, prices, and getting a straight answer about cost.",
+  dialogue:[
+    ["A","Dobar dan! Koliko košta kilogram rajčica?","Hello! How much is a kilo of tomatoes?"],
+    ["B","Tri eura.","Three euros."],
+    ["A","Dajte mi pola kile, molim.","Give me half a kilo, please."],
+    ["B","Izvolite. Još nešto?","Here you go. Anything else?"],
+    ["A","Imate li jagode?","Do you have strawberries?"],
+    ["B","Danas nemamo, žao mi je.","Not today, sorry."],
+    ["A","Nema veze. Koliko je sve skupa?","Never mind. How much altogether?"],
+    ["B","Dva i pol eura.","Two fifty."]
+  ],
+  blocks:[
+    {h:"Asking the price", lines:[
+      ["Koliko košta?","How much is it?"],
+      ["Koliko je to?","How much is that?"],
+      ["Koliko sve skupa?","How much altogether?"],
+      ["Je li to popust?","Is that a discount?"],
+      ["Preskupo je.","That's too expensive."]
+    ]},
+    {h:"Buying", lines:[
+      ["Dajte mi…, molim.","Give me…, please."],
+      ["Uzet ću ovo.","I'll take this."],
+      ["Pola kile.","Half a kilo."],
+      ["Jedan kilogram.","One kilo."],
+      ["Samo gledam, hvala.","I'm just looking, thanks."],
+      ["Mogu li probati?","Can I try it?"]
+    ]},
+    {h:"Clothes", lines:[
+      ["Imate li veći broj?","Do you have a bigger size?"],
+      ["Imate li manji broj?","Do you have a smaller size?"],
+      ["Gdje je kabina?","Where's the fitting room?"],
+      ["Premalo mi je.","It's too small for me."],
+      ["Preveliko mi je.","It's too big for me."],
+      ["Imate li drugu boju?","Do you have another colour?"]
+    ]},
+    {h:"What they'll say", lines:[
+      ["Izvolite!","Here you go!"],
+      ["Nemamo, žao mi je.","We don't have it, sorry."],
+      ["Kartica ili gotovina?","Card or cash?"],
+      ["Trebate li vrećicu?","Do you need a bag?"],
+      ["Hvala, doviđenja!","Thanks, goodbye!"]
+    ]}
+  ],
+  tips:"<b>Croatia uses the euro</b> since 2023. If a phrasebook mentions <em>kune</em>, it's out of date.<br><br><b>At a market, greet first.</b> Walking up and naming a price is rude; <em>Dobar dan</em> then your question is how it's done. Small thing, big difference in how you're treated.<br><br><b>Numbers do odd things to nouns:</b> <em>jedan euro, dva eura, pet eura</em>. If you can't remember the rule, say the number and point — nobody will mind.",
+  drills:[
+    {t:"type",q:"Ask: How much does it cost?",a:["koliko košta","koliko kosta"],e:"Koliko košta?"},
+    {t:"type",q:"Say: I'm just looking, thanks.",a:["samo gledam hvala","samo gledam"],e:"Samo gledam, hvala."},
+    {t:"mc",q:"'Imate li veći broj?' asks for:",o:["A lower price","A bigger size","Another colour","The receipt"],a:1,e:"broj here means size."},
+    {t:"type",q:"Say: That's too expensive.",a:["preskupo je","to je preskupo"],e:"Preskupo je."},
+    {t:"mc",q:"What's the currency in Croatia now?",o:["kuna","euro","dinar","forint"],a:1,e:"The euro, since 2023."},
+    {t:"type",q:"Say: I'll take this.",a:["uzet ću ovo","uzet cu ovo"],e:"Uzet ću ovo."}
+  ]
+},
+{
+  id:"s5", title:"Making plans", sub:"Dogovaranje",
+  goal:"Invite someone somewhere, agree a time, and cancel gracefully when you need to.",
+  dialogue:[
+    ["A","Imaš li vremena u subotu?","Do you have time on Saturday?"],
+    ["B","Mislim da imam. Zašto?","I think so. Why?"],
+    ["A","Ideš na kavu?","Want to go for a coffee?"],
+    ["B","Može! U koliko sati?","Sure! What time?"],
+    ["A","Oko pet? Kod Trga.","Around five? By the square."],
+    ["B","Odgovara mi. Vidimo se!","Works for me. See you!"],
+    ["A","Super, javim ti se.","Great, I'll be in touch."]
+  ],
+  blocks:[
+    {h:"Inviting", lines:[
+      ["Ideš na kavu?","Want to go for a coffee?"],
+      ["Hoćeš izaći večeras?","Do you want to go out tonight?"],
+      ["Imaš li vremena…?","Do you have time…?"],
+      ["Što radiš u subotu?","What are you doing on Saturday?"],
+      ["Jesi li slobodan / slobodna?","Are you free? (m / f)"],
+      ["Dođi s nama!","Come with us!"]
+    ]},
+    {h:"Agreeing", lines:[
+      ["Može!","Sure!"],
+      ["Naravno!","Of course!"],
+      ["Odgovara mi.","That works for me."],
+      ["Dogovoreno.","Agreed / deal."],
+      ["Rado.","Gladly."],
+      ["Vidimo se!","See you!"]
+    ]},
+    {h:"Fixing the time and place", lines:[
+      ["U koliko sati?","What time?"],
+      ["Oko pet.","Around five."],
+      ["Gdje se nalazimo?","Where shall we meet?"],
+      ["Kod Trga.","By the square."],
+      ["Ispred kina.","In front of the cinema."],
+      ["Javim ti se.","I'll be in touch."]
+    ]},
+    {h:"Saying no nicely", lines:[
+      ["Ne mogu, žao mi je.","I can't, sorry."],
+      ["Možda drugi put.","Maybe another time."],
+      ["Imam nešto drugo.","I've got something else on."],
+      ["Baš sam zauzet / zauzeta.","I'm really busy. (m / f)"],
+      ["Kasnim, oprosti.","I'm running late, sorry."],
+      ["Moram otkazati.","I have to cancel."]
+    ]}
+  ],
+  tips:"<b>Može</b> is the workhorse here. It means <em>OK</em>, <em>sure</em>, <em>that works</em>, and as a question <em>Može?</em> means <em>is that alright with you?</em> You'll hear it a hundred times a day.<br><br><b>Javim ti se</b> — literally <em>I'll let you know</em> — is how Croatians end loose plans. It's genuine, not a brush-off.<br><br><b>Turning someone down:</b> add a reason, however vague. <em>Ne mogu</em> alone is blunt; <em>Ne mogu, imam nešto drugo</em> is normal and completely fine.",
+  drills:[
+    {t:"type",q:"Ask a friend: Want to go for a coffee?",a:["ideš na kavu","ides na kavu","hoćeš na kavu"],e:"Ideš na kavu?"},
+    {t:"mc",q:"Someone suggests 5pm. You agree:",o:["Nema veze","Odgovara mi","Ovisi","Žao mi je"],a:1,e:"Odgovara mi — that works for me."},
+    {t:"type",q:"Ask: What time?",a:["u koliko sati","koliko sati"],e:"U koliko sati?"},
+    {t:"type",q:"Decline politely: I can't, sorry.",a:["ne mogu žao mi je","ne mogu zao mi je","ne mogu, žao mi je"],e:"Ne mogu, žao mi je."},
+    {t:"mc",q:"'Javim ti se' means:",o:["I'm leaving","I'll let you know","I agree","I forgot"],a:1,e:"It's how loose plans are left."},
+    {t:"type",q:"Ask: Where shall we meet?",a:["gdje se nalazimo","gdje se vidimo"],e:"Gdje se nalazimo?"}
+  ]
+},
+{
+  id:"s6", title:"Small talk", sub:"Ćaskanje",
+  goal:"Fill the gaps. Weather, weekends, how things are going — the glue of every conversation.",
+  dialogue:[
+    ["A","Kako ide?","How's it going?"],
+    ["B","Dobro, a ti?","Good, and you?"],
+    ["A","Ne mogu se žaliti. Kakvo vrijeme danas!","Can't complain. What weather today!"],
+    ["B","Znam, prelijepo je. Konačno sunce.","I know, it's gorgeous. Finally some sun."],
+    ["A","Što radiš ovaj vikend?","What are you doing this weekend?"],
+    ["B","Ništa posebno. Možda idem na more.","Nothing special. Maybe I'll go to the coast."],
+    ["A","Baš lijepo. Uživaj!","Very nice. Enjoy!"]
+  ],
+  blocks:[
+    {h:"How are you, really", lines:[
+      ["Kako ide?","How's it going?"],
+      ["Kako si?","How are you?"],
+      ["Što ima?","What's up?"],
+      ["Dobro sam, a ti?","I'm good, and you?"],
+      ["Ne mogu se žaliti.","Can't complain."],
+      ["Moglo bi bolje.","Could be better."],
+      ["Ide nekako.","Getting by."]
+    ]},
+    {h:"Weather", lines:[
+      ["Kakvo je vrijeme?","What's the weather like?"],
+      ["Lijepo je danas.","It's nice today."],
+      ["Vruće je.","It's hot."],
+      ["Hladno je.","It's cold."],
+      ["Pada kiša.","It's raining."],
+      ["Konačno sunce!","Finally some sun!"]
+    ]},
+    {h:"Weekend and plans", lines:[
+      ["Što radiš ovaj vikend?","What are you doing this weekend?"],
+      ["Ništa posebno.","Nothing special."],
+      ["Odmaram se.","I'm resting."],
+      ["Kako je bilo?","How was it?"],
+      ["Bilo je super.","It was great."],
+      ["Uživaj!","Enjoy!"]
+    ]},
+    {h:"Reacting", lines:[
+      ["Stvarno?","Really?"],
+      ["Fakat?","Seriously?"],
+      ["Baš lijepo.","How nice."],
+      ["Ma daj!","Come on! / No way!"],
+      ["Šteta.","That's a shame."],
+      ["Drago mi je zbog tebe.","I'm glad for you."]
+    ]}
+  ],
+  tips:"<b>Reacting matters more than talking.</b> A well-placed <em>Stvarno?</em> or <em>Baš lijepo</em> keeps a conversation alive while you think. Learners often go silent while composing a sentence; a two-word reaction buys you five seconds and sounds natural.<br><br><b>Kako ide?</b> is friendlier than <em>Kako si?</em> among people your age.<br><br><b>Weather is the safest topic in the language.</b> If you're stuck with someone and have nothing to say, <em>Kakvo vrijeme!</em> always works.",
+  drills:[
+    {t:"type",q:"Ask a friend: How's it going?",a:["kako ide"],e:"Kako ide?"},
+    {t:"mc",q:"Someone shares good news. Best reaction?",o:["Šteta.","Baš lijepo!","Ne znam.","Možda."],a:1,e:"Baš lijepo — how nice."},
+    {t:"type",q:"Say: It's raining.",a:["pada kiša","pada kisa"],e:"Pada kiša."},
+    {t:"type",q:"Say: Nothing special.",a:["ništa posebno","nista posebno"],e:"Ništa posebno."},
+    {t:"mc",q:"'Ne mogu se žaliti' means:",o:["I can't complain","I don't want to talk","I'm not well","I can't come"],a:0,e:"A modest 'I'm doing fine'."},
+    {t:"type",q:"React: Really?",a:["stvarno","fakat"],e:"Stvarno? or Fakat?"}
+  ]
+},
+{
+  id:"s7", title:"Opinions and disagreeing", sub:"Mišljenje",
+  goal:"Say what you think, push back politely, and hold your own in a real conversation.",
+  dialogue:[
+    ["A","Mislim da je Split ljepši od Zagreba.","I think Split is nicer than Zagreb."],
+    ["B","Stvarno? Ja se ne slažem.","Really? I disagree."],
+    ["A","Zašto?","Why?"],
+    ["B","Zagreb ima više toga. Kafići, koncerti…","Zagreb has more going on. Cafés, concerts…"],
+    ["A","Imaš pravo, ali more je more.","You're right, but the sea is the sea."],
+    ["B","To je istina.","That's true."],
+    ["A","Svakome svoje.","To each their own."]
+  ],
+  blocks:[
+    {h:"Saying what you think", lines:[
+      ["Mislim da…","I think that…"],
+      ["Po meni…","In my opinion…"],
+      ["Čini mi se da…","It seems to me that…"],
+      ["Siguran sam da…","I'm sure that… (m)"],
+      ["Nisam siguran.","I'm not sure. (m)"],
+      ["Ovisi.","It depends."]
+    ]},
+    {h:"Agreeing", lines:[
+      ["Slažem se.","I agree."],
+      ["Imaš pravo.","You're right."],
+      ["To je istina.","That's true."],
+      ["Točno tako.","Exactly."],
+      ["I ja mislim tako.","I think so too."]
+    ]},
+    {h:"Disagreeing without a fight", lines:[
+      ["Ne slažem se.","I disagree."],
+      ["Nisam siguran u to.","I'm not sure about that."],
+      ["Možda, ali…","Maybe, but…"],
+      ["Razumijem te, ali…","I understand you, but…"],
+      ["Ja to vidim drugačije.","I see it differently."],
+      ["Svakome svoje.","To each their own."]
+    ]},
+    {h:"Liking and not liking", lines:[
+      ["Sviđa mi se.","I like it."],
+      ["Ne sviđa mi se.","I don't like it."],
+      ["Volim…","I love…"],
+      ["Mrzim…","I hate…"],
+      ["Nije loše.","Not bad."],
+      ["Baš mi je super.","I really love it."]
+    ]}
+  ],
+  tips:"<b>Mislim da</b> is your safest opener for any opinion. Unlike English, you can never drop the <em>da</em>.<br><br><b>Croatians disagree openly and it isn't rude.</b> A flat <em>Ne slažem se</em> is normal and won't offend anyone. Softening it endlessly can actually read as evasive.<br><br><b>Liking works backwards.</b> <em>Sviđa mi se</em> literally means <em>it is pleasing to me</em> — the thing is the subject, not you. So for plural things it becomes <em>Sviđaju mi se</em>.",
+  drills:[
+    {t:"type",q:"Say: I think that's a good idea.",a:["mislim da je to dobra ideja"],e:"Mislim da je to dobra ideja."},
+    {t:"type",q:"Say: I disagree.",a:["ne slažem se","ne slazem se"],e:"Ne slažem se."},
+    {t:"mc",q:"'Svakome svoje' means:",o:["Everyone is wrong","To each their own","All of us agree","Nobody knows"],a:1,e:"A polite way to close a difference of opinion."},
+    {t:"type",q:"Say: You're right.",a:["imaš pravo","imas pravo"],e:"Imaš pravo."},
+    {t:"mc",q:"'I like these books' =",o:["Sviđa mi se ove knjige","Sviđaju mi se ove knjige","Volim se ove knjige","Sviđam ove knjige"],a:1,e:"Plural thing → sviđaju."},
+    {t:"type",q:"Say: It depends.",a:["ovisi"],e:"Ovisi."}
+  ]
+},
+{
+  id:"s8", title:"Talking about yourself", sub:"O sebi",
+  goal:"Answer the questions everyone asks: family, school, work, hobbies — without freezing.",
+  dialogue:[
+    ["A","Imaš li braće i sestara?","Do you have brothers and sisters?"],
+    ["B","Imam jednu sestru. Mlađa je od mene.","I have one sister. She's younger than me."],
+    ["A","A čime se baviš?","And what do you do?"],
+    ["B","Idem u srednju školu. Zadnja godina.","I'm in high school. Final year."],
+    ["A","Znaš li već što ćeš studirati?","Do you know what you'll study yet?"],
+    ["B","Razmišljam o ekonomiji.","I'm thinking about economics."],
+    ["A","Super. A u slobodno vrijeme?","Nice. And in your free time?"],
+    ["B","Volim sport i učim jezike.","I like sport and I learn languages."]
+  ],
+  blocks:[
+    {h:"Family", lines:[
+      ["Imaš li braće i sestara?","Do you have siblings?"],
+      ["Imam brata i sestru.","I have a brother and a sister."],
+      ["Jedinac sam / Jedinica sam.","I'm an only child. (m / f)"],
+      ["Stariji je od mene.","He's older than me."],
+      ["Živim s roditeljima.","I live with my parents."],
+      ["Baka mi je iz Hrvatske.","My grandma is from Croatia."]
+    ]},
+    {h:"School and work", lines:[
+      ["Čime se baviš?","What do you do?"],
+      ["Idem u školu.","I go to school."],
+      ["Studiram…","I study…"],
+      ["Radim u…","I work at…"],
+      ["Zadnja mi je godina.","It's my final year."],
+      ["Želim studirati…","I want to study…"]
+    ]},
+    {h:"Free time", lines:[
+      ["U slobodno vrijeme…","In my free time…"],
+      ["Volim čitati.","I like reading."],
+      ["Bavim se sportom.","I do sport."],
+      ["Sviram gitaru.","I play guitar."],
+      ["Gledam serije.","I watch series."],
+      ["Učim hrvatski.","I'm learning Croatian."]
+    ]},
+    {h:"Where you live", lines:[
+      ["Odakle si?","Where are you from?"],
+      ["Živim u…","I live in…"],
+      ["Rođen sam u… / Rođena sam u…","I was born in… (m / f)"],
+      ["Tu sam cijeli život.","I've been here my whole life."],
+      ["Preselili smo se prije dvije godine.","We moved two years ago."]
+    ]}
+  ],
+  tips:"<b>Prepare three sentences about yourself and drill them until they're automatic.</b> Who you are, what you do, why you're learning Croatian. You'll be asked all three within five minutes of meeting anyone, and having them ready means you start every conversation sounding better than you are.<br><br><b>Čime se baviš?</b> is broader than <em>what's your job</em> — it covers studies, hobbies, whatever you're into. Safe to ask anyone.<br><br><b>Croatians will ask about family early.</b> It isn't nosy, it's normal.",
+  drills:[
+    {t:"type",q:"Say: I have one sister.",a:["imam jednu sestru"],e:"Imam jednu sestru."},
+    {t:"type",q:"Say: I'm learning Croatian.",a:["učim hrvatski","ucim hrvatski"],e:"Učim hrvatski."},
+    {t:"mc",q:"'Čime se baviš?' asks:",o:["Where do you live?","What are you into?","How old are you?","Who are you with?"],a:1,e:"Covers work, study and hobbies."},
+    {t:"type",q:"Say: I live with my parents.",a:["živim s roditeljima","zivim s roditeljima"],e:"Živim s roditeljima."},
+    {t:"mc",q:"A woman says 'I was born in Split':",o:["Rođen sam u Splitu","Rođena sam u Splitu","Rođeno sam u Splitu","Rodila u Splitu"],a:1,e:"Feminine takes rođena."},
+    {t:"type",q:"Say: In my free time I like reading.",a:["u slobodno vrijeme volim čitati","u slobodno vrijeme volim citati"],e:"U slobodno vrijeme volim čitati."}
+  ]
+},
+{
+  id:"s9", title:"Getting around", sub:"Snalaženje",
+  goal:"Directions, tickets, transport — and what to do when you're lost.",
+  dialogue:[
+    ["A","Oprostite, kako da dođem do Trga?","Excuse me, how do I get to the square?"],
+    ["B","Idite ravno pa skrenite desno.","Go straight, then turn right."],
+    ["A","Je li daleko?","Is it far?"],
+    ["B","Ne, pet minuta pješke.","No, five minutes on foot."],
+    ["A","A gdje mogu kupiti kartu za tramvaj?","And where can I buy a tram ticket?"],
+    ["B","Na kiosku, tamo iza ugla.","At the kiosk, round the corner there."],
+    ["A","Puno hvala!","Thanks a lot!"],
+    ["B","Nema na čemu.","You're welcome."]
+  ],
+  blocks:[
+    {h:"Asking the way", lines:[
+      ["Kako da dođem do…?","How do I get to…?"],
+      ["Gdje je…?","Where is…?"],
+      ["Je li daleko?","Is it far?"],
+      ["Možete li mi pokazati na karti?","Can you show me on the map?"],
+      ["Izgubio sam se. / Izgubila sam se.","I'm lost. (m / f)"],
+      ["Jesam li na dobrom putu?","Am I going the right way?"]
+    ]},
+    {h:"Directions you'll hear", lines:[
+      ["Ravno","Straight ahead"],
+      ["Lijevo / Desno","Left / Right"],
+      ["Skrenite desno.","Turn right."],
+      ["Prvo lijevo.","First left."],
+      ["Iza ugla","Round the corner"],
+      ["Preko puta","Opposite"],
+      ["Pored banke","Next to the bank"],
+      ["Pet minuta pješke","Five minutes on foot"]
+    ]},
+    {h:"Tickets and transport", lines:[
+      ["Jednu kartu, molim.","One ticket, please."],
+      ["Kada polazi vlak za Split?","When does the train to Split leave?"],
+      ["S kojeg perona?","From which platform?"],
+      ["Koliko traje put?","How long does the journey take?"],
+      ["Je li ovo pravi autobus?","Is this the right bus?"],
+      ["Gdje trebam izaći?","Where should I get off?"]
+    ]},
+    {h:"If it goes wrong", lines:[
+      ["Propustio sam autobus.","I missed the bus. (m)"],
+      ["Vlak kasni.","The train is late."],
+      ["Ne znam gdje sam.","I don't know where I am."],
+      ["Možete li mi pomoći, molim vas?","Could you help me, please?"]
+    ]}
+  ],
+  tips:"<b>Ask for directions in a shop, not on the street.</b> Someone standing behind a counter has time and isn't going anywhere. People rushing past often give a quick answer you won't catch.<br><br><b>Buy tram tickets at a kiosk</b> before boarding — they're cheaper than on board, and you must validate them in the machine when you get on.<br><br><b>If you catch nothing of the answer,</b> say <em>Možete li pokazati?</em> and offer your phone map. Pointing beats a perfect sentence.",
+  drills:[
+    {t:"type",q:"Ask: How do I get to the square?",a:["kako da dođem do trga","kako da dodem do trga"],e:"Kako da dođem do Trga?"},
+    {t:"mc",q:"'Skrenite desno' means:",o:["Go straight","Turn right","Turn left","Stop here"],a:1,e:"desno = right."},
+    {t:"type",q:"Say (male): I'm lost.",a:["izgubio sam se"],e:"Izgubio sam se."},
+    {t:"type",q:"Ask: Is it far?",a:["je li daleko","jel daleko"],e:"Je li daleko?"},
+    {t:"mc",q:"'S kojeg perona?' asks about:",o:["The price","The platform","The time","The driver"],a:1,e:"peron = platform."},
+    {t:"type",q:"Ask: Where should I get off?",a:["gdje trebam izaći","gdje trebam izaci"],e:"Gdje trebam izaći?"}
+  ]
+},
+{
+  id:"s10", title:"When something's wrong", sub:"Problemi",
+  goal:"Complain politely, ask for help, and handle the moments where your Croatian matters most.",
+  dialogue:[
+    ["A","Oprostite, mislim da ovo nije moja narudžba.","Excuse me, I don't think this is my order."],
+    ["B","Oh, ispričavam se. Što ste naručili?","Oh, my apologies. What did you order?"],
+    ["A","Naručio sam juhu, ne salatu.","I ordered soup, not salad."],
+    ["B","Odmah ću zamijeniti.","I'll swap it right away."],
+    ["A","Hvala vam.","Thank you."],
+    ["B","Nema problema, žao mi je zbog toga.","No problem, sorry about that."]
+  ],
+  blocks:[
+    {h:"Complaining politely", lines:[
+      ["Oprostite, mislim da…","Excuse me, I think that…"],
+      ["Ovo nije ono što sam naručio.","This isn't what I ordered. (m)"],
+      ["Mislim da je greška u računu.","I think there's a mistake in the bill."],
+      ["Možete li provjeriti?","Could you check?"],
+      ["Ne radi.","It's not working."],
+      ["Pokvareno je.","It's broken."]
+    ]},
+    {h:"Asking for help", lines:[
+      ["Trebam pomoć.","I need help."],
+      ["Možete li mi pomoći?","Can you help me?"],
+      ["Ne znam što da radim.","I don't know what to do."],
+      ["Koga da pitam?","Who should I ask?"],
+      ["Gdje je najbliža ljekarna?","Where's the nearest pharmacy?"]
+    ]},
+    {h:"Not feeling well", lines:[
+      ["Ne osjećam se dobro.","I don't feel well."],
+      ["Boli me glava.","I have a headache."],
+      ["Boli me trbuh.","My stomach hurts."],
+      ["Trebam liječnika.","I need a doctor."],
+      ["Alergičan sam na… / Alergična sam na…","I'm allergic to… (m / f)"],
+      ["Imam temperaturu.","I have a fever."]
+    ]},
+    {h:"Emergencies", lines:[
+      ["Upomoć!","Help!"],
+      ["Zovite hitnu!","Call an ambulance!"],
+      ["Zovite policiju!","Call the police!"],
+      ["Ukrali su mi torbu.","My bag has been stolen."],
+      ["Izgubio sam putovnicu.","I've lost my passport. (m)"]
+    ]}
+  ],
+  tips:"<b>Oprostite, mislim da…</b> is the whole trick to complaining in Croatian. It turns an accusation into an observation, and people respond well to it.<br><br><b>Boljeti works backwards.</b> <em>Boli me glava</em> literally means <em>the head hurts me</em> — the body part is the subject. So it's <em>Bole me noge</em> for legs, plural.<br><br><b>Emergency number in Croatia is 112.</b> Worth knowing before you need it.",
+  drills:[
+    {t:"type",q:"Say: I don't feel well.",a:["ne osjećam se dobro","ne osjecam se dobro"],e:"Ne osjećam se dobro."},
+    {t:"type",q:"Say: I have a headache.",a:["boli me glava"],e:"Boli me glava — literally 'the head hurts me'."},
+    {t:"mc",q:"Politest way to start a complaint:",o:["Ovo je pogrešno!","Oprostite, mislim da…","Zašto ste to napravili?","Ne valja."],a:1,e:"Softens it into an observation."},
+    {t:"type",q:"Say: I need help.",a:["trebam pomoć","trebam pomoc"],e:"Trebam pomoć."},
+    {t:"mc",q:"Emergency number in Croatia:",o:["911","112","999","100"],a:1,e:"112 across the EU."},
+    {t:"type",q:"Say: It's not working.",a:["ne radi"],e:"Ne radi."}
+  ]
+},
+{
+  id:"s11", title:"Telling a story", sub:"Pričanje",
+  goal:"Say what happened. Ordering events is what turns sentences into conversation.",
+  dialogue:[
+    ["A","Kako je bilo na moru?","How was it at the coast?"],
+    ["B","Bilo je super! Prvo smo išli u Split.","It was great! First we went to Split."],
+    ["A","I onda?","And then?"],
+    ["B","Onda smo uzeli trajekt za Hvar.","Then we took the ferry to Hvar."],
+    ["A","Koliko ste ostali?","How long did you stay?"],
+    ["B","Tjedan dana. Na kraju nismo htjeli otići.","A week. In the end we didn't want to leave."],
+    ["A","Vjerujem!","I bet!"]
+  ],
+  blocks:[
+    {h:"Ordering events", lines:[
+      ["Prvo…","First…"],
+      ["Onda… / Zatim…","Then…"],
+      ["Poslije toga…","After that…"],
+      ["Na kraju…","In the end…"],
+      ["Odjednom…","Suddenly…"],
+      ["Dok smo…","While we were…"]
+    ]},
+    {h:"When it happened", lines:[
+      ["Jučer","Yesterday"],
+      ["Prošli tjedan","Last week"],
+      ["Prošle godine","Last year"],
+      ["Prije dva dana","Two days ago"],
+      ["Kad sam bio mali / bila mala","When I was little (m / f)"],
+      ["Nedavno","Recently"]
+    ]},
+    {h:"Reacting to a story", lines:[
+      ["I onda?","And then?"],
+      ["Stvarno?","Really?"],
+      ["Ma daj!","No way!"],
+      ["Vjerujem.","I bet."],
+      ["Kako je bilo?","How was it?"],
+      ["Šteta.","That's a shame."]
+    ]},
+    {h:"Saying how it was", lines:[
+      ["Bilo je super.","It was great."],
+      ["Bilo je grozno.","It was awful."],
+      ["Bilo je zanimljivo.","It was interesting."],
+      ["Nikad neću zaboraviti.","I'll never forget it."],
+      ["Bilo je prvi put.","It was the first time."]
+    ]}
+  ],
+  tips:"<b>Prvo, onda, na kraju</b> will carry a whole story on their own. Even with shaky grammar, sequencing words make you easy to follow — and following is what listeners actually need.<br><br><b>Remember the past tense agrees with you.</b> A man says <em>išao sam</em>, a woman says <em>išla sam</em>. Drill your own form until it's automatic; you'll use it in every story you ever tell.<br><br><b>I onda?</b> is how you show you're listening. Say it and the other person keeps going — which is free practice for you.",
+  drills:[
+    {t:"type",q:"Say (female): I went to Split.",a:["išla sam u split","isla sam u split"],e:"Išla sam u Split."},
+    {t:"type",q:"Say: It was great.",a:["bilo je super"],e:"Bilo je super."},
+    {t:"mc",q:"Which orders a story correctly?",o:["Na kraju, onda, prvo","Prvo, onda, na kraju","Onda, prvo, na kraju","Prvo, na kraju, onda"],a:1,e:"First, then, in the end."},
+    {t:"type",q:"Ask: How was it?",a:["kako je bilo"],e:"Kako je bilo?"},
+    {t:"mc",q:"A man says 'I was in Zagreb':",o:["Bila sam u Zagrebu","Bio sam u Zagrebu","Bili smo u Zagrebu","Bilo je u Zagrebu"],a:1,e:"Male speaker: bio sam."},
+    {t:"type",q:"Encourage them to continue: And then?",a:["i onda"],e:"I onda?"}
+  ]
+},
+{
+  id:"s12", title:"Being polite", sub:"Pristojnost",
+  goal:"Thanks, apologies, compliments and invitations — the social oil of every language.",
+  dialogue:[
+    ["A","Hvala ti puno na pomoći.","Thanks a lot for your help."],
+    ["B","Ma nema na čemu.","Oh, don't mention it."],
+    ["A","Stvarno si me spasio.","You really saved me."],
+    ["B","Nema frke. Bilo kad.","No worries. Anytime."],
+    ["A","Moram ići. Oprosti što žurim.","I have to go. Sorry for rushing."],
+    ["B","U redu je. Čuvaj se!","It's fine. Take care!"],
+    ["A","I ti. Vidimo se!","You too. See you!"]
+  ],
+  blocks:[
+    {h:"Thanks", lines:[
+      ["Hvala.","Thanks."],
+      ["Hvala ti / Hvala vam.","Thank you. (ti / vi)"],
+      ["Hvala puno.","Thanks a lot."],
+      ["Hvala na pomoći.","Thanks for the help."],
+      ["Nema na čemu.","You're welcome."],
+      ["Nema frke.","No worries."]
+    ]},
+    {h:"Sorry", lines:[
+      ["Oprosti / Oprostite.","Sorry. (ti / vi)"],
+      ["Žao mi je.","I'm sorry."],
+      ["Nisam htio / htjela.","I didn't mean to. (m / f)"],
+      ["Moja greška.","My mistake."],
+      ["Ispričavam se.","My apologies."],
+      ["U redu je.","It's fine."]
+    ]},
+    {h:"Compliments", lines:[
+      ["Super izgledaš!","You look great!"],
+      ["Baš mi se sviđa.","I really like it."],
+      ["Odlično govoriš engleski.","You speak English excellently."],
+      ["Bravo!","Well done!"],
+      ["Svaka čast.","Respect / nicely done."]
+    ]},
+    {h:"Wishes and goodbyes", lines:[
+      ["Sretno!","Good luck!"],
+      ["Čuvaj se.","Take care."],
+      ["Sve najbolje.","All the best."],
+      ["Dobar tek!","Enjoy your meal!"],
+      ["Živjeli!","Cheers!"],
+      ["Sretan put!","Have a good trip!"]
+    ]}
+  ],
+  tips:"<b>Oprostite does double duty.</b> It's both <em>sorry</em> and <em>excuse me</em> — you use it to apologise and to get someone's attention.<br><br><b>Živjeli</b> literally means <em>may we live</em>, and you say it while making eye contact. Croatians take the eye contact part seriously.<br><br><b>Dobar tek</b> is said to anyone about to eat, including strangers at the next table. Not saying it isn't rude, but saying it makes you sound local.<br><br><b>Svaka čast</b> is worth learning — it's genuine respect for something someone did well, and it lands much better than a plain <em>bravo</em>.",
+  drills:[
+    {t:"type",q:"Say: Thanks for the help.",a:["hvala na pomoći","hvala na pomoci"],e:"Hvala na pomoći."},
+    {t:"mc",q:"Someone thanks you. Reply:",o:["Oprosti","Nema na čemu","Žao mi je","Sretno"],a:1,e:"Nema na čemu — you're welcome."},
+    {t:"type",q:"Say: Take care.",a:["čuvaj se","cuvaj se"],e:"Čuvaj se."},
+    {t:"mc",q:"'Dobar tek!' is said:",o:["When leaving","Before eating","When toasting","On arrival"],a:1,e:"Enjoy your meal."},
+    {t:"type",q:"Say (male): I didn't mean to.",a:["nisam htio"],e:"Nisam htio."},
+    {t:"mc",q:"'Svaka čast' means roughly:",o:["Every hour","Nicely done","No thanks","Be careful"],a:1,e:"Genuine respect for something well done."}
+  ]
+}
+];
+
+
 /* ---------- grammar reference ---------- */
 const CASES = {
   head:["padež","žena (f)","grad (m)","more (n)","pitanje"],
@@ -1457,7 +2143,7 @@ async function loadKey(){
 const maskKey = k => !k ? "" : k.length<12 ? "•".repeat(k.length) : k.slice(0,6)+"…"+k.slice(-4);
 
 let S = {
-  name:"", xp:0, streak:0, lastDay:null,
+  skills:{}, name:"", xp:0, streak:0, lastDay:null,
   done:{},                 // unitId -> {read:true, drill:score}
   cards:{},                // "hr|en" -> {box:1..5, seen:n}
   level:"A1",
@@ -1767,7 +2453,7 @@ function paintNav(){
 function go(v, arg){
   CUR = v; paintNav();
   window.scrollTo({top:0, behavior:"instant"});
-  ({home:vHome, lekcije:vLessons, unit:vUnit, razgovor:vTalk, provjera:vQuiz,
+  ({home:vHome, lekcije:vSkills, skill:vSkill, unit:vUnit, razgovor:vTalk, provjera:vQuiz,
     citanje:vRead, rjecnik:vPacks, kartice:vCards, gramatika:vGrammar, napredak:vSave}[v] || vHome)(arg);
 }
 function shell(eyebrow, title, lede, body){
@@ -1791,6 +2477,12 @@ function vHome(){
         <h2 style="font-size:26px;margin-bottom:4px">${u.id}. ${esc(u.title)}</h2>
         <p style="color:var(--stone-dim);font-size:14.5px">${esc(u.goal)}</p>
         <button class="btn" onclick="go('unit',${u.id})">${dual("Open lesson","Otvori lekciju")}</button>
+      </div>
+      <div class="card">
+        <div class="kicker">speaking · govor</div>
+        <h2 style="font-size:26px;margin-bottom:4px">Learn what to say</h2>
+        <p style="color:var(--stone-dim);font-size:14.5px">Twelve real situations — café, directions, small talk, complaining — each with a dialogue and the phrases to go with it.</p>
+        <button class="btn" onclick="go('lekcije')">Open speaking</button>
       </div>
       <div class="card">
         <div class="kicker">talk to someone · razgovor</div>
@@ -1823,6 +2515,75 @@ const POTD = ALLP[Math.floor(Date.now()/864e5) % ALLP.length];
 /* ============================================================
    LEKCIJE
    ============================================================ */
+function skillDone(s){ return !!(S.skills || {})[s.id]; }
+
+function vSkills(){
+  const done = SKILLS.filter(skillDone).length;
+  shell("speaking · govor", "How to <i>say</i> things",
+    `${done} of ${SKILLS.length} done. Real situations, real phrases, and a dialogue for each. No grammar tables here — those live in the Grammar tab. This is what you actually say.`,
+    SKILLS.map((s, i) => `<button class="skillcard ${skillDone(s) ? "done" : ""}" onclick="go('skill','${s.id}')">
+      <span class="num">${skillDone(s) ? "\u2713" : i + 1}</span>
+      <span style="flex:1;min-width:0"><span class="t">${esc(s.title)}</span><span class="s">${esc(s.sub)}</span></span>
+    </button>`).join(""));
+}
+
+function vSkill(id){
+  const s = SKILLS.find(x => x.id === id) || SKILLS[0];
+  const i = SKILLS.indexOf(s);
+  const next = SKILLS[i + 1];
+
+  const dlg = `<div class="dlg">${s.dialogue.map(d => `
+    <div class="dline ${(d[0] === "B" || d[0] === "K") ? "b" : ""}">
+      <span class="who">${esc(d[0])}</span>
+      <span class="say"><span class="cro">${esc(d[1])} ${spk(d[1])}</span><br><span class="eng">${esc(d[2])}</span></span>
+    </div>`).join("")}</div>`;
+
+  const blocks = s.blocks.map(b => `
+    <div class="kicker" style="margin-top:22px">${esc(b.h)}</div>
+    <div class="wordlist">${b.lines.map(l => wordRow(l[0], l[1])).join("")}</div>`).join("");
+
+  shell(`lesson ${i + 1} of ${SKILLS.length}`, esc(s.title), esc(s.goal),
+    `<div class="chips" style="margin-bottom:18px">
+       <button class="btn ghost sm" onclick="go('lekcije')">\u2190 ${dual("All lessons","Sve lekcije")}</button>
+       <button class="btn sm" onclick="startSkillDrill('${s.id}')">${dual("Practise","Vje\u017ebaj")}</button>
+       <button class="btn ghost sm" onclick="skillTalk('${s.id}')">${dual("Try it with the tutor","Probaj u razgovoru")}</button>
+     </div>
+
+     <div class="card">
+       <div class="kicker">dialogue · dijalog</div>
+       ${dlg}
+       <div style="margin-top:14px"><button class="btn ghost sm" onclick="speak(${JSON.stringify(s.dialogue.map(d=>d[1]).join(". ")).replace(/"/g,"&quot;")})">\ud83d\udd0a ${dual("Listen to the whole thing","Poslu\u0161aj sve")}</button></div>
+     </div>
+
+     ${blocks}
+
+     <div class="card" style="margin-top:22px">
+       <div class="kicker">what to know</div>
+       <div style="font-size:15px">${s.tips}</div>
+     </div>
+
+     <div style="margin-top:24px;display:flex;gap:9px;flex-wrap:wrap">
+       <button class="btn" onclick="startSkillDrill('${s.id}')">${dual("Practise now","Vje\u017ebaj sada")}</button>
+       ${next ? `<button class="btn ghost" onclick="go('skill','${next.id}')">Next: ${esc(next.title)} \u2192</button>` : ""}
+     </div>`);
+}
+
+function startSkillDrill(id){
+  const s = SKILLS.find(x => x.id === id); if(!s) return;
+  D = { unit:null, skill:id, title:s.title, q: shuffle(s.drills.slice()), i:0, score:0 };
+  paintDrill();
+}
+
+function skillTalk(id){
+  const map = { s1:"upoznavanje", s2:"kafic", s3:"put", s4:"trznica", s5:"hobi",
+                s6:"slobodno", s7:"slobodno", s8:"obitelj", s9:"put", s10:"lijecnik",
+                s11:"putovanje", s12:"slobodno" };
+  S.scenario = map[id] || "slobodno";
+  const c = curChat();
+  if(c.hist.length) newChat(S.scenario, S.level);
+  save(); go("razgovor");
+}
+
 function unitState(u){
   const d = S.done[u.id] || {};
   if(d.read && d.drill != null && d.drill >= 60) return "done";
@@ -1836,36 +2597,6 @@ function firstOpen(){
   return UNITS[UNITS.length - 1].id;
 }
 
-function vLessons(){
-  const cur = firstOpen();
-  let out = "";
-  SECTIONS.forEach(sec => {
-    const list = UNITS.filter(u => u.sec === sec.id);
-    const done = list.filter(u => unitState(u) === "done").length;
-    out += `<div class="secthead">
-      <div class="bar" style="background:${sec.color}"></div>
-      <div><h3>${esc(sec.name)}</h3><div class="sub">${esc(sec.hr)}</div></div>
-      <div class="cnt">${done}/${list.length}</div>
-    </div><div class="path">`;
-    list.forEach((u, i) => {
-      const st = unitState(u);
-      const side = i % 2 === 0 ? "l" : "r";
-      const isCur = u.id === cur;
-      const style = st === "done" ? `background:${sec.color};border-color:${sec.color};color:#05132B`
-                  : st === "open" ? `color:${sec.color}` : "";
-      out += `<div class="node ${side} ${st} ${isCur ? "cur" : ""}">
-        <button onclick="${st === "locked" ? "lockedMsg()" : `go('unit',${u.id})`}">
-          <span class="dotbig" style="${style}">${st === "done" ? "✓" : st === "locked" ? "&#128274;" : u.id}</span>
-          <span class="lbl"><b>${esc(u.title)}</b><span>${esc(u.sub)}</span></span>
-        </button></div>`;
-    });
-    out += `</div>`;
-  });
-  const total = UNITS.filter(u => unitState(u) === "done").length;
-  shell("the course · tečaj", "Your <i>path</i>",
-    `${total} of ${UNITS.length} units complete. Work down in order — finishing a unit unlocks the next. Everything from the alphabet to verb aspect, in the order that actually makes sense to learn it.`,
-    out);
-}
 function lockedMsg(){
   const el = document.createElement("div");
   el.className = "invite";
@@ -1964,6 +2695,7 @@ function endDrill(){
   const pct = Math.round(D.score/D.q.length*100);
   const msg = pct===100 ? "Perfect. Every one right." : pct>=75 ? "Very good." : pct>=50 ? "Decent start — reread the lesson." : "Go back to the lesson and try again.";
   if(D.unit){ S.done[D.unit] = S.done[D.unit]||{}; S.done[D.unit].drill = Math.max(S.done[D.unit].drill||0, pct); save(); }
+  if(D.skill && pct >= 60){ S.skills = S.skills || {}; S.skills[D.skill] = pct; save(); }
   const next = D.unit ? UNITS.find(x=>x.id===D.unit+1) : null;
   shell("done · gotovo", "Your score", "",
     `<div class="card" style="text-align:center;padding:40px">
@@ -2474,34 +3206,40 @@ function gradeCard(ok){
    GRAMATIKA — reference
    ============================================================ */
 function vGrammar(){
-  const checklist = SECTIONS.map(sec => {
+  const cur = firstOpen();
+  let path = "";
+  SECTIONS.forEach(sec => {
     const list = UNITS.filter(u => u.sec === sec.id);
-    return `<div class="secthead" style="margin-top:18px">
-        <div class="bar" style="background:${sec.color}"></div>
-        <div><h3 style="font-size:19px">${esc(sec.name)}</h3></div>
-        <div class="cnt">${list.filter(u=>unitState(u)==="done").length}/${list.length}</div>
-      </div>
-      <div class="wordlist">${list.map(u => {
-        const st = unitState(u);
-        return `<div class="word" style="cursor:pointer" onclick="${st==="locked"?"lockedMsg()":`go('unit',${u.id})`}">
-          <span style="color:${st==="done"?"var(--olive)":st==="locked"?"var(--stone-dim)":sec.color};width:18px">${st==="done"?"✓":st==="locked"?"·":"○"}</span>
-          <span class="hr" style="min-width:0;flex:1;font-size:16px">${esc(u.title)}</span>
-          <span class="en" style="flex:none;font-size:12.5px">${esc(u.sub)}</span></div>`;
-      }).join("")}</div>`;
-  }).join("");
-  return vGrammarBody(checklist);
+    const done = list.filter(u => unitState(u) === "done").length;
+    path += `<div class="secthead">
+      <div class="bar" style="background:${sec.color}"></div>
+      <div><h3>${esc(sec.name)}</h3><div class="sub">${esc(sec.hr)}</div></div>
+      <div class="cnt">${done}/${list.length}</div>
+    </div><div class="path">`;
+    list.forEach((u, i) => {
+      const st = unitState(u);
+      const side = i % 2 === 0 ? "l" : "r";
+      const style = st === "done" ? `background:${sec.color};border-color:${sec.color};color:#05132B`
+                  : st === "open" ? `color:${sec.color}` : "";
+      path += `<div class="node ${side} ${st} ${u.id === cur ? "cur" : ""}">
+        <button onclick="${st === "locked" ? "lockedMsg()" : `go('unit',${u.id})`}">
+          <span class="dotbig" style="${style}">${st === "done" ? "✓" : st === "locked" ? "&#128274;" : u.id}</span>
+          <span class="lbl"><b>${esc(u.title)}</b><span>${esc(u.sub)}</span></span>
+        </button></div>`;
+    });
+    path += `</div>`;
+  });
+  return vGrammarBody(path);
 }
-function vGrammarBody(checklist){
+function vGrammarBody(path){
   const tbl = rows => `<div class="tblwrap"><table><tr>${CASES.head.map(h=>`<th>${h}</th>`).join("")}</tr>
     ${rows.map(r=>`<tr><td class="cs">${r[0]}</td><td class="hr">${r[1]}</td><td class="hr">${r[2]}</td><td class="hr">${r[3]}</td><td style="color:var(--stone-dim);font-size:13px">${r[4]||""}</td></tr>`).join("")}</table></div>`;
-  shell("gramatika · reference", "Sve na <i>jednom</i> mjestu",
-    "The tables you'll come back to. Croatian schools drill the cases in this exact order, so learning the sequence pays off every time you open a dictionary or a textbook.",
-    `<div class="card">
-      <div class="kicker">your grammar progress</div>
-      <p style="font-size:14px;color:var(--stone-dim);margin:0">Every grammar topic in the course, in teaching order. Tap any one to open its lesson.</p>
-      ${checklist}
-    </div>
+  const total = UNITS.filter(u => unitState(u) === "done").length;
+  shell("grammar · gramatika", "The <i>rules</i>",
+    `${total} of ${UNITS.length} units done. Work down in order — each unlocks the next. Reference tables are underneath, and you can jump to them any time.`,
+    `${path}
 
+    <hr class="rule">
     <div class="card" style="margin-top:14px">
       <div class="kicker">cases — singular · jednina</div>${tbl(CASES.sg)}
       <div class="kicker" style="margin-top:22px">cases — plural · množina</div>${tbl(CASES.pl)}
@@ -2829,7 +3567,7 @@ function uploadSave(input){
 }
 
 function applyState(obj){
-  const base = {name:"", xp:0, streak:0, lastDay:null, done:{}, cards:{}, chats:{}, chatId:null,
+  const base = {name:"", xp:0, streak:0, lastDay:null, done:{}, skills:{}, cards:{}, chats:{}, chatId:null,
                 level:"A1", scenario:"kafic", showEn:true};
   const keepChats = obj.chats ? obj.chats : S.chats;      // a progress-only code shouldn't wipe your conversations
   const keepId    = obj.chats ? obj.chatId : S.chatId;
