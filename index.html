@@ -171,6 +171,60 @@ td.cs{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transfo
   font-family:var(--mono);font-size:13px;font-weight:700;background:rgba(107,166,255,.14);color:var(--brass)}
 .gsec h3{font-size:19px;margin:0;line-height:1.2}
 
+/* ---------- vocab packs ---------- */
+.pack{background:var(--deep-2);border:1px solid var(--line);border-radius:var(--r);padding:16px;
+  cursor:pointer;transition:.15s}
+.pack:hover{border-color:var(--brass);transform:translateY(-2px);background:var(--deep-3)}
+.pack b{font-family:var(--display);font-size:19px;display:block;line-height:1.2}
+.pack span{font-size:12.5px;color:var(--stone-dim)}
+.pack .n{font-family:var(--mono);font-size:11px;color:var(--brass);margin-top:7px;display:block;letter-spacing:.06em}
+
+/* ---------- learning path ---------- */
+.secthead{display:flex;align-items:center;gap:13px;margin:28px 0 6px;padding:12px 16px;
+  background:linear-gradient(90deg, rgba(107,166,255,.13), rgba(107,166,255,.02));
+  border:1px solid var(--line);border-radius:12px}
+.secthead .bar{flex:none;width:5px;height:36px;border-radius:3px}
+.secthead h3{font-size:21px;margin:0}
+.secthead .sub{font-size:11px;color:var(--stone-dim);letter-spacing:.13em;text-transform:uppercase}
+.secthead .cnt{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--brass);font-weight:700;
+  background:rgba(107,166,255,.12);border:1px solid rgba(107,166,255,.28);padding:4px 11px;border-radius:999px}
+
+.path{position:relative;padding:18px 0 10px}
+.path::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1.5px;
+  background:linear-gradient(180deg, rgba(107,166,255,.35), rgba(107,166,255,.10));border-radius:2px}
+
+.node{position:relative;display:flex;align-items:center;gap:14px;margin:16px 0;width:50%}
+.node.l{margin-right:auto;flex-direction:row-reverse;text-align:right;padding-right:34px}
+.node.r{margin-left:auto;padding-left:34px}
+.node button{all:unset;cursor:pointer;display:contents}
+.node .lbl{flex:1;min-width:0;background:var(--deep-2);border:1px solid var(--line);
+  border-radius:12px;padding:11px 15px;transition:.15s}
+.node .lbl b{display:block;font-family:var(--display);font-size:17px;font-weight:700;line-height:1.25;color:var(--stone)}
+.node .lbl span{font-size:12px;color:var(--stone-dim)}
+.node:not(.locked):hover .lbl{border-color:var(--brass);background:var(--deep-3)}
+.node.cur .lbl{border-color:var(--brass);background:rgba(107,166,255,.10)}
+.node.done .lbl{border-color:rgba(63,185,138,.35)}
+
+.dotbig{position:absolute;top:50%;width:52px;height:52px;margin-top:-26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:17px;
+  border:3px solid var(--deep);background:var(--deep-2);transition:transform .15s}
+.node.l .dotbig{right:-26px}
+.node.r .dotbig{left:-26px}
+.node:not(.locked):hover .dotbig{transform:scale(1.09)}
+.node.open .dotbig{border:3px solid currentColor}
+.node.done .dotbig{color:#05132B;box-shadow:0 0 14px rgba(63,185,138,.35)}
+.node.cur .dotbig{box-shadow:0 0 0 5px rgba(107,166,255,.22), 0 0 22px rgba(107,166,255,.45)}
+.node.locked{opacity:.45}
+.node.locked .dotbig{background:transparent;border:2px solid var(--line-2);color:var(--stone-dim)}
+.node.locked .lbl{background:transparent;border-style:dashed}
+
+@media (max-width:700px){
+  .path::before{left:26px}
+  .node,.node.l,.node.r{width:100%;margin:13px 0;padding:0 0 0 62px;flex-direction:row;text-align:left}
+  .node .lbl{width:100%}
+  .node.l .dotbig,.node.r .dotbig{left:0;right:auto}
+}
+
 /* ---------- practical lessons ---------- */
 .skillcard{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--deep-2);
   border:1px solid var(--line);border-radius:var(--r);padding:15px 18px;margin-bottom:9px;transition:.15s}
@@ -360,7 +414,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "7.2";
+const VERSION = "7.3";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -2070,28 +2124,6 @@ const ALPHABET = [
   ["U u","oo — boot"],["V v","v"],["Z z","z"],["Ž ž","zh — measure"]
 ];
 
-const CROATIAN_ONLY = [
-  ["kruh","hljeb / hleb","bread"],
-  ["kava","kafa","coffee"],
-  ["tisuća","hiljada","thousand"],
-  ["vlak","voz","train"],
-  ["tjedan","sedmica / nedjelja","week"],
-  ["zrak","vazduh","air"],
-  ["povijest","istorija","history"],
-  ["glazba","muzika","music"],
-  ["kazalište","pozorište","theatre"],
-  ["tvrtka","firma / preduzeće","company"],
-  ["obitelj","porodica","family"],
-  ["juha","supa","soup"],
-  ["nogomet","fudbal","football"],
-  ["knjižnica","biblioteka","library"],
-  ["časnik","oficir","officer"],
-  ["mrkva","šargarepa","carrot"],
-  ["rajčica","paradajz","tomato"],
-  ["tko / što","ko / šta","who / what"],
-  ["radit ću","radiću","I will work"],
-  ["uvjet, vrijeme, lijep","uslov, vreme, lep","ijekavian vs. ekavian"]
-];
 
 const dual = (en, hr) => `${en}<span class="c2">${hr}</span>`;
 
@@ -3298,14 +3330,6 @@ function vGrammarBody(path){
       <div class="kicker">the alphabet · abeceda — 30 letters, all phonetic</div>
       <div class="wordlist">${ALPHABET.map(a=>`<div class="word">${spk(a[0].split(" ")[1]||a[0])}<span class="hr">${esc(a[0])}</span><span class="en">${esc(a[1])}</span></div>`).join("")}</div>
       <div class="note">Croatian uses <b>Latin script only</b>. Dž, Lj and Nj are single letters, not pairs. There are no silent letters and no exceptions: spell it as you hear it, read it as it's written.</div>
-    </div>
-
-    <div class="card" style="margin-top:14px">
-      <div class="kicker">what makes it Croatian · hrvatski, a ne…</div>
-      <p style="font-size:14.5px;color:var(--stone-dim)">You'll meet the words on the right online, in subtitles, and in a lot of apps that lump these languages together. This course never uses them. Learn the left column.</p>
-      <div class="tblwrap"><table><tr><th>hrvatski ✓</th><th>izbjegavaj ✗</th><th>English</th></tr>
-        ${CROATIAN_ONLY.map(r=>`<tr><td class="hr" style="color:var(--olive)">${esc(r[0])}</td><td style="color:var(--madder);opacity:.8">${esc(r[1])}</td><td style="color:var(--stone-dim);font-size:13.5px">${esc(r[2])}</td></tr>`).join("")}
-      </table></div>
     </div>
 
     <div class="card" style="margin-top:14px">
