@@ -1,11 +1,21 @@
 /* ============================================================
-   Nauči hrvatski — Gemini proxy (Cloudflare Pages Function)
-   Route: /api/chat
+   Nauči hrvatski — Cloudflare Worker
+   Serves the site and proxies /api/chat to Gemini.
+   Works both as a Pages advanced-mode _worker.js and as a
+   Worker with static assets.
    The API key lives in the GEMINI_API_KEY environment variable
    and never reaches the browser.
    ============================================================ */
 
 const MODEL_CHAIN  = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
+
+// When a model runs out of free-tier quota it stays exhausted for hours.
+// Remember which one is working so every later request doesn't waste a
+// round-trip re-checking the dead one, but retry the preferred model
+// periodically in case quota has reset.
+let WORKING_MODEL = null;
+let WORKING_SINCE = 0;
+const RECHECK_MS = 15 * 60 * 1000;
 const ALLOWED      = new Set([...MODEL_CHAIN, "gemini-3.1-flash-lite", "gemini-2.5-flash-lite"]);
 
 const MAX_MESSAGES    = 40;
@@ -82,8 +92,7 @@ function originOk(request, env){
   return false;
 }
 
-export async function onRequestGet(context){
-  const { request, env } = context;
+async function handleGet(request, env){
   const url = new URL(request.url);
   if(url.searchParams.has("ping")){
     const base = {
@@ -116,8 +125,7 @@ export async function onRequestGet(context){
   return json(405, { error: "Method not allowed" });
 }
 
-export async function onRequestPost(context){
-  const { request, env } = context;
+async function handlePost(request, env){
 
   if(!originOk(request, env)) return json(403, { error: "Forbidden" });
   if(!env.GEMINI_API_KEY)     return json(500, { error: "Server is not configured yet." });
@@ -165,8 +173,13 @@ export async function onRequestPost(context){
     });
 
   try{
+    if(WORKING_MODEL && Date.now() - WORKING_SINCE > RECHECK_MS) WORKING_MODEL = null;
+
     const tried = [];
-    const candidates = [asked, ...MODEL_CHAIN].filter(m => m && !tried.includes(m) && (tried.push(m), true));
+    const preferred = (body.model && ALLOWED.has(body.model)) ? body.model : (WORKING_MODEL || asked);
+    const candidates = [preferred, ...MODEL_CHAIN]
+      .filter(m => m && !tried.includes(m) && (tried.push(m), true));
+
     let res = null, used = null;
 
     for(const m of candidates){
@@ -177,8 +190,16 @@ export async function onRequestPost(context){
         res = await send(m, retry);
       }
       // retired, out of quota, or overloaded — all worth trying the next model
-      if([404, 429, 500, 502, 503].includes(res.status) && m !== candidates[candidates.length - 1]) continue;
+      if([404, 429, 500, 502, 503].includes(res.status) && m !== candidates[candidates.length - 1]){
+        console.warn(`Model ${m} unavailable (${res.status}) — falling back.`);
+        if(WORKING_MODEL === m) WORKING_MODEL = null;
+        continue;
+      }
       used = m; break;
+    }
+
+    if(res && res.ok && used && used !== WORKING_MODEL){
+      WORKING_MODEL = used; WORKING_SINCE = Date.now();
     }
 
     if(!res.ok){
@@ -205,3 +226,24 @@ export async function onRequestPost(context){
     return json(502, { error: "Could not reach Gemini." });
   }
 }
+
+
+/* ============================================================
+   Entry point. Anything that isn't /api/chat is served as a
+   static file straight from the site.
+   ============================================================ */
+export default {
+  async fetch(request, env){
+    const url = new URL(request.url);
+
+    if(url.pathname === "/api/chat"){
+      if(request.method === "POST")    return handlePost(request, env);
+      if(request.method === "GET")     return handleGet(request, env);
+      if(request.method === "OPTIONS") return new Response(null, { status: 204 });
+      return json(405, { error: "Method not allowed" });
+    }
+
+    if(env.ASSETS) return env.ASSETS.fetch(request);
+    return new Response("Not found", { status: 404 });
+  }
+};
