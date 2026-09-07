@@ -415,7 +415,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "7.6";
+const VERSION = "7.7";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -2268,6 +2268,33 @@ const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&
 const norm = s => String(s).toLowerCase().trim()
   .replace(/[.,!?;:]/g,"").replace(/\s+/g," ")
   .replace(/č/g,"c").replace(/ć/g,"c").replace(/š/g,"s").replace(/ž/g,"z").replace(/đ/g,"d");
+// One or two stray letters is a typo, not a failure to know the answer.
+// Accept it, but show the exact spelling so the right form is what sticks.
+function editDistance(a, b){
+  if(a === b) return 0;
+  const m = a.length, n = b.length;
+  if(Math.abs(m - n) > 2) return 99;
+  let prev = Array.from({length: n + 1}, (_, i) => i);
+  for(let i = 1; i <= m; i++){
+    const cur = [i];
+    for(let j = 1; j <= n; j++){
+      cur[j] = Math.min(prev[j] + 1, cur[j-1] + 1, prev[j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[n];
+}
+function checkTyped(input, accepted){
+  const v = norm(input);
+  if(!v) return { ok:false, typo:false };
+  for(const a of accepted) if(norm(a) === v) return { ok:true, typo:false };
+  for(const a of accepted){
+    const t = norm(a);
+    if(t.length >= 6 && editDistance(v, t) <= 2) return { ok:true, typo:true, meant:a };
+  }
+  return { ok:false, typo:false };
+}
+
 const shuffle = a => a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(v=>v[1]);
 const cardKey = (hr,en) => hr+"|"+en;
 
@@ -2798,10 +2825,14 @@ function startDrill(id, custom){
   D = { unit:id, title: custom ? "Provjera" : u.title, q: shuffle((custom||u.drills).slice()), i:0, score:0 };
   paintDrill();
 }
+let TYPED = "", TYPO = "";
 function paintDrill(){
+  TYPED = ""; TYPO = "";
   if(D.i >= D.q.length){ return endDrill(); }
   const q = D.q[D.i];
-  const bar = `<div class="progressline"><i style="width:${(D.i/D.q.length)*100}%"></i></div>`;
+  const bar = `<div class="progressline"><i style="width:${(D.i/D.q.length)*100}%"></i></div>
+    <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--stone-dim);margin:-12px 0 16px">
+      <span>${D.i+1} / ${D.q.length}</span><span>${D.score} correct</span></div>`;
   const body = q.t === "mc"
     ? `<div class="opts">${q.o.map((o,i)=>`<button class="opt" onclick="pick(${i})">${esc(o)}</button>`).join("")}</div>`
     : `<input class="answer" id="ans" placeholder="Type it in Croatian…" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -2818,16 +2849,35 @@ function pick(i){
     ok = i === q.a;
     $$(".opt").forEach((b,j)=>{ b.disabled = true; if(j===q.a) b.classList.add("right"); else if(j===i) b.classList.add("wrong"); });
   } else {
-    const v = norm($("#ans").value);
-    if(!v) return;
-    ok = q.a.some(x => norm(x) === v);
+    const typed = $("#ans").value;
+    if(!norm(typed)) return;
+    const r = checkTyped(typed, q.a);
+    ok = r.ok; TYPED = typed; TYPO = r.typo ? (r.meant || q.a[0]) : "";
     $("#ans").disabled = true;
     $("#ans").style.borderColor = ok ? "var(--olive)" : "var(--madder)";
+    $("#ans").style.borderWidth = "2px";
   }
   if(ok){ D.score++; addXP(5); }
+
+  const yours = (q.t === "type" && TYPED)
+    ? `<div style="margin-top:9px;font-size:14px">
+         <span style="color:var(--stone-dim)">You wrote:</span>
+         <span class="hr" style="font-family:var(--display);font-size:17px;color:${ok?"var(--olive)":"var(--madder)"}">${esc(TYPED)}</span>
+       </div>` : "";
+  const answer = (q.t === "type" && (!ok || TYPO))
+    ? `<div style="margin-top:5px;font-size:14px">
+         <span style="color:var(--stone-dim)">${ok ? "Exact spelling:" : "Answer:"}</span>
+         <span style="font-family:var(--display);font-size:17px;color:var(--brass)">${esc(TYPO || q.a[0])}</span>
+       </div>` : "";
+
   $("#verdict").innerHTML = `<div class="verdict ${ok?"ok":"no"}">
-    <b style="color:${ok?"var(--olive)":"var(--madder)"}">${ok?"Correct!":"Not quite."}</b> ${esc(q.e||"")}
-    </div><div style="margin-top:12px"><button class="btn" id="nx">${D.i+1>=D.q.length?"See score":"Next →"}</button></div>`;
+    <b style="color:${ok?"var(--olive)":"var(--madder)"}">${ok ? (TYPO ? "Close enough \u2713" : "Correct \u2713") : "Not quite \u2717"}</b>
+    ${esc(q.e||"")}${yours}${answer}
+    </div>
+    <div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <button class="btn" id="nx">${D.i+1>=D.q.length?"See score":"Next \u2192"}</button>
+      <span style="font-family:var(--mono);font-size:13px;color:var(--stone-dim)">${D.score} / ${D.i+1} correct</span>
+    </div>`;
   $("#nx").focus();
   $("#nx").onclick = ()=>{ D.i++; paintDrill(); };
 }
