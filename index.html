@@ -415,7 +415,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "7.7";
+const VERSION = "8.0";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -2543,6 +2543,126 @@ async function askProxy(system, messages, maxTokens){
   return data.text.trim();
 }
 
+/* ============================================================
+   STREAMING + HISTORY WINDOW
+   ============================================================ */
+
+// Keep the last N turns verbatim and cap total characters. The system prompt
+// carries the persona, so older turns cost tokens without adding much.
+const HISTORY_TURNS = 10;
+const HISTORY_CHARS = 6000;
+
+function trimHistory(hist, maxTurns, maxChars){
+  maxTurns = maxTurns || HISTORY_TURNS;
+  maxChars = maxChars || HISTORY_CHARS;
+
+  let out = hist.slice(-maxTurns);
+
+  // A window must open on a learner turn, or the model sees its own reply
+  // with nothing to reply to.
+  while(out.length && out[0].who !== "me") out.shift();
+
+  const size = m => (m.hr || "").length;
+  let total = out.reduce((n, m) => n + size(m), 0);
+
+  while(out.length > 2 && total > maxChars){
+    total -= size(out.shift());
+    while(out.length && out[0].who !== "me") total -= size(out.shift());
+  }
+  return out;
+}
+
+function historyForApi(hist){
+  return trimHistory(hist).map(m => m.who === "me"
+    ? { role:"user", content: m.hr }
+    : { role:"assistant", content: taggedFrom(m) });
+}
+
+/* ---- tag-delimited replies: the Croatian arrives first, so it can render
+        while the rest is still generating ---- */
+function taggedFrom(m){
+  let s = `<r>${m.hr || ""}</r>`;
+  if(m.tr) s += `<t>${m.tr}</t>`;
+  (m.sugg || []).forEach(x => {
+    const hr = typeof x === "string" ? x : (x.hr || "");
+    const en = typeof x === "string" ? "" : (x.en || "");
+    if(hr) s += `<s>${hr} | ${en}</s>`;
+  });
+  return s;
+}
+
+function parseTagged(buf){
+  const grab = t => {
+    const m = buf.match(new RegExp("<" + t + ">([\\s\\S]*?)(?:</" + t + ">|$)"));
+    if(!m) return "";
+    // Mid-stream the closing tag arrives a character at a time, so strip any
+    // half-received "<", "</" or "</r" before showing it.
+    return m[1].replace(/<\/?[a-z]?$/i, "").trim();
+  };
+  const sugg = [];
+  const re = /<s>([\s\S]*?)<\/s>/g;
+  let m;
+  while((m = re.exec(buf))){
+    const [hr, en] = m[1].split("|").map(x => (x || "").trim());
+    if(hr) sugg.push({ hr, en: en || "" });
+  }
+  const corr = grab("c");
+  let fix = null;
+  if(corr){
+    const [fixed, note] = corr.split("::").map(x => (x || "").trim());
+    if(fixed) fix = { fixed, note: note || "" };
+  }
+  return { reply: grab("r"), translation: grab("t"), correction: fix, suggestions: sugg };
+}
+
+// Streams the reply, calling onText() with the Croatian so far.
+async function askProxyStream(system, messages, onText, maxTokens){
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), AI_TIMEOUT);
+  let res;
+  try{
+    res = await fetch(PROXY, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ system, messages, maxTokens: maxTokens || 2048, stream: true }),
+      signal: ctrl.signal
+    });
+  }catch(e){
+    clearTimeout(timer);
+    if(e && e.name === "AbortError") throw new Error("TIMEOUT");
+    throw new Error("NOPROXY");
+  }
+
+  if(res.status === 404 || res.status === 405){ clearTimeout(timer); throw new Error("NOSTREAM"); }
+  if(!res.ok){
+    clearTimeout(timer);
+    let d = null;
+    try{ d = await res.json(); }catch(e){}
+    if(res.status === 429) throw new Error((d && d.error) || "RATE");
+    if(res.status === 500) throw new Error("NOKEY");
+    if(res.status === 403) throw new Error("ORIGIN");
+    throw new Error((d && d.error) || ("HTTP " + res.status));
+  }
+  if(!res.body){ clearTimeout(timer); throw new Error("NOSTREAM"); }
+
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "", lastShown = "";
+  try{
+    for(;;){
+      const { done, value } = await reader.read();
+      if(done) break;
+      buf += dec.decode(value, { stream: true });
+      const partial = parseTagged(buf).reply;
+      if(partial && partial !== lastShown){ lastShown = partial; onText(partial); }
+    }
+  }finally{ clearTimeout(timer); }
+
+  const out = parseTagged(buf);
+  if(!out.reply) throw new Error("Empty reply.");
+  return out;
+}
+
 async function ask(system, messages, maxTokens){
   if(GKEY) return askGemini(system, messages, maxTokens);   // personal key wins, for local dev
   if(PROXY_OK !== false){
@@ -3076,15 +3196,32 @@ HOW TO BEHAVE:
 - If their Croatian was fine, set "correction" to null and do not invent a nitpick.
 - "suggestions" = three short, natural things THEY could say next. Each is an object with "hr" (the Croatian) and "en" (its English translation).
 
-OUTPUT: return ONLY valid JSON, no markdown fences, no text outside it:
-{"reply":"<Croatian>","translation":"<English of reply>","correction":null or {"fixed":"<their sentence corrected>","note":"<one short English sentence explaining why>"},"suggestions":[{"hr":"<Croatian>","en":"<English>"},{"hr":"...","en":"..."},{"hr":"...","en":"..."}]}`;
+OUTPUT FORMAT — use these tags exactly, in this order, and nothing else.
+No JSON, no markdown, no text outside the tags. Put the Croatian reply FIRST
+so the learner sees it immediately.
+
+<r>your Croatian reply, 1-2 sentences, ending in a question</r>
+<t>English translation of that reply</t>
+<c>their corrected sentence :: one short English sentence saying why</c>
+<s>Croatian thing they could say | English translation</s>
+<s>Croatian thing they could say | English translation</s>
+<s>Croatian thing they could say | English translation</s>
+
+Omit the <c> block entirely when their Croatian was fine. Always give exactly
+three <s> lines, each with the Croatian, then a pipe, then the English.`;
 }
 
 async function openLine(){
   if(CH.busy) return; CH.busy = true;
   try{
-    const txt = await ask(tutorSystem(), [{role:"user", content:"Start the conversation. Greet me in character and ask me one easy opening question."}]);
-    const j = parseJSON(txt);
+    const opener = [{role:"user", content:"Start the conversation. Greet me in character and ask me one easy opening question."}];
+    let j;
+    try{
+      j = await askProxyStream(tutorSystem(), opener, ()=>{});
+    }catch(e){
+      if(String(e.message) === "NOSTREAM") j = parseTagged(await ask(tutorSystem(), opener));
+      else throw e;
+    }
     CH.hist.push({who:"bot", hr:j.reply, tr:j.translation, sugg:j.suggestions||[]});
     touchChat(); paintChat();
     if($("#cherr")) $("#cherr").innerHTML = "";
@@ -3103,13 +3240,33 @@ async function sendMsg(){
   const slow1 = setTimeout(()=>{ const t=$("#typingtxt"); if(t) t.textContent = "still thinking\u2026"; }, 8000);
   const slow2 = setTimeout(()=>{ const t=$("#typingtxt"); if(t) t.textContent = "Gemini is slow right now \u2014 hang on\u2026"; }, 20000);
   try{
-    const msgs = [];
-    CH.hist.forEach(m=>{
-      if(m.who==="me") msgs.push({role:"user", content:m.hr});
-      else msgs.push({role:"assistant", content:JSON.stringify({reply:m.hr, translation:m.tr, correction:m.fix||null, suggestions:m.sugg||[]})});
-    });
-    const txt = await ask(tutorSystem(), msgs);
-    const j = parseJSON(txt);
+    const msgs = historyForApi(CH.hist);
+
+    // Render the Croatian as it arrives rather than after the whole reply.
+    const live = document.createElement("div");
+    live.className = "msg bot";
+    live.innerHTML = `<div class="cro"></div>`;
+    let first = true;
+    const onText = t => {
+      if(first){
+        clearTimeout(slow1); clearTimeout(slow2);
+        const ty0 = $("#typing"); if(ty0) ty0.remove();
+        c.appendChild(live); first = false;
+      }
+      live.querySelector(".cro").textContent = t;
+      c.scrollTop = c.scrollHeight;
+    };
+
+    let j;
+    try{
+      j = await askProxyStream(tutorSystem(), msgs, onText);
+    }catch(e){
+      if(String(e.message) === "NOSTREAM"){        // host can't stream — fall back
+        j = parseTagged(await ask(tutorSystem(), msgs));
+      } else { if(live.parentNode) live.remove(); throw e; }
+    }
+    if(live.parentNode) live.remove();
+
     CH.hist.push({who:"bot", hr:j.reply, tr:j.translation, fix:j.correction||null, sugg:j.suggestions||[]});
     touchChat(); addXP(3);
     if($("#cherr")) $("#cherr").innerHTML = "";
