@@ -415,7 +415,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "7.4";
+const VERSION = "7.5";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -2748,7 +2748,7 @@ function vUnit(id){
   shell(`${u.id}. cjelina · `, esc(u.title),
     esc(u.goal),
     `<div class="chips" style="margin-bottom:18px">
-      <button class="btn ghost sm" onclick="go('lekcije')">← ${dual("All lessons","Sve lekcije")}</button>
+      <button class="btn ghost sm" onclick="go('gramatika')">← ${dual("All grammar units","Sve cjeline")}</button>
       <button class="btn sm" onclick="startDrill(${u.id})">${dual("Practise","Vježbaj")} (${u.drills.length})</button>
       <button class="btn ghost sm" onclick="genPractice(${u.id})">${dual("More practice from AI","Još vježbi")}</button>
     </div>
@@ -2827,16 +2827,22 @@ function pick(i){
 function endDrill(){
   const pct = Math.round(D.score/D.q.length*100);
   const msg = pct===100 ? "Perfect. Every one right." : pct>=75 ? "Very good." : pct>=50 ? "Decent start — reread the lesson." : "Go back to the lesson and try again.";
-  if(D.unit){ S.done[D.unit] = S.done[D.unit]||{}; S.done[D.unit].drill = Math.max(S.done[D.unit].drill||0, pct); save(); }
+  if(D.unit){
+    S.done[D.unit] = S.done[D.unit] || {};
+    S.done[D.unit].read = true;                       // completing the drill counts as done
+    S.done[D.unit].drill = Math.max(S.done[D.unit].drill || 0, pct);
+    save();
+  }
   if(D.skill && pct >= 60){ S.skills = S.skills || {}; S.skills[D.skill] = pct; save(); }
   const next = D.unit ? UNITS.find(x=>x.id===D.unit+1) : null;
   shell("done · gotovo", "Your score", "",
     `<div class="card" style="text-align:center;padding:40px">
       <div style="font-family:var(--mono);font-size:56px;color:var(--brass);line-height:1">${D.score}<span style="font-size:26px;color:var(--stone-dim)">/${D.q.length}</span></div>
       <p style="font-family:var(--display);font-size:22px;margin-top:8px">${msg}</p>
+      ${D.unit && next ? `<p style="color:var(--olive);font-size:14px;margin:0">Unlocked: ${esc(next.title)}</p>` : ""}
       <div class="chips" style="justify-content:center;margin-top:16px">
         ${D.unit?`<button class="btn ghost sm" onclick="startDrill(${D.unit})">${dual("Again","Opet")}</button>
-        <button class="btn ghost sm" onclick="go('unit',${D.unit})">${dual("Back to lesson","Natrag na lekciju")}</button>`:""}
+        <button class="btn ghost sm" onclick="go('gramatika')">${dual("Back to grammar","Natrag na gramatiku")}</button>`:""}
         ${next?`<button class="btn sm" onclick="go('unit',${next.id})">${dual("Next unit","Sljedeća cjelina")} →</button>`:`<button class="btn sm" onclick="go('razgovor')">${dual("Go talk","Idi na razgovor")} →</button>`}
       </div></div>`);
 }
