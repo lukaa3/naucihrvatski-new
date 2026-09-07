@@ -415,7 +415,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "7.5";
+const VERSION = "7.6";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -2731,7 +2731,7 @@ function firstOpen(){
 function lockedMsg(){
   const el = document.createElement("div");
   el.className = "invite";
-  el.innerHTML = `<p>Finish the unit before this one first — read it and do the practice.</p>
+  el.innerHTML = `<p><b>Locked.</b> Finish the unit before this one first — read it, then pass its practice quiz.</p>
     <button class="btn sm" onclick="this.parentNode.remove()">OK</button>`;
   document.body.appendChild(el);
   setTimeout(()=>{ if(el.parentNode) el.remove(); }, 3500);
@@ -2745,7 +2745,9 @@ function vUnit(id){
   const vocab = `<div class="wordlist">${u.vocab.map(v=>wordRow(v[0],v[1])).join("")}</div>`;
   const phr   = `<div class="wordlist">${u.phrases.map(v=>wordRow(v[0],v[1])).join("")}</div>`;
   const next = UNITS.find(x=>x.id===id+1);
-  shell(`${u.id}. cjelina · `, esc(u.title),
+  const done = unitState(u) === "done";
+  const locked = next ? unitState(next) === "locked" : false;
+  shell(`unit ${u.id} of ${UNITS.length}`, esc(u.title),
     esc(u.goal),
     `<div class="chips" style="margin-bottom:18px">
       <button class="btn ghost sm" onclick="go('gramatika')">← ${dual("All grammar units","Sve cjeline")}</button>
@@ -2757,9 +2759,14 @@ function vUnit(id){
     <div class="kicker">vocabulary · rječnik</div>${vocab}
     <div class="kicker" style="margin-top:22px">phrases · fraze</div>${phr}
     <div id="extra"></div>
-    <div style="margin-top:26px;display:flex;gap:9px;flex-wrap:wrap">
-      <button class="btn" onclick="startDrill(${u.id})">${dual("Practise now","Vježbaj sada")}</button>
-      ${next?`<button class="btn ghost" onclick="go('unit',${next.id})">Next: ${esc(next.title)} →</button>`:""}
+    <div class="note" style="margin-top:26px">
+      ${done ? `<b>Unit complete.</b> ${next ? "Next up: " + esc(next.title) + "." : "That's the last unit in the course."}`
+             : `<b>To unlock the next unit,</b> finish the practice quiz below and score at least 60%. Reading the unit isn't enough on its own — you have to produce the language, not just recognise it.`}
+    </div>
+    <div style="margin-top:14px;display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn" onclick="startDrill(${u.id})">${done ? dual("Practise again","Vježbaj opet") : dual("Practise now","Vježbaj sada")}</button>
+      ${next && !locked ? `<button class="btn ghost" onclick="go('unit',${next.id})">Next: ${esc(next.title)} →</button>` : ""}
+      ${next && locked ? `<button class="btn ghost" disabled>&#128274; ${esc(next.title)}</button>` : ""}
     </div>`);
   if(!S.done[id]) S.done[id] = {};
   if(!S.done[id].read){ S.done[id].read = true; addXP(10); } else save();
@@ -3384,7 +3391,7 @@ function vGrammarBody(path){
     ${rows.map(r=>`<tr><td class="cs">${r[0]}</td><td class="hr">${r[1]}</td><td class="hr">${r[2]}</td><td class="hr">${r[3]}</td><td style="color:var(--stone-dim);font-size:13px">${r[4]||""}</td></tr>`).join("")}</table></div>`;
   const total = UNITS.filter(u => unitState(u) === "done").length;
   shell("grammar · gramatika", "The <i>rules</i>",
-    `${total} of ${UNITS.length} units done. Work down in order — each unlocks the next. Reference tables are underneath, and you can jump to them any time.`,
+    `${total} of ${UNITS.length} units done. <b>Pass a unit's practice quiz to unlock the next one</b> — reading alone doesn't open it. Reference tables are underneath and always available.`,
     `${path}
 
     <hr class="rule">
