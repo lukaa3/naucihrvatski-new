@@ -165,12 +165,53 @@ async function handlePost(request, env){
   };
   if(system) payload.system_instruction = { parts: [{ text: system }] };
 
-  const send = (m, p) => fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
+  const wantStream = body.stream === true;
+
+  const send = (m, p, streaming) => fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${m}:` +
+      (streaming ? "streamGenerateContent?alt=sse" : "generateContent"), {
       method:"POST",
       headers:{ "Content-Type":"application/json", "x-goog-api-key": env.GEMINI_API_KEY },
       body: JSON.stringify(p)
     });
+
+  // Gemini streams Server-Sent Events. Unwrap them into plain text chunks so
+  // the browser can just read().  Status is checked before any piping, so the
+  // model-fallback chain still works on a failed stream.
+  function toPlainStream(upstream){
+    const dec = new TextDecoder();
+    let buf = "";
+    return new ReadableStream({
+      async start(controller){
+        const reader = upstream.body.getReader();
+        const enc = new TextEncoder();
+        try{
+          for(;;){
+            const { done, value } = await reader.read();
+            if(done) break;
+            buf += dec.decode(value, { stream: true });
+            const lines = buf.split("\n");
+            buf = lines.pop();
+            for(const line of lines){
+              if(!line.startsWith("data:")) continue;
+              const payload = line.slice(5).trim();
+              if(!payload || payload === "[DONE]") continue;
+              try{
+                const j = JSON.parse(payload);
+                const parts = (((j.candidates || [])[0] || {}).content || {}).parts || [];
+                const text = parts.map(p => p.text || "").join("");
+                if(text) controller.enqueue(enc.encode(text));
+              }catch(e){ /* partial JSON line, skip */ }
+            }
+          }
+        }catch(e){
+          console.error("stream broke:", e && e.message);
+        }finally{
+          controller.close();
+        }
+      }
+    });
+  }
 
   try{
     if(WORKING_MODEL && Date.now() - WORKING_SINCE > RECHECK_MS) WORKING_MODEL = null;
@@ -183,11 +224,11 @@ async function handlePost(request, env){
     let res = null, used = null;
 
     for(const m of candidates){
-      res = await send(m, payload);
+      res = await send(m, payload, wantStream);
       if(res.status === 400){                       // some models reject thinkingConfig
         const retry = JSON.parse(JSON.stringify(payload));
         delete retry.generationConfig.thinkingConfig;
-        res = await send(m, retry);
+        res = await send(m, retry, wantStream);
       }
       // retired, out of quota, or overloaded — all worth trying the next model
       if([404, 429, 500, 502, 503].includes(res.status) && m !== candidates[candidates.length - 1]){
@@ -207,6 +248,19 @@ async function handlePost(request, env){
       try { const j = await res.json(); detail = (j.error && j.error.message) || ""; } catch(e){}
       console.error("Gemini error", res.status, detail);
       return json(res.status === 429 ? 429 : 502, { error: classify(res.status, detail) });
+    }
+
+    // Status is good, so it's safe to hand the stream straight to the browser.
+    if(wantStream){
+      return new Response(toPlainStream(res), {
+        status: 200,
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "no-store",
+          "X-Model-Used": used || "",
+          "X-Accel-Buffering": "no"
+        }
+      });
     }
 
     const data = await res.json();
