@@ -141,6 +141,7 @@ input,textarea,select{font-family:inherit;font-size:inherit}
 .word .en{color:var(--stone-dim);flex:1;font-size:14.5px}
 .word .note{font-size:12px;color:var(--brass);opacity:.85;font-style:italic}
 .spk{background:none;border:0;color:var(--stone-dim);padding:3px 5px;border-radius:6px;line-height:1}
+body.novoice .spk{opacity:.4}
 .spk:hover{color:var(--brass);background:rgba(107,166,255,.14)}
 .save{background:none;border:0;color:var(--stone-dim);padding:3px 5px;font-size:13px}
 .save:hover{color:var(--brass)}
@@ -414,7 +415,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "7.3";
+const VERSION = "7.4";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -2272,18 +2273,87 @@ const cardKey = (hr,en) => hr+"|"+en;
 
 /* --- speech --- */
 let VOICES = [];
-function loadVoices(){ try{ VOICES = speechSynthesis.getVoices()||[]; }catch(e){} }
-if(window.speechSynthesis){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+function loadVoices(){
+  try{ VOICES = speechSynthesis.getVoices()||[]; }catch(e){}
+  try{ document.body.classList.toggle("novoice", voiceQuality() === "none"); }catch(e){}
+}
+if(window.speechSynthesis){
+  loadVoices();
+  speechSynthesis.onvoiceschanged = () => { loadVoices(); if(croVoice()) VOICEWARNED = false; };
+  setTimeout(loadVoices, 800);
+}
+// A device with no Croatian voice will happily read Croatian in an English
+// accent, which teaches the wrong pronunciation. Better to say so than to lie.
+function croVoice(){
+  return VOICES.find(v => /^hr/i.test(v.lang))
+      || VOICES.find(v => /^(bs|sr|sl)/i.test(v.lang))     // very close neighbours
+      || VOICES.find(v => /^(pl|cs|sk)/i.test(v.lang))     // Slavic, imperfect but not English
+      || null;
+}
+let VOICEWARNED = false;
+// Croatian audio is only accurate if the device has a Croatian voice.
+// Without one the browser reads Croatian with an English mouth, which
+// teaches the wrong pronunciation — so say so rather than pretend.
+function voiceQuality(){
+  if(!window.speechSynthesis) return "none";
+  if(VOICES.some(v => /^hr/i.test(v.lang))) return "good";
+  if(VOICES.some(v => /^(bs|sr|sl|sk|cs|pl)/i.test(v.lang))) return "near";
+  return "none";
+}
+function voiceNote(){
+  const q = voiceQuality();
+  if(q === "good") return "";
+  const ua = navigator.userAgent || "";
+  const how = /iPhone|iPad|iPod/i.test(ua)
+      ? "Settings \u2192 Accessibility \u2192 Spoken Content \u2192 Voices \u2192 add Croatian (Hrvatski)."
+    : /Android/i.test(ua)
+      ? "Settings \u2192 Accessibility \u2192 Text-to-speech \u2192 install the Croatian voice data."
+    : /Mac OS X/i.test(ua)
+      ? "System Settings \u2192 Accessibility \u2192 Spoken Content \u2192 System Voice \u2192 Manage Voices \u2192 add Croatian."
+      : "Windows Settings \u2192 Time & Language \u2192 Speech \u2192 Manage voices \u2192 Add Croatian.";
+  return q === "near"
+    ? "This device has no Croatian voice, so audio uses a related Slavic language. Close, but not exact. To fix it: " + how
+    : "This device has no Croatian voice, so audio is read with an English accent and will be wrong. To fix it: " + how;
+}
+
+let VOICE_WARNED = false;
 function speak(text){
   if(!window.speechSynthesis) return;
+  if(voiceQuality() === "none" && !VOICE_WARNED){
+    VOICE_WARNED = true;
+    const el = document.createElement("div");
+    el.className = "invite";
+    el.innerHTML = `<p><b>Audio won't sound right on this device.</b> ${esc(voiceNote())}</p>
+      <button class="btn sm" onclick="this.parentNode.remove()">Got it</button>`;
+    document.body.appendChild(el);
+    setTimeout(()=>{ if(el.parentNode) el.remove(); }, 14000);
+  }
+  const v = croVoice();
+  if(!v){
+    if(!VOICEWARNED){ VOICEWARNED = true; voiceHelp(); }
+    return;
+  }
   try{
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(String(text).replace(/\s*\/\s*/g," , "));
-    u.lang = "hr-HR"; u.rate = .88;
-    const v = VOICES.find(v=>/^hr/i.test(v.lang)) || VOICES.find(v=>/^(bs|sr|sl|pl|cs)/i.test(v.lang));
-    if(v) u.voice = v;
+    u.lang = v.lang || "hr-HR"; u.rate = .88; u.voice = v;
     speechSynthesis.speak(u);
   }catch(e){}
+}
+
+function voiceHelp(){
+  if($("#voicebar")) return;
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const mac = /Macintosh/.test(navigator.userAgent);
+  const how = ios ? "Settings \u2192 Accessibility \u2192 Spoken Content \u2192 Voices \u2192 Croatian"
+            : mac ? "System Settings \u2192 Accessibility \u2192 Spoken Content \u2192 System Voice \u2192 Manage Voices \u2192 Croatian"
+            : "your device's text-to-speech settings, and add a Croatian voice";
+  const el = document.createElement("div");
+  el.id = "voicebar"; el.className = "invite";
+  el.innerHTML = `<p><b>No Croatian voice on this device.</b> Audio is switched off rather than reading Croatian
+    with an English accent, which would teach you the wrong sounds. To add one: ${esc(how)}.</p>
+    <button class="btn sm" onclick="this.parentNode.remove()">OK</button>`;
+  document.body.appendChild(el);
 }
 const spk = t => `<button class="spk" title="Poslušaj" onclick="speak(${JSON.stringify(t).replace(/"/g,'&quot;')})">🔊</button>`;
 
@@ -2409,15 +2479,24 @@ async function probe(live){
   paintGear();
 }
 
+const AI_TIMEOUT = 45000;
+
 async function askProxy(system, messages, maxTokens){
   let res;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), AI_TIMEOUT);
   try{
     res = await fetch(PROXY, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ system, messages, maxTokens: maxTokens || 2048 })
+      body: JSON.stringify({ system, messages, maxTokens: maxTokens || 2048 }),
+      signal: ctrl.signal
     });
-  }catch(e){ throw new Error("NOPROXY"); }          // offline, or opened as a local file
+  }catch(e){
+    clearTimeout(timer);
+    if(e && e.name === "AbortError") throw new Error("TIMEOUT");
+    throw new Error("NOPROXY");                     // offline, or opened as a local file
+  }finally{ clearTimeout(timer); }
 
   if(res.status === 404){ throw new Error("NOPROXY:404"); }
 
@@ -2476,6 +2555,7 @@ function apiError(e){
   if(m === "BADKEY")  return `<div class="err"><b>Ključ ne radi.</b> Google rejected that API key. Open <b>Postavke</b>, check you pasted the whole thing, and make sure the Generative Language API is enabled for the key.<div style="margin-top:9px"><button class="btn sm" onclick="openSettings()">Otvori postavke</button></div></div>`;
   if(m === "NOMODEL") return `<div class="err"><b>Model nije pronađen.</b> Your key doesn't have access to <b>${esc(GMODEL)}</b>. Pick a different one in <b>Postavke</b>.<div style="margin-top:9px"><button class="btn sm" onclick="openSettings()">Promijeni model</button></div></div>`;
   if(m === "RATE")    return `<div class="err"><b>Previše zahtjeva.</b> You've hit Gemini's rate limit. Wait a minute and try again — the free tier is generous but not unlimited.</div>`;
+  if(m === "TIMEOUT") return `<div class="err"><b>That took too long.</b> Gemini didn't answer within 45 seconds — usually it's briefly overloaded. Send your message again.</div>`;
   if(/^BUSY/.test(m) || /50[023]/.test(m)) return `<div class="err"><b>Gemini was busy.</b> It was temporarily overloaded — this clears in a few seconds. Just send your message again.</div>`;
   if(!GKEY) return `<div class="err"><b>AI is not connected.</b> Lessons, grammar, drills and flashcards all work without it.<div style="font-family:var(--mono);font-size:11px;margin-top:8px;color:var(--stone-dim);word-break:break-all">${esc(m) || "no error message"}</div><div style="margin-top:9px"><button class="btn sm" onclick="openSettings()">Otvori postavke</button></div></div>`;
   return `<div class="err"><b>That did not work.</b> ${esc(m) || "Unknown error."} Try again, or check your key in <b>Postavke</b>.</div>`;
@@ -2955,8 +3035,10 @@ async function sendMsg(){
   i.value = ""; CH.busy = true; $("#send").disabled = true;
   CH.hist.push({who:"me", hr:t}); touchChat(); paintChat();
   const c = $("#chat");
-  c.insertAdjacentHTML("beforeend", `<div class="msg bot" id="typing"><span class="spin"></span></div>`);
+  c.insertAdjacentHTML("beforeend", `<div class="msg bot" id="typing"><span class="spin"></span> <span id="typingtxt" style="font-size:13px;color:var(--stone-dim)"></span></div>`);
   c.scrollTop = c.scrollHeight;
+  const slow1 = setTimeout(()=>{ const t=$("#typingtxt"); if(t) t.textContent = "still thinking\u2026"; }, 8000);
+  const slow2 = setTimeout(()=>{ const t=$("#typingtxt"); if(t) t.textContent = "Gemini is slow right now \u2014 hang on\u2026"; }, 20000);
   try{
     const msgs = [];
     CH.hist.forEach(m=>{
@@ -2973,7 +3055,9 @@ async function sendMsg(){
     if($("#cherr")) $("#cherr").innerHTML = apiError(e);
     console.error("Nauči hrvatski AI call failed:", e);
   }
+  clearTimeout(slow1); clearTimeout(slow2);
   const ty = $("#typing"); if(ty) ty.remove();
+  $$(".msg.bot").forEach(el => { if(el.querySelector(".spin") && !el.textContent.trim()) el.remove(); });
   CH.busy = false; if($("#send")) $("#send").disabled = false;
   paintChat(); if($("#say")) $("#say").focus();
 }
@@ -3808,6 +3892,9 @@ function openSettings(){
       : st.k === "probing" ? "Checking the server…"
       : "The server path isn't usable yet. The checks below say why."}</p>
     ${diag}
+
+    ${voiceQuality() !== "good" ? `<div class="kicker" style="margin-top:18px">pronunciation</div>
+      <div class="note" style="margin-top:0">${esc(voiceNote())}</div>` : ""}
 
     <div style="margin-top:16px"><button class="btn" onclick="testConn()">Test connection</button></div>
     <div id="kmsg" style="margin-top:12px"></div>
