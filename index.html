@@ -341,7 +341,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "7.0";
+const VERSION = "7.1";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -3301,8 +3301,16 @@ const CLOUD = {
 
   async init(){
     if(!SB_READY()){ this.ready = true; this.lastErr = "NOCONFIG"; paintCloud(); return; }
+
+    // The Supabase library loads as a separate module script. Waiting on an
+    // event is unreliable — it may already have fired — so poll for it.
+    for(let i = 0; i < 100 && !window.__sbCreate; i++){
+      await new Promise(r => setTimeout(r, 100));
+    }
     if(!window.__sbCreate){
-      await new Promise(r => window.addEventListener("sb-ready", r, {once:true}));
+      this.ready = true; this.lastErr = "NOLIB"; paintCloud();
+      if(CUR === "napredak") vSave();
+      return;
     }
     try{
       SB = window.__sbCreate(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -3328,22 +3336,26 @@ const CLOUD = {
   },
 
   async signIn(email, password){
+    if(!SB) throw new Error(SB_READY() ? "NOLIB" : "NOCONFIG");
     const { error } = await SB.auth.signInWithPassword({ email, password });
     if(error) throw new Error(error.message);
   },
 
   async signUp(email, password){
+    if(!SB) throw new Error(SB_READY() ? "NOLIB" : "NOCONFIG");
     const { data, error } = await SB.auth.signUp({ email, password });
     if(error) throw new Error(error.message);
     return (data && data.session) ? "in" : "confirm";
   },
 
   async recover(email){
+    if(!SB) throw new Error(SB_READY() ? "NOLIB" : "NOCONFIG");
     const { error } = await SB.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
     if(error) throw new Error(error.message);
   },
 
   async resetPassword(password){
+    if(!SB) throw new Error(SB_READY() ? "NOLIB" : "NOCONFIG");
     const { error } = await SB.auth.updateUser({ password });
     if(error) throw new Error(error.message);
     try{ history.replaceState(null, "", location.pathname); }catch(e){}
@@ -3352,14 +3364,14 @@ const CLOUD = {
   async acceptInvite(password){ return this.resetPassword(password); },
 
   async signOut(){
-    try{ await SB.auth.signOut(); }catch(e){}
+    try{ if(SB) await SB.auth.signOut(); }catch(e){}
     this.user = null; this.email = ""; paintCloud();
     if(CUR === "napredak") vSave();
   },
 
   /* ---- progress sync ---- */
   async sync(){
-    if(this.busy || !this.user) return;
+    if(this.busy || !this.user || !SB) return;
     this.busy = true; this.lastErr = "";
     try{
       const { data, error } = await SB.from("progress")
@@ -3376,7 +3388,7 @@ const CLOUD = {
   },
 
   async push(quiet){
-    if(!this.user) return;
+    if(!this.user || !SB) return;
     try{
       const now = Date.now();
       const { error } = await SB.from("progress").upsert({
@@ -3390,6 +3402,7 @@ const CLOUD = {
   },
 
   async pull(){
+    if(!SB){ this.lastErr = "NOLIB"; if(CUR === "napredak") vSave(); return; }
     try{
       const { data, error } = await SB.from("progress")
         .select("state, updated_at").eq("user_id", this.user.id).maybeSingle();
@@ -3404,7 +3417,8 @@ const CLOUD = {
 
 function cloudErrText(m){
   m = String(m || "");
-  if(m === "NOCONFIG") return "Accounts aren't set up yet. Add your Supabase URL and anon key near the top of index.html.";
+  if(m === "NOCONFIG") return "Accounts aren't set up yet — the Supabase URL and anon key are still placeholders near the top of index.html.";
+  if(m === "NOLIB")    return "The Supabase library didn't load. Check your internet connection, turn off any ad blocker for this site, and refresh.";
   if(/Invalid login credentials/i.test(m)) return "Wrong email or password.";
   if(/User already registered/i.test(m))   return "That email already has an account — sign in instead.";
   if(/Password should be at least/i.test(m)) return "Password must be at least 6 characters.";
@@ -3598,6 +3612,9 @@ function vSave(){
         </div>`
       : `
         <div style="font-family:var(--display);font-size:22px;font-weight:700">Sign in — no more save codes</div>
+        ${!CLOUD.ready ? `<div style="font-size:13px;color:var(--stone-dim);margin-top:6px"><span class="spin"></span> Loading sign-in…</div>`
+          : (CLOUD.lastErr === "NOCONFIG" || CLOUD.lastErr === "NOLIB")
+            ? `<div class="err" style="margin-top:10px">${esc(cloudErrText(CLOUD.lastErr))}</div>` : ""}
         
         <p style="font-size:14.5px;color:var(--stone-dim);margin-top:6px">Make an account with an email and password and your progress follows you to every device automatically. Passwords are handled by Netlify — this app never sees them.</p>
         ${CLOUD.lastErr ? `<div class="err" style="margin-top:10px">${esc(cloudErrText(CLOUD.lastErr))}</div>` : ""}
