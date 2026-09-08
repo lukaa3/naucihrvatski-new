@@ -592,7 +592,7 @@ const UNITS = [
     {h:"The question words",
      b:"<b>tko?</b> who · <b>što?</b> what · <b>gdje?</b> where · <b>kamo?</b> where to · <b>odakle?</b> where from<br><b>kada?</b> when · <b>kako?</b> how · <b>zašto?</b> why · <b>koliko?</b> how much/many<br><b>koji?</b> which · <b>čiji?</b> whose · <b>kakav?</b> what kind of<br><br>Croatian uses <b>tko</b> and <b>što</b> — not <em>ko</em> and <em>šta</em>."},
     {h:"Question words decline too",
-     b:"<b>tko</b> changes by case just like a noun:<br>N <b>tko</b> · G <b>koga</b> · D <b>komu/kome</b> · A <b>koga</b> · L <b>o kome</b> · I <b>s kim</b><br><br><b>što</b>: N što · G <b>čega</b> · D <b>čemu</b> · A što · L <b>o čemu</b> · I <b>čime</b><br><br>S <b>kim</b> ideš? — Who are you going with?<br>O <b>čemu</b> govoriš? — What are you talking about?<br>Od <b>koga</b> je to? — Who is that from?"},
+     b:"Grammar tables label the seven cases by their first letter. You'll see this everywhere, so learn the shorthand now:<br><br><b>N</b> = nominativ (the subject) · <b>G</b> = genitiv (of, from) · <b>D</b> = dativ (to whom) · <b>A</b> = akuzativ (the object) · <b>V</b> = vokativ (calling someone) · <b>L</b> = lokativ (about, in) · <b>I</b> = instrumental (with)<br><br><b>tko</b> changes shape across all seven, just like a noun:<table><tr><th>case</th><th>tko (who)</th><th>što (what)</th></tr><tr><td class='cs'>N</td><td class='hr'>tko</td><td class='hr'>što</td></tr><tr><td class='cs'>G</td><td class='hr'>koga</td><td class='hr'>čega</td></tr><tr><td class='cs'>D</td><td class='hr'>komu / kome</td><td class='hr'>čemu</td></tr><tr><td class='cs'>A</td><td class='hr'>koga</td><td class='hr'>što</td></tr><tr><td class='cs'>L</td><td class='hr'>o kome</td><td class='hr'>o čemu</td></tr><tr><td class='cs'>I</td><td class='hr'>s kim</td><td class='hr'>čime</td></tr></table>S <b>kim</b> ideš? — Who are you going with? (with → instrumental)<br>O <b>čemu</b> govoriš? — What are you talking about? (about → locative)<br>Od <b>koga</b> je to? — Who is that from? (from → genitive)"},
     {h:"koji, čiji and kakav agree like adjectives",
      b:"<b>koji / koja / koje</b> — which<br><b>čiji / čija / čije</b> — whose<br><b>kakav / kakva / kakvo</b> — what kind of<br><br><b>Koja</b> je tvoja? — Which one is yours? (f thing)<br><b>Čiji</b> je ovo auto? — Whose car is this?<br><b>Kakvo</b> je vrijeme? — What's the weather like?"},
     {h:"Yes-no questions, three ways",
@@ -2745,7 +2745,7 @@ function shell(eyebrow, title, lede, body){
 function nextUnit(){ return UNITS.find(u => u.id === firstOpen()) || UNITS[0]; }
 function vHome(){
   const u = nextUnit();
-  const doneCount = UNITS.filter(x=>S.done[x.id]&&S.done[x.id].read).length;
+  const doneCount = UNITS.filter(u => unitState(u) === "done").length;
   const wordCount = UNITS.reduce((n,x)=>n+x.vocab.length+x.phrases.length,0) + PACKS.reduce((n,p)=>n+p.w.length,0);
   shell(S.name ? `bok, ${esc(S.name)} — nastavljamo` : "dobro došao — welcome", `Naučimo <i>hrvatski</i>.`,
     "Seven cases, one alphabet where every letter says exactly what it looks like, and a country that will talk back to you. Twelve units, a tutor who only speaks standard Croatian, and as much practice as you want.",
@@ -2771,7 +2771,8 @@ function vHome(){
     </div>
 
     <div class="grid g3" style="margin-top:14px">
-      <div class="card"><div class="kicker">lessons · lekcije</div><div style="font-family:var(--mono);font-size:30px;color:var(--brass)">${doneCount}<span style="font-size:16px;color:var(--stone-dim)">/${UNITS.length}</span></div><div style="font-size:13px;color:var(--stone-dim)">units read</div></div>
+      <div class="card"><div class="kicker">grammar · gramatika</div><div style="font-family:var(--mono);font-size:30px;color:var(--brass)">${doneCount}<span style="font-size:16px;color:var(--stone-dim)">/${UNITS.length}</span></div><div style="font-size:13px;color:var(--stone-dim)">grammar units completed</div></div>
+      <div class="card"><div class="kicker">speaking · govor</div><div style="font-family:var(--mono);font-size:30px;color:var(--brass)">${SKILLS.filter(skillDone).length}<span style="font-size:16px;color:var(--stone-dim)">/${SKILLS.length}</span></div><div style="font-size:13px;color:var(--stone-dim)">speaking lessons completed</div></div>
       <div class="card"><div class="kicker">vocabulary · rječnik</div><div style="font-family:var(--mono);font-size:30px;color:var(--brass)">${wordCount}</div><div style="font-size:13px;color:var(--stone-dim)">words & phrases in the course</div></div>
       <div class="card"><div class="kicker">flashcards · kartice</div><div style="font-family:var(--mono);font-size:30px;color:var(--brass)">${Object.keys(S.cards||{}).length}</div><div style="font-size:13px;color:var(--stone-dim)">saved for review</div></div>
     </div>
@@ -2794,6 +2795,25 @@ const POTD = ALLP[Math.floor(Date.now()/864e5) % ALLP.length];
    LEKCIJE
    ============================================================ */
 function skillDone(s){ return !!(S.skills || {})[s.id]; }
+
+function skillState(s){
+  if(skillDone(s)) return "done";
+  const i = SKILLS.indexOf(s);
+  if(i <= 0) return "open";
+  return skillDone(SKILLS[i - 1]) ? "open" : "locked";
+}
+function firstOpenSkill(){
+  const s = SKILLS.find(x => skillState(x) !== "done");
+  return s ? s.id : SKILLS[SKILLS.length - 1].id;
+}
+function lockedSkillMsg(){
+  const el = document.createElement("div");
+  el.className = "invite";
+  el.innerHTML = `<p><b>Locked.</b> Finish the lesson before this one \u2014 read it, then pass its practice.</p>
+    <button class="btn sm" onclick="this.parentNode.remove()">OK</button>`;
+  document.body.appendChild(el);
+  setTimeout(()=>{ if(el.parentNode) el.remove(); }, 3500);
+}
 
 function vSkills(){
   const done = SKILLS.filter(skillDone).length;
@@ -3017,6 +3037,8 @@ function endDrill(){
       <div style="font-family:var(--mono);font-size:56px;color:var(--brass);line-height:1">${D.score}<span style="font-size:26px;color:var(--stone-dim)">/${D.q.length}</span></div>
       <p style="font-family:var(--display);font-size:22px;margin-top:8px">${msg}</p>
       ${D.unit && next ? `<p style="color:var(--olive);font-size:14px;margin:0">Unlocked: ${esc(next.title)}</p>` : ""}
+      ${D.skill && pct >= 60 ? (()=>{ const si = SKILLS.findIndex(x => x.id === D.skill); const sn = SKILLS[si+1];
+        return sn ? `<p style="color:var(--olive);font-size:14px;margin:0">Unlocked: ${esc(sn.title)}</p>` : ""; })() : ""}
       <div class="chips" style="justify-content:center;margin-top:16px">
         ${D.unit?`<button class="btn ghost sm" onclick="startDrill(${D.unit})">${dual("Again","Opet")}</button>
         <button class="btn ghost sm" onclick="go('gramatika')">${dual("Back to grammar","Natrag na gramatiku")}</button>`:""}
@@ -3605,7 +3627,8 @@ function vGrammarBody(path){
     <div class="secthead"><div class="bar" style="background:var(--brass)"></div>
       <div><h3>Reference tables</h3><div class="sub">Tablice</div></div></div>
     <div class="card" style="margin-top:8px">
-      <div class="kicker">cases — singular · jednina</div>${tbl(CASES.sg)}
+      <div class="kicker">cases — singular · jednina</div>
+      <div class="note" style="margin-top:0"><b>Reading the shorthand:</b> N = nominativ (subject) · G = genitiv (of, from) · D = dativ (to whom) · A = akuzativ (object) · V = vokativ (calling someone) · L = lokativ (about, in) · I = instrumental (with). Croatian schools drill them in exactly that order, and every dictionary uses it.</div>${tbl(CASES.sg)}
       <div class="kicker" style="margin-top:22px">cases — plural · množina</div>${tbl(CASES.pl)}
       <div class="note"><b>Shortcut:</b> dativ and lokativ are always identical. In the plural, dativ, lokativ and instrumental are all identical too. That means seven cases really only cost you five sets of endings.</div>
     </div>
