@@ -415,7 +415,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "8.0";
+const VERSION = "8.1";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -593,10 +593,12 @@ const UNITS = [
      b:"<b>tko?</b> who · <b>što?</b> what · <b>gdje?</b> where · <b>kamo?</b> where to · <b>odakle?</b> where from<br><b>kada?</b> when · <b>kako?</b> how · <b>zašto?</b> why · <b>koliko?</b> how much/many<br><b>koji?</b> which · <b>čiji?</b> whose · <b>kakav?</b> what kind of<br><br>Croatian uses <b>tko</b> and <b>što</b> — not <em>ko</em> and <em>šta</em>."},
     {h:"A few question phrases to memorise whole",
      b:"Croatian question words change their ending depending on the job they're doing in the sentence — the case system, which you'll learn properly in the next section. You don't need to understand it yet.<br><br>For now, learn these four as <b>fixed phrases</b>, the way you'd learn a single word:<br><br><b>S kim?</b> — With whom?<br><em>S kim ideš?</em> — Who are you going with?<br><br><b>O čemu?</b> — About what?<br><em>O čemu govoriš?</em> — What are you talking about?<br><br><b>Od koga?</b> — From whom?<br><em>Od koga je to?</em> — Who is that from?<br><br><b>Kome?</b> — To whom?<br><em>Kome pišeš?</em> — Who are you writing to?<br><br>Why they look different from <em>tko</em> and <em>što</em> will make complete sense once you've done Section 2. Until then, treat them as vocabulary."},
-    {h:"koji, čiji and kakav agree like adjectives",
-     b:"<b>koji / koja / koje</b> — which<br><b>čiji / čija / čije</b> — whose<br><b>kakav / kakva / kakvo</b> — what kind of<br><br><b>Koja</b> je tvoja? — Which one is yours? (f thing)<br><b>Čiji</b> je ovo auto? — Whose car is this?<br><b>Kakvo</b> je vrijeme? — What's the weather like?"},
-    {h:"Yes-no questions, three ways",
-     b:"1. <b>Je li</b> ovo tvoje? — most standard<br>2. <b>Da li</b> ideš? — very common in speech<br>3. Just intonation: <b>Ideš?</b><br><br>And the survival questions, worth memorising word for word:<br><b>Što znači…?</b> — What does … mean?<br><b>Kako se kaže … na hrvatskom?</b> — How do you say … in Croatian?<br><b>Možete li ponoviti?</b> — Can you repeat?<br><b>Gdje je…?</b> — Where is…?<br><b>Koliko košta?</b> — How much does it cost?"}
+    {h:"koji, čiji and kakav change with the thing you're asking about",
+     b:"These three copy the gender of the noun, exactly like an adjective. The three forms are always <b>masculine / feminine / neuter</b>, in that order:<table><tr><th></th><th>m</th><th>f</th><th>n</th></tr><tr><td class='cs'>which</td><td class='hr'>koji</td><td class='hr'>koja</td><td class='hr'>koje</td></tr><tr><td class='cs'>whose</td><td class='hr'>čiji</td><td class='hr'>čija</td><td class='hr'>čije</td></tr><tr><td class='cs'>what kind of</td><td class='hr'>kakav</td><td class='hr'>kakva</td><td class='hr'>kakvo</td></tr></table>Pick the form by the noun you are asking about:<br><br><b>Koji</b> auto? — Which car? <em>(auto, masculine)</em><br><b>Koja</b> knjiga? — Which book? <em>(knjiga, feminine)</em><br><b>Koje</b> pivo? — Which beer? <em>(pivo, neuter)</em><br><br><b>Čiji</b> je ovo auto? — Whose car is this?<br><b>Čija</b> je ovo torba? — Whose bag is this?<br><b>Kakvo</b> je vrijeme? — What is the weather like? <em>(vrijeme, neuter)</em><br><br>Not sure of a noun's gender? The ending tells you: consonant = masculine, <b>-a</b> = feminine, <b>-o</b> or <b>-e</b> = neuter."},
+    {h:"Yes-no questions",
+     b:"There's one pattern, not three: take the verb and put <b>li</b> right after it. <b>li</b> is the question marker — it has no English translation, it just signals that this is a yes/no question.<br><br><b>With any ordinary verb — verb + li:</b><br><b>Ideš li?</b> — Are you going?<br><b>Imaš li kruha?</b> — Do you have any bread?<br><b>Govorite li engleski?</b> — Do you speak English?<br><b>Možeš li mi pomoći?</b> — Can you help me?<br><br><b>With <em>biti</em> (to be), use the long form + li.</b> This is where <em>je li</em> and <em>jesi li</em> both come from — the same construction, different person:<table><tr><th>person</th><th>question</th><th>meaning</th></tr><tr><td class='cs'>ja</td><td class='hr'>jesam li</td><td>am I</td></tr><tr><td class='cs'>ti</td><td class='hr'>jesi li</td><td>are you</td></tr><tr><td class='cs'>on / ona / ono</td><td class='hr'>je li</td><td>is he / she / it</td></tr><tr><td class='cs'>mi</td><td class='hr'>jesmo li</td><td>are we</td></tr><tr><td class='cs'>vi</td><td class='hr'>jeste li</td><td>are you (formal / plural)</td></tr><tr><td class='cs'>oni</td><td class='hr'>jesu li</td><td>are they</td></tr></table><b>Jesi li</b> umoran? — Are you tired?<br><b>Je li</b> ovo tvoje? — Is this yours?<br><b>Jeste li</b> spremni? — Are you ready? (formal)<br><br>So yes — <b>jesi li</b> is completely correct. Use it when the subject is <em>you</em>; <em>je li</em> when the subject is he, she or it.<br><br><b>What about <em>da li</em>?</b> <em>Da li ideš?</em> also means <em>Are you going?</em> and you will hear it constantly. It is understood everywhere, but Croatian style guides prefer <b>Ideš li?</b> — <em>da li</em> is more associated with Serbian usage. Recognise it, but produce <em>Ideš li?</em><br><br><b>Or just raise your voice:</b> <em>Ideš?</em> Completely normal in speech."},
+    {h:"The survival questions",
+     b:"Memorise these word for word. They keep a conversation alive when nothing else will:<br><br><b>Što znači to?</b> — What does that mean?<br><b>Kako se kaže … na hrvatskom?</b> — How do you say … in Croatian?<br><b>Možete li ponoviti?</b> — Could you repeat that?<br><b>Možete li govoriti sporije?</b> — Could you speak more slowly?<br><b>Gdje je…?</b> — Where is…?<br><b>Koliko košta?</b> — How much does it cost?<br><b>Ne razumijem.</b> — I do not understand."}
   ],
   vocab:[["tko","who"],["što","what"],["gdje","where"],["kamo","where to"],["odakle","where from"],
     ["kada","when"],["kako","how"],["zašto","why"],["zato što","because"],["koliko","how much"],
@@ -610,7 +612,7 @@ const UNITS = [
   drills:[
     {t:"type",q:"Ask: What does that mean?",a:["što znači to","sto znaci to","što to znači"],e:"Što znači to?"},
     {t:"mc",q:"'Who are you going with?' =",o:["Tko ideš?","S kim ideš?","Koga ideš?","Čime ideš?"],a:1,e:"S kim — learn it as a fixed phrase for now; the ending is explained in Section 2."},
-    {t:"mc",q:"Which is standard Croatian?",o:["Ko je to?","Šta je to?","Tko je to?","Ča je to?"],a:2,e:"tko, not ko. što, not šta."},
+    {t:"mc",q:"Ask a friend: Are you tired?",o:["Je li umoran?","Jesi li umoran?","Da umoran?","Umoran li?"],a:1,e:"The subject is you, so jesi li."},
     {t:"type",q:"Ask: How much does it cost?",a:["koliko košta","koliko kosta"],e:"Koliko košta?"},
     {t:"mc",q:"Which asks 'Where are you going?'",o:["Gdje si?","Kamo ideš?","Odakle si?","Kako ide?"],a:1,e:"Kamo = where to. Gdje = where (you already are)."},
     {t:"type",q:"Ask: Where is the station?",a:["gdje je kolodvor"],e:"Gdje je kolodvor?"}
@@ -795,7 +797,7 @@ const UNITS = [
     {t:"type",q:"Say: Coffee with milk, please.",a:["kava s mlijekom molim","kava s mlijekom molim vas"],e:"Kava s mlijekom, molim."},
     {t:"type",q:"Say: I live with my family.",a:["živim s obitelji","zivim s obitelji"],e:"Živim s obitelji."},
     {t:"mc",q:"Instrumental of 'prijatelj':",o:["prijateljom","prijateljem","prijatelju","prijatelja"],a:1,e:"Soft consonant → -em."},
-    {t:"mc",q:"Why 'sa mnom' and not 's mnom'?",o:["It's feminine","Easier to pronounce","It's plural","It's a rule for pronouns only"],a:1,e:"sa appears before awkward clusters for pronunciation."}
+    {t:"type",q:"Ask: Do you want to come with me?",a:["hoćeš ići sa mnom","hoces ici sa mnom","hoćeš li ići sa mnom"],e:"Hoćeš ići sa mnom?"}
   ]
 },
 {
@@ -826,7 +828,7 @@ const UNITS = [
     {t:"mc",q:"In the plural, which three merge?",o:["N, G, A","D, L, I","N, A, V","G, D, A"],a:1,e:"D, L and I all take -ama/-ima."},
     {t:"type",q:"Say: We're going with friends.",a:["idemo s prijateljima"],e:"Idemo s prijateljima."},
     {t:"mc",q:"Genitive plural of 'žena':",o:["žene","žena","ženama","ženu"],a:1,e:"žena — the bare stem, a distinctively long ending."},
-    {t:"mc",q:"Which case is 4th in the Croatian order?",o:["Genitiv","Dativ","Akuzativ","Lokativ"],a:2,e:"N, G, D, A, V, L, I."}
+    {t:"mc",q:"We are talking about the cities —",o:["o gradovi","o gradove","o gradovima","o gradova"],a:2,e:"o takes the locative; the plural ending is -ima."}
   ]
 },
 /* ============ SECTION 3 — TENSES ============ */
@@ -885,7 +887,7 @@ const UNITS = [
     ["Neću ići.","I won't go."],["Vidimo se sljedeći tjedan.","See you next week."],
     ["Nadam se da ćeš doći.","I hope you'll come."],["Sutra idem u Zagreb.","I'm going to Zagreb tomorrow."]],
   drills:[
-    {t:"mc",q:"Which spelling is standard Croatian?",o:["Radiću sutra.","Raditi ću sutra.","Radit ću sutra.","Radit-ću sutra."],a:2,e:"Infinitive loses -i and stays separate. One word is Serbian."},
+    {t:"type",q:"Say: I will work tomorrow.",a:["radit ću sutra","sutra ću raditi","radit cu sutra"],e:"Radit ću sutra — the infinitive drops its -i and stays a separate word."},
     {t:"type",q:"Say: We'll go to the seaside.",a:["ići ćemo na more","ici cemo na more","mi ćemo ići na more"],e:"Ići ćemo na more."},
     {t:"mc",q:"'I won't come' =",o:["Ne ću doći","Neću doći","Nisam doći","Ne hoću dolaziti"],a:1,e:"Neću — one word."},
     {t:"type",q:"Ask: Will you come? (informal)",a:["hoćeš li doći","hoces li doci"],e:"Hoćeš li doći?"},
