@@ -415,7 +415,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "8.1";
+const VERSION = "8.2";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -624,8 +624,8 @@ const UNITS = [
   grammar:[
     {h:"Counting",
      b:"nula, jedan, dva, tri, četiri, pet, šest, sedam, osam, devet, deset,<br>jedanaest, dvanaest, trinaest, četrnaest, petnaest, šesnaest, sedamnaest, osamnaest, devetnaest, dvadeset.<br><br>From 11 up it's just <em>digit + naest</em>. Tens: dvadeset, trideset, četrdeset, pedeset, šezdeset, sedamdeset, osamdeset, devedeset, <b>sto</b>, <b>tisuća</b>.<br><br>21 = dvadeset jedan. 135 = sto trideset pet."},
-    {h:"What the noun does after a number",
-     b:"Numbers change the shape of the word that follows. You don't need to know why yet — the endings are cases, which start in Unit 8. For now, copy the pattern:<table><tr><th>after…</th><th>masculine</th><th>feminine</th></tr><tr><td class='cs'>1</td><td class='hr'>jedan stol</td><td class='hr'>jedna kava</td></tr><tr><td class='cs'>2, 3, 4</td><td class='hr'>dva stola</td><td class='hr'>tri kave</td></tr><tr><td class='cs'>5 and up</td><td class='hr'>pet stolova</td><td class='hr'>šest kava</td></tr></table>Also: <b>dva</b> for masculine and neuter, but <b>dvije</b> for feminine.<br><em>dva piva</em> (beer, n) · <em>dvije kave</em> (coffee, f)<br><br>The one to say out loud until it sticks:<br><b>jedna kava · dvije kave · pet kava</b><br><br>Anything ending in 2, 3 or 4 follows that middle row too — <em>dvadeset dva stola</em> (22 tables). Anything ending in 5–0 follows the bottom row.<br><br><em>Unit 9 explains exactly why these endings look like this. Until then, the pattern is enough to order coffee correctly.</em>"},
+    {h:"Counting things — three phrases for now",
+     b:"Numbers slightly change the word that follows them. The reason is the case system, which starts in Unit 8, so we'll leave the rule until <b>Unit 9</b> where it can be explained properly.<br><br>For now, just learn these three by heart. They cover almost everything you'll order:<br><br><b>jedna kava</b> — one coffee<br><b>dvije kave</b> — two coffees<br><b>pet kava</b> — five coffees<br><br>Say them out loud a few times. That's genuinely all you need at this stage — and when the rule arrives in Unit 9, you'll already have the pattern in your ear."},
     {h:"Telling the time",
      b:"<b>Koliko je sati?</b> — What time is it?<br>Jedan sat · Dva sata · Pet sati (the number rule again)<br><br><b>Pola tri = 2:30.</b> Literally <em>half three</em>, meaning half way <b>to</b> three. This trips up every English speaker. Pola tri is NOT 3:30.<br><br>Deset i petnaest — 10:15 · Petnaest do pet — 4:45<br><b>U koliko sati?</b> — At what time? → <b>U</b> osam."},
     {h:"Days and months",
@@ -643,8 +643,8 @@ const UNITS = [
   drills:[
     {t:"type",q:"What is 'pola tri' in digits?",a:["2:30","230","14:30"],e:"2:30 — half way TO three."},
     {t:"mc",q:"Which is October?",o:["kolovoz","listopad","studeni","rujan"],a:1,e:"listopad. kolovoz=August, rujan=September, studeni=November."},
-    {t:"mc",q:"Correct form after 'pet':",o:["pet kava","pet kave","pet kavu","pet kavi"],a:0,e:"Five and up takes the -a ending: pet kava."},
-    {t:"mc",q:"'two coffees' =",o:["dva kave","dvije kave","dva kava","dvije kava"],a:1,e:"kava is feminine, so dvije — and 2/3/4 gives kave."},
+    {t:"type",q:"Say: See you at eight.",a:["vidimo se u osam","vidimo se u osam sati"],e:"Vidimo se u osam."},
+    {t:"mc",q:"Which is Wednesday?",o:["utorak","srijeda","četvrtak","subota"],a:1,e:"srijeda. utorak=Tuesday, četvrtak=Thursday, subota=Saturday."},
     {t:"type",q:"Say: I'm seventeen years old.",a:["imam sedamnaest godina"],e:"Imam sedamnaest godina — literally 'I have 17 years'."},
     {t:"mc",q:"'tjedan' means:",o:["Sunday","week","month","Tuesday"],a:1,e:"tjedan = week; nedjelja = Sunday."}
   ]
@@ -689,6 +689,8 @@ const UNITS = [
      b:"<table><tr><th></th><th>N</th><th>G sing</th><th>G plural</th></tr><tr><td class='cs'>m</td><td class='hr'>grad</td><td class='hr'>grada</td><td class='hr'>gradova</td></tr><tr><td class='cs'>f</td><td class='hr'>kuća</td><td class='hr'>kuće</td><td class='hr'>kuća</td></tr><tr><td class='cs'>n</td><td class='hr'>more</td><td class='hr'>mora</td><td class='hr'>mora</td></tr></table>m/n take <b>-a</b>, f takes <b>-e</b>."},
     {h:"Four jobs",
      b:"<b>1 · Possession</b> — English <em>of</em> or <em>'s</em>:<br>knjiga <b>profesora</b> · centar <b>grada</b> · kraj <b>filma</b><br><br><b>2 · After these prepositions:</b> <b>iz</b> from/out of, <b>od</b> from, <b>do</b> to/until, <b>bez</b> without, <b>kod</b> at someone's, <b>blizu</b> near, <b>poslije/nakon</b> after, <b>prije</b> before, <b>oko</b> around, <b>preko</b> across, <b>zbog</b> because of, <b>umjesto</b> instead of<br><br><b>3 · After quantities</b> — 5+, and <em>puno, malo, čaša, boca, kilogram</em>:<br>puno <b>ljudi</b> · čaša <b>vode</b> · kilogram <b>jabuka</b><br><br><b>4 · After nema</b>:<br><b>Nema</b> kruha. — There's no bread. · <b>Nema</b> problema."},
+    {h:"Numbers use the genitive — the rule from Unit 7",
+     b:"Back in Unit 7 you learned <em>jedna kava · dvije kave · pet kava</em> as three phrases. Here's why they differ — it's the genitive doing the work.<table><tr><th>after…</th><th>what the noun takes</th><th>example</th></tr><tr><td class='cs'>1</td><td>nothing special, it just agrees</td><td class='hr'>jedan stol · jedna kava</td></tr><tr><td class='cs'>2, 3, 4</td><td>genitive <b>singular</b></td><td class='hr'>dva stola · tri kave</td></tr><tr><td class='cs'>5 and up</td><td>genitive <b>plural</b></td><td class='hr'>pet stolova · šest kava</td></tr></table>That's it — the same genitive endings you just learned, triggered by a number instead of a preposition.<br><br>Two extra details:<br>• <b>dva</b> for masculine and neuter, <b>dvije</b> for feminine — <em>dva piva</em>, <em>dvije kave</em><br>• Anything <em>ending</em> in 2, 3 or 4 follows the middle row: <em>dvadeset dva stola</em> (22 tables). Anything ending 5–0 follows the bottom row: <em>dvadeset pet stolova</em>.<br><br>Now say the Unit 7 phrases again and you'll hear the pattern: <b>jedna kava · dvije kave · pet kava</b>."},
     {h:"ima and nema",
      b:"<b>Ima</b> + noun = there is / there are.<br><b>Nema</b> + <b>genitive</b> = there isn't.<br>Ima li kruha? — Is there bread?<br>Nema mlijeka. — There's no milk.<br>Ima li ovdje zahod? — Is there a toilet here?"}
   ],
@@ -707,7 +709,7 @@ const UNITS = [
     {t:"type",q:"Say: There's no bread.",a:["nema kruha"],e:"Nema kruha."},
     {t:"mc",q:"Which does NOT take genitive?",o:["bez","kod","do","u"],a:3,e:"u takes accusative or locative."},
     {t:"mc",q:"'a glass of water' =",o:["čaša voda","čaša vodu","čaša vode","čaša vodom"],a:2,e:"Quantity → genitive."},
-    {t:"type",q:"Say: No problem.",a:["nema problema"],e:"Nema problema."}
+    {t:"mc",q:"'five coffees' =",o:["pet kava","pet kave","pet kavu","pet kavi"],a:0,e:"Five and up takes the genitive plural: pet kava."}
   ]
 },
 {
