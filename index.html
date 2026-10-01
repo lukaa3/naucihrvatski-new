@@ -195,6 +195,11 @@ td.cs{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transfo
 .cal-key{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:4px;background:rgba(234,240,250,.04)}
 .cal-key.full{background:var(--olive)} .cal-key.half{background:rgba(107,166,255,.24)} .cal-key.today{border:1.5px solid var(--brass)}
 
+.countdown{margin-top:8px;font-size:13.5px;color:var(--stone-dim);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.countdown b{font-family:var(--mono);color:var(--brass);font-size:14px}
+.cd-dot{width:7px;height:7px;border-radius:50%;background:var(--olive);box-shadow:0 0 8px var(--olive);animation:cdp 2s ease-in-out infinite}
+@keyframes cdp{50%{opacity:.35}}
+
 /* ---------- learning path ---------- */
 .secthead{display:flex;align-items:center;gap:13px;margin:28px 0 6px;padding:12px 16px;
   background:linear-gradient(90deg, rgba(107,166,255,.13), rgba(107,166,255,.02));
@@ -430,7 +435,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "8.5";
+const VERSION = "8.6";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -2147,13 +2152,195 @@ const VERBS = [
  {i:"pitati", en:"to ask", p:["pitam","pitaš","pita","pitamo","pitate","pitaju"], pm:"pitao", pf:"pitala", fu:"pitat ću", ex:["Mogu li nešto pitati?","Can I ask something?"]},
  {i:"pomoći", en:"to help", p:["pomognem","pomogneš","pomogne","pomognemo","pomognete","pomognu"], pm:"pomogao", pf:"pomogla", fu:"pomoći ću", ex:["Pomoći ću ti sutra.","I'll help you tomorrow."]},
  {i:"platiti", en:"to pay", p:["platim","platiš","plati","platimo","platite","plate"], pm:"platio", pf:"platila", fu:"platit ću", ex:["Ja ću platiti.","I'll pay."]},
- {i:"početi", en:"to start", p:["počnem","počneš","počne","počnemo","počnete","počnu"], pm:"počeo", pf:"počela", fu:"počet ću", ex:["Film počinje u osam.","The film starts at eight."]},
+ {i:"početi", en:"to start", p:["počnem","počneš","počne","počnemo","počnete","počnu"], pm:"počeo", pf:"počela", fu:"počet ću", ex:["Počet ćemo sutra.","We'll start tomorrow."]},
  {i:"zvati", en:"to call", p:["zovem","zoveš","zove","zovemo","zovete","zovu"], pm:"zvao", pf:"zvala", fu:"zvat ću", ex:["Zovem mamu.","I'm calling mum."]},
  {i:"sjediti", en:"to sit", p:["sjedim","sjediš","sjedi","sjedimo","sjedite","sjede"], pm:"sjedio", pf:"sjedila", fu:"sjedit ću", ex:["Sjedimo u kafiću.","We're sitting in a café."]},
  {i:"trčati", en:"to run", p:["trčim","trčiš","trči","trčimo","trčite","trče"], pm:"trčao", pf:"trčala", fu:"trčat ću", ex:["Trčim svako jutro.","I run every morning."]},
  {i:"voziti", en:"to drive", p:["vozim","voziš","vozi","vozimo","vozite","voze"], pm:"vozio", pf:"vozila", fu:"vozit ću", ex:["Tata vozi auto.","Dad is driving the car."]},
  {i:"stanovati", en:"to live (reside)", p:["stanujem","stanuješ","stanuje","stanujemo","stanujete","stanuju"], pm:"stanovao", pf:"stanovala", fu:"stanovat ću", ex:["Stanujem blizu škole.","I live near the school."]},
- {i:"odgovoriti", en:"to answer", p:["odgovorim","odgovoriš","odgovori","odgovorimo","odgovorite","odgovore"], pm:"odgovorio", pf:"odgovorila", fu:"odgovorit ću", ex:["Odgovorit ću ti sutra.","I'll answer you tomorrow."]}
+ {i:"odgovoriti", en:"to answer", p:["odgovorim","odgovoriš","odgovori","odgovorimo","odgovorite","odgovore"], pm:"odgovorio", pf:"odgovorila", fu:"odgovorit ću", ex:["Odgovorit ću ti sutra.","I'll answer you tomorrow."]},
+ {"i":"morati","en":"must / to have to","p":["moram","moraš","mora","moramo","morate","moraju"],"pm":"morao","pf":"morala","fu":"morat ću","ex":["Moram ići.","I have to go."]},
+ {"i":"pričati","en":"to talk / chat","p":["pričam","pričaš","priča","pričamo","pričate","pričaju"],"pm":"pričao","pf":"pričala","fu":"pričat ću","ex":["Pričamo o filmu.","We're talking about the film."]},
+ {"i":"razgovarati","en":"to have a conversation","p":["razgovaram","razgovaraš","razgovara","razgovaramo","razgovarate","razgovaraju"],"pm":"razgovarao","pf":"razgovarala","fu":"razgovarat ću","ex":["Razgovaram s mamom.","I'm talking with mum."]},
+ {"i":"šetati","en":"to walk / stroll","p":["šetam","šetaš","šeta","šetamo","šetate","šetaju"],"pm":"šetao","pf":"šetala","fu":"šetat ću","ex":["Šetamo uz more.","We're walking along the sea."]},
+ {"i":"hodati","en":"to walk","p":["hodam","hodaš","hoda","hodamo","hodate","hodaju"],"pm":"hodao","pf":"hodala","fu":"hodat ću","ex":["Hodam u školu.","I walk to school."]},
+ {"i":"ručati","en":"to have lunch","p":["ručam","ručaš","ruča","ručamo","ručate","ručaju"],"pm":"ručao","pf":"ručala","fu":"ručat ću","ex":["Ručamo u dva.","We have lunch at two."]},
+ {"i":"večerati","en":"to have dinner","p":["večeram","večeraš","večera","večeramo","večerate","večeraju"],"pm":"večerao","pf":"večerala","fu":"večerat ću","ex":["Večeramo zajedno.","We're having dinner together."]},
+ {"i":"otvarati","en":"to open (regularly)","p":["otvaram","otvaraš","otvara","otvaramo","otvarate","otvaraju"],"pm":"otvarao","pf":"otvarala","fu":"otvarat ću","ex":["Dućan otvara u osam.","The shop opens at eight."]},
+ {"i":"zatvarati","en":"to close (regularly)","p":["zatvaram","zatvaraš","zatvara","zatvaramo","zatvarate","zatvaraju"],"pm":"zatvarao","pf":"zatvarala","fu":"zatvarat ću","ex":["Kada zatvarate?","When do you close?"]},
+ {"i":"pokušati","en":"to try","p":["pokušam","pokušaš","pokuša","pokušamo","pokušate","pokušaju"],"pm":"pokušao","pf":"pokušala","fu":"pokušat ću","ex":["Pokušat ću sutra.","I'll try tomorrow."]},
+ {"i":"probati","en":"to try / taste","p":["probam","probaš","proba","probamo","probate","probaju"],"pm":"probao","pf":"probala","fu":"probat ću","ex":["Probaj ovo!","Try this!"]},
+ {"i":"ponavljati","en":"to repeat / revise","p":["ponavljam","ponavljaš","ponavlja","ponavljamo","ponavljate","ponavljaju"],"pm":"ponavljao","pf":"ponavljala","fu":"ponavljat ću","ex":["Ponavljam riječi svaki dan.","I revise words every day."]},
+ {"i":"upoznati","en":"to meet / get to know","p":["upoznam","upoznaš","upozna","upoznamo","upoznate","upoznaju"],"pm":"upoznao","pf":"upoznala","fu":"upoznat ću","ex":["Drago mi je što sam te upoznao.","I'm glad I met you. (m)"]},
+ {"i":"čuvati","en":"to keep / look after","p":["čuvam","čuvaš","čuva","čuvamo","čuvate","čuvaju"],"pm":"čuvao","pf":"čuvala","fu":"čuvat ću","ex":["Čuvaj se!","Take care!"]},
+ {"i":"spremati se","en":"to get ready","p":["spremam se","spremaš se","sprema se","spremamo se","spremate se","spremaju se"],"pm":"spremao","pf":"spremala","fu":"spremat ću se","ex":["Spremam se za školu.","I'm getting ready for school."],"se":true},
+ {"i":"pripremati","en":"to prepare","p":["pripremam","pripremaš","priprema","pripremamo","pripremate","pripremaju"],"pm":"pripremao","pf":"pripremala","fu":"pripremat ću","ex":["Pripremam ručak.","I'm preparing lunch."]},
+ {"i":"čestitati","en":"to congratulate","p":["čestitam","čestitaš","čestita","čestitamo","čestitate","čestitaju"],"pm":"čestitao","pf":"čestitala","fu":"čestitat ću","ex":["Čestitam!","Congratulations!"]},
+ {"i":"planirati","en":"to plan","p":["planiram","planiraš","planira","planiramo","planirate","planiraju"],"pm":"planirao","pf":"planirala","fu":"planirat ću","ex":["Planiramo izlet.","We're planning a trip."]},
+ {"i":"organizirati","en":"to organise","p":["organiziram","organiziraš","organizira","organiziramo","organizirate","organiziraju"],"pm":"organizirao","pf":"organizirala","fu":"organizirat ću","ex":["Organiziram zabavu.","I'm organising a party."]},
+ {"i":"rezervirati","en":"to book","p":["rezerviram","rezerviraš","rezervira","rezerviramo","rezervirate","rezerviraju"],"pm":"rezervirao","pf":"rezervirala","fu":"rezervirat ću","ex":["Rezervirao sam stol.","I booked a table. (m)"]},
+ {"i":"studirati","en":"to study (at university)","p":["studiram","studiraš","studira","studiramo","studirate","studiraju"],"pm":"studirao","pf":"studirala","fu":"studirat ću","ex":["Studiram ekonomiju.","I study economics."]},
+ {"i":"vježbati","en":"to practise / exercise","p":["vježbam","vježbaš","vježba","vježbamo","vježbate","vježbaju"],"pm":"vježbao","pf":"vježbala","fu":"vježbat ću","ex":["Vježbam hrvatski.","I'm practising Croatian."]},
+ {"i":"trenirati","en":"to train","p":["treniram","treniraš","trenira","treniramo","trenirate","treniraju"],"pm":"trenirao","pf":"trenirala","fu":"trenirat ću","ex":["Treniram nogomet.","I train football."]},
+ {"i":"navijati","en":"to support / cheer","p":["navijam","navijaš","navija","navijamo","navijate","navijaju"],"pm":"navijao","pf":"navijala","fu":"navijat ću","ex":["Navijam za Hrvatsku!","I support Croatia!"]},
+ {"i":"svirati","en":"to play (an instrument)","p":["sviram","sviraš","svira","sviramo","svirate","sviraju"],"pm":"svirao","pf":"svirala","fu":"svirat ću","ex":["Sviram gitaru.","I play guitar."]},
+ {"i":"crtati","en":"to draw","p":["crtam","crtaš","crta","crtamo","crtate","crtaju"],"pm":"crtao","pf":"crtala","fu":"crtat ću","ex":["Volim crtati.","I like drawing."]},
+ {"i":"slikati","en":"to take photos","p":["slikam","slikaš","slika","slikamo","slikate","slikaju"],"pm":"slikao","pf":"slikala","fu":"slikat ću","ex":["Slikam zalazak sunca.","I'm taking photos of the sunset."]},
+ {"i":"snimati","en":"to record / film","p":["snimam","snimaš","snima","snimamo","snimate","snimaju"],"pm":"snimao","pf":"snimala","fu":"snimat ću","ex":["Snimam video.","I'm filming a video."]},
+ {"i":"uživati","en":"to enjoy","p":["uživam","uživaš","uživa","uživamo","uživate","uživaju"],"pm":"uživao","pf":"uživala","fu":"uživat ću","ex":["Uživam u moru.","I'm enjoying the sea."]},
+ {"i":"kupati se","en":"to swim / bathe","p":["kupam se","kupaš se","kupa se","kupamo se","kupate se","kupaju se"],"pm":"kupao","pf":"kupala","fu":"kupat ću se","ex":["Kupamo se svaki dan.","We go swimming every day."],"se":true},
+ {"i":"sunčati se","en":"to sunbathe","p":["sunčam se","sunčaš se","sunča se","sunčamo se","sunčate se","sunčaju se"],"pm":"sunčao","pf":"sunčala","fu":"sunčat ću se","ex":["Sunčam se na plaži.","I'm sunbathing on the beach."],"se":true},
+ {"i":"tuširati se","en":"to shower","p":["tuširam se","tuširaš se","tušira se","tuširamo se","tuširate se","tuširaju se"],"pm":"tuširao","pf":"tuširala","fu":"tuširat ću se","ex":["Tuširam se ujutro.","I shower in the morning."],"se":true},
+ {"i":"odmarati se","en":"to rest","p":["odmaram se","odmaraš se","odmara se","odmaramo se","odmarate se","odmaraju se"],"pm":"odmarao","pf":"odmarala","fu":"odmarat ću se","ex":["Odmaram se vikendom.","I rest at the weekend."],"se":true},
+ {"i":"osjećati se","en":"to feel","p":["osjećam se","osjećaš se","osjeća se","osjećamo se","osjećate se","osjećaju se"],"pm":"osjećao","pf":"osjećala","fu":"osjećat ću se","ex":["Kako se osjećaš?","How do you feel?"],"se":true},
+ {"i":"nadati se","en":"to hope","p":["nadam se","nadaš se","nada se","nadamo se","nadate se","nadaju se"],"pm":"nadao","pf":"nadala","fu":"nadat ću se","ex":["Nadam se da ćeš doći.","I hope you'll come."],"se":true},
+ {"i":"zabavljati se","en":"to have fun","p":["zabavljam se","zabavljaš se","zabavlja se","zabavljamo se","zabavljate se","zabavljaju se"],"pm":"zabavljao","pf":"zabavljala","fu":"zabavljat ću se","ex":["Zabavljamo se!","We're having fun!"],"se":true},
+ {"i":"svađati se","en":"to argue","p":["svađam se","svađaš se","svađa se","svađamo se","svađate se","svađaju se"],"pm":"svađao","pf":"svađala","fu":"svađat ću se","ex":["Ne svađajte se!","Don't argue!"],"se":true},
+ {"i":"sjećati se","en":"to remember","p":["sjećam se","sjećaš se","sjeća se","sjećamo se","sjećate se","sjećaju se"],"pm":"sjećao","pf":"sjećala","fu":"sjećat ću se","ex":["Ne sjećam se.","I don't remember."],"se":true},
+ {"i":"izgledati","en":"to look (seem)","p":["izgledam","izgledaš","izgleda","izgledamo","izgledate","izgledaju"],"pm":"izgledao","pf":"izgledala","fu":"izgledat ću","ex":["Super izgledaš!","You look great!"]},
+ {"i":"padati","en":"to fall","p":["padam","padaš","pada","padamo","padate","padaju"],"pm":"padao","pf":"padala","fu":"padat ću","ex":["Pada kiša.","It's raining."]},
+ {"i":"sanjati","en":"to dream","p":["sanjam","sanjaš","sanja","sanjamo","sanjate","sanjaju"],"pm":"sanjao","pf":"sanjala","fu":"sanjat ću","ex":["Sanjao sam o moru.","I dreamed about the sea. (m)"]},
+ {"i":"sumnjati","en":"to doubt","p":["sumnjam","sumnjaš","sumnja","sumnjamo","sumnjate","sumnjaju"],"pm":"sumnjao","pf":"sumnjala","fu":"sumnjat ću","ex":["Sumnjam.","I doubt it."]},
+ {"i":"razmišljati","en":"to think (about)","p":["razmišljam","razmišljaš","razmišlja","razmišljamo","razmišljate","razmišljaju"],"pm":"razmišljao","pf":"razmišljala","fu":"razmišljat ću","ex":["Razmišljam o tome.","I'm thinking about it."]},
+ {"i":"računati","en":"to count on / calculate","p":["računam","računaš","računa","računamo","računate","računaju"],"pm":"računao","pf":"računala","fu":"računat ću","ex":["Računam na tebe.","I'm counting on you."]},
+ {"i":"mijenjati","en":"to change","p":["mijenjam","mijenjaš","mijenja","mijenjamo","mijenjate","mijenjaju"],"pm":"mijenjao","pf":"mijenjala","fu":"mijenjat ću","ex":["Stalno mijenjam planove.","I keep changing my plans."]},
+ {"i":"plaćati","en":"to pay (regularly)","p":["plaćam","plaćaš","plaća","plaćamo","plaćate","plaćaju"],"pm":"plaćao","pf":"plaćala","fu":"plaćat ću","ex":["Plaćam karticom.","I pay by card."]},
+ {"i":"uzimati","en":"to take (regularly)","p":["uzimam","uzimaš","uzima","uzimamo","uzimate","uzimaju"],"pm":"uzimao","pf":"uzimala","fu":"uzimat ću","ex":["Uzimam autobus.","I take the bus."]},
+ {"i":"birati","en":"to choose","p":["biram","biraš","bira","biramo","birate","biraju"],"pm":"birao","pf":"birala","fu":"birat ću","ex":["Ti biraš film.","You pick the film."]},
+ {"i":"prodati","en":"to sell","p":["prodam","prodaš","proda","prodamo","prodate","prodaju"],"pm":"prodao","pf":"prodala","fu":"prodat ću","ex":["Prodao sam bicikl.","I sold my bike. (m)"]},
+ {"i":"saznati","en":"to find out","p":["saznam","saznaš","sazna","saznamo","saznate","saznaju"],"pm":"saznao","pf":"saznala","fu":"saznat ću","ex":["Saznat ću sutra.","I'll find out tomorrow."]},
+ {"i":"pročitati","en":"to read (to the end)","p":["pročitam","pročitaš","pročita","pročitamo","pročitate","pročitaju"],"pm":"pročitao","pf":"pročitala","fu":"pročitat ću","ex":["Pročitao sam knjigu.","I finished the book. (m)"]},
+ {"i":"pogledati","en":"to have a look / watch","p":["pogledam","pogledaš","pogleda","pogledamo","pogledate","pogledaju"],"pm":"pogledao","pf":"pogledala","fu":"pogledat ću","ex":["Pogledaj ovo!","Look at this!"]},
+ {"i":"skuhati","en":"to cook / make","p":["skuham","skuhaš","skuha","skuhamo","skuhate","skuhaju"],"pm":"skuhao","pf":"skuhala","fu":"skuhat ću","ex":["Skuhat ću kavu.","I'll make some coffee."]},
+ {"i":"pričekati","en":"to wait a moment","p":["pričekam","pričekaš","pričeka","pričekamo","pričekate","pričekaju"],"pm":"pričekao","pf":"pričekala","fu":"pričekat ću","ex":["Pričekaj malo!","Wait a sec!"]},
+ {"i":"obećati","en":"to promise","p":["obećam","obećaš","obeća","obećamo","obećate","obećaju"],"pm":"obećao","pf":"obećala","fu":"obećat ću","ex":["Obećao sam.","I promised. (m)"]},
+ {"i":"ispričati se","en":"to apologise","p":["ispričam se","ispričaš se","ispriča se","ispričamo se","ispričate se","ispričaju se"],"pm":"ispričao","pf":"ispričala","fu":"ispričat ću se","ex":["Moram se ispričati.","I need to apologise."],"se":true},
+ {"i":"parkirati","en":"to park","p":["parkiram","parkiraš","parkira","parkiramo","parkirate","parkiraju"],"pm":"parkirao","pf":"parkirala","fu":"parkirat ću","ex":["Gdje mogu parkirati?","Where can I park?"]},
+ {"i":"napraviti","en":"to make / do","p":["napravim","napraviš","napravi","napravimo","napravite","naprave"],"pm":"napravio","pf":"napravila","fu":"napravit ću","ex":["Što ćemo napraviti?","What shall we do?"]},
+ {"i":"završiti","en":"to finish","p":["završim","završiš","završi","završimo","završite","završe"],"pm":"završio","pf":"završila","fu":"završit ću","ex":["Završio sam zadaću.","I finished my homework. (m)"]},
+ {"i":"vratiti se","en":"to come back","p":["vratim se","vratiš se","vrati se","vratimo se","vratite se","vrate se"],"pm":"vratio","pf":"vratila","fu":"vratit ću se","ex":["Vratit ću se brzo.","I'll be back soon."],"se":true},
+ {"i":"buditi se","en":"to wake up","p":["budim se","budiš se","budi se","budimo se","budite se","bude se"],"pm":"budio","pf":"budila","fu":"budit ću se","ex":["Budim se u sedam.","I wake up at seven."],"se":true},
+ {"i":"oblačiti se","en":"to get dressed","p":["oblačim se","oblačiš se","oblači se","oblačimo se","oblačite se","oblače se"],"pm":"oblačio","pf":"oblačila","fu":"oblačit ću se","ex":["Oblačim se.","I'm getting dressed."],"se":true},
+ {"i":"čistiti","en":"to clean","p":["čistim","čistiš","čisti","čistimo","čistite","čiste"],"pm":"čistio","pf":"čistila","fu":"čistit ću","ex":["Čistim sobu.","I'm cleaning my room."]},
+ {"i":"dolaziti","en":"to come (regularly)","p":["dolazim","dolaziš","dolazi","dolazimo","dolazite","dolaze"],"pm":"dolazio","pf":"dolazila","fu":"dolazit ću","ex":["Dolazim svaki dan.","I come every day."]},
+ {"i":"odlaziti","en":"to leave (regularly)","p":["odlazim","odlaziš","odlazi","odlazimo","odlazite","odlaze"],"pm":"odlazio","pf":"odlazila","fu":"odlazit ću","ex":["Kad odlaziš?","When are you leaving?"]},
+ {"i":"izlaziti","en":"to go out","p":["izlazim","izlaziš","izlazi","izlazimo","izlazite","izlaze"],"pm":"izlazio","pf":"izlazila","fu":"izlazit ću","ex":["Izlazimo večeras.","We're going out tonight."]},
+ {"i":"ulaziti","en":"to come in / enter","p":["ulazim","ulaziš","ulazi","ulazimo","ulazite","ulaze"],"pm":"ulazio","pf":"ulazila","fu":"ulazit ću","ex":["Ulazim!","I'm coming in!"]},
+ {"i":"nalaziti se","en":"to meet up / be located","p":["nalazim se","nalaziš se","nalazi se","nalazimo se","nalazite se","nalaze se"],"pm":"nalazio","pf":"nalazila","fu":"nalazit ću se","ex":["Gdje se nalazimo?","Where are we meeting?"],"se":true},
+ {"i":"prolaziti","en":"to pass / go by","p":["prolazim","prolaziš","prolazi","prolazimo","prolazite","prolaze"],"pm":"prolazio","pf":"prolazila","fu":"prolazit ću","ex":["Vrijeme brzo prolazi.","Time flies."]},
+ {"i":"staviti","en":"to put","p":["stavim","staviš","stavi","stavimo","stavite","stave"],"pm":"stavio","pf":"stavila","fu":"stavit ću","ex":["Stavi to na stol.","Put it on the table."]},
+ {"i":"baciti","en":"to throw","p":["bacim","baciš","baci","bacimo","bacite","bace"],"pm":"bacio","pf":"bacila","fu":"bacit ću","ex":["Baci loptu!","Throw the ball!"]},
+ {"i":"otvoriti","en":"to open","p":["otvorim","otvoriš","otvori","otvorimo","otvorite","otvore"],"pm":"otvorio","pf":"otvorila","fu":"otvorit ću","ex":["Možeš li otvoriti prozor?","Can you open the window?"]},
+ {"i":"zatvoriti","en":"to close","p":["zatvorim","zatvoriš","zatvori","zatvorimo","zatvorite","zatvore"],"pm":"zatvorio","pf":"zatvorila","fu":"zatvorit ću","ex":["Zatvori vrata, molim te.","Close the door, please."]},
+ {"i":"upaliti","en":"to turn on","p":["upalim","upališ","upali","upalimo","upalite","upale"],"pm":"upalio","pf":"upalila","fu":"upalit ću","ex":["Upali svjetlo.","Turn on the light."]},
+ {"i":"ugasiti","en":"to turn off","p":["ugasim","ugasiš","ugasi","ugasimo","ugasite","ugase"],"pm":"ugasio","pf":"ugasila","fu":"ugasit ću","ex":["Ugasi mobitel.","Turn off your phone."]},
+ {"i":"koristiti","en":"to use","p":["koristim","koristiš","koristi","koristimo","koristite","koriste"],"pm":"koristio","pf":"koristila","fu":"koristit ću","ex":["Koristim ovu aplikaciju.","I use this app."]},
+ {"i":"trošiti","en":"to spend","p":["trošim","trošiš","troši","trošimo","trošite","troše"],"pm":"trošio","pf":"trošila","fu":"trošit ću","ex":["Trošim previše novca.","I spend too much money."]},
+ {"i":"promijeniti","en":"to change","p":["promijenim","promijeniš","promijeni","promijenimo","promijenite","promijene"],"pm":"promijenio","pf":"promijenila","fu":"promijenit ću","ex":["Promijenio sam mišljenje.","I changed my mind. (m)"]},
+ {"i":"odlučiti","en":"to decide","p":["odlučim","odlučiš","odluči","odlučimo","odlučite","odluče"],"pm":"odlučio","pf":"odlučila","fu":"odlučit ću","ex":["Odlučio sam.","I've decided. (m)"]},
+ {"i":"naručiti","en":"to order","p":["naručim","naručiš","naruči","naručimo","naručite","naruče"],"pm":"naručio","pf":"naručila","fu":"naručit ću","ex":["Naručit ću pizzu.","I'll order a pizza."]},
+ {"i":"preporučiti","en":"to recommend","p":["preporučim","preporučiš","preporuči","preporučimo","preporučite","preporuče"],"pm":"preporučio","pf":"preporučila","fu":"preporučit ću","ex":["Preporučit ću ti dobar film.","I'll recommend you a good film."]},
+ {"i":"objasniti","en":"to explain","p":["objasnim","objasniš","objasni","objasnimo","objasnite","objasne"],"pm":"objasnio","pf":"objasnila","fu":"objasnit ću","ex":["Možeš li mi objasniti?","Can you explain it to me?"]},
+ {"i":"ponoviti","en":"to repeat","p":["ponovim","ponoviš","ponovi","ponovimo","ponovite","ponove"],"pm":"ponovio","pf":"ponovila","fu":"ponovit ću","ex":["Možete li ponoviti?","Could you repeat that?"]},
+ {"i":"prevoditi","en":"to translate","p":["prevodim","prevodiš","prevodi","prevodimo","prevodite","prevode"],"pm":"prevodio","pf":"prevodila","fu":"prevodit ću","ex":["Prevodim tekst.","I'm translating a text."]},
+ {"i":"veseliti se","en":"to look forward to","p":["veselim se","veseliš se","veseli se","veselimo se","veselite se","vesele se"],"pm":"veselio","pf":"veselila","fu":"veselit ću se","ex":["Veselim se ljetu.","I'm looking forward to summer."],"se":true},
+ {"i":"ljutiti se","en":"to be angry","p":["ljutim se","ljutiš se","ljuti se","ljutimo se","ljutite se","ljute se"],"pm":"ljutio","pf":"ljutila","fu":"ljutit ću se","ex":["Nemoj se ljutiti.","Don't be angry."],"se":true},
+ {"i":"mrziti","en":"to hate","p":["mrzim","mrziš","mrzi","mrzimo","mrzite","mrze"],"pm":"mrzio","pf":"mrzila","fu":"mrzit ću","ex":["Mrzim ponedjeljke.","I hate Mondays."]},
+ {"i":"ljubiti","en":"to kiss","p":["ljubim","ljubiš","ljubi","ljubimo","ljubite","ljube"],"pm":"ljubio","pf":"ljubila","fu":"ljubit ću","ex":["Ljubim te!","Love you! (end of a message)"]},
+ {"i":"grliti","en":"to hug","p":["grlim","grliš","grli","grlimo","grlite","grle"],"pm":"grlio","pf":"grlila","fu":"grlit ću","ex":["Grlim te!","Hugs!"]},
+ {"i":"zaljubiti se","en":"to fall in love","p":["zaljubim se","zaljubiš se","zaljubi se","zaljubimo se","zaljubite se","zaljube se"],"pm":"zaljubio","pf":"zaljubila","fu":"zaljubit ću se","ex":["Zaljubio sam se.","I've fallen in love. (m)"],"se":true},
+ {"i":"dogovoriti se","en":"to agree / arrange","p":["dogovorim se","dogovoriš se","dogovori se","dogovorimo se","dogovorite se","dogovore se"],"pm":"dogovorio","pf":"dogovorila","fu":"dogovorit ću se","ex":["Dogovorili smo se.","We've agreed."],"se":true},
+ {"i":"javiti se","en":"to get in touch","p":["javim se","javiš se","javi se","javimo se","javite se","jave se"],"pm":"javio","pf":"javila","fu":"javit ću se","ex":["Javit ću ti se.","I'll get in touch."],"se":true},
+ {"i":"primiti","en":"to receive","p":["primim","primiš","primi","primimo","primite","prime"],"pm":"primio","pf":"primila","fu":"primit ću","ex":["Primio sam poruku.","I got the message. (m)"]},
+ {"i":"zahvaliti","en":"to thank","p":["zahvalim","zahvališ","zahvali","zahvalimo","zahvalite","zahvale"],"pm":"zahvalio","pf":"zahvalila","fu":"zahvalit ću","ex":["Želim ti zahvaliti.","I want to thank you."]},
+ {"i":"oprostiti","en":"to forgive","p":["oprostim","oprostiš","oprosti","oprostimo","oprostite","oproste"],"pm":"oprostio","pf":"oprostila","fu":"oprostit ću","ex":["Oprosti mi.","Forgive me."]},
+ {"i":"nastaviti","en":"to continue","p":["nastavim","nastaviš","nastavi","nastavimo","nastavite","nastave"],"pm":"nastavio","pf":"nastavila","fu":"nastavit ću","ex":["Nastavimo sutra.","Let's continue tomorrow."]},
+ {"i":"žuriti se","en":"to hurry","p":["žurim se","žuriš se","žuri se","žurimo se","žurite se","žure se"],"pm":"žurio","pf":"žurila","fu":"žurit ću se","ex":["Žurim se!","I'm in a hurry!"],"se":true},
+ {"i":"kasniti","en":"to be late","p":["kasnim","kasniš","kasni","kasnimo","kasnite","kasne"],"pm":"kasnio","pf":"kasnila","fu":"kasnit ću","ex":["Kasnim pet minuta.","I'm five minutes late."]},
+ {"i":"zaboraviti","en":"to forget","p":["zaboravim","zaboraviš","zaboravi","zaboravimo","zaboravite","zaborave"],"pm":"zaboravio","pf":"zaboravila","fu":"zaboravit ću","ex":["Zaboravio sam ključeve.","I forgot my keys. (m)"]},
+ {"i":"sjetiti se","en":"to remember (recall)","p":["sjetim se","sjetiš se","sjeti se","sjetimo se","sjetite se","sjete se"],"pm":"sjetio","pf":"sjetila","fu":"sjetit ću se","ex":["Sjetio sam se!","I remembered! (m)"],"se":true},
+ {"i":"pamtiti","en":"to memorise / remember","p":["pamtim","pamtiš","pamti","pamtimo","pamtite","pamte"],"pm":"pamtio","pf":"pamtila","fu":"pamtit ću","ex":["Ne pamtim imena.","I'm bad at remembering names."]},
+ {"i":"shvatiti","en":"to realise / get it","p":["shvatim","shvatiš","shvati","shvatimo","shvatite","shvate"],"pm":"shvatio","pf":"shvatila","fu":"shvatit ću","ex":["Shvatio sam.","I get it now. (m)"]},
+ {"i":"graditi","en":"to build","p":["gradim","gradiš","gradi","gradimo","gradite","grade"],"pm":"gradio","pf":"gradila","fu":"gradit ću","ex":["Grade novu zgradu.","They're building a new building."]},
+ {"i":"popraviti","en":"to fix","p":["popravim","popraviš","popravi","popravimo","popravite","poprave"],"pm":"popravio","pf":"popravila","fu":"popravit ću","ex":["Možeš li popraviti bicikl?","Can you fix the bike?"]},
+ {"i":"seliti se","en":"to move (house)","p":["selim se","seliš se","seli se","selimo se","selite se","sele se"],"pm":"selio","pf":"selila","fu":"selit ću se","ex":["Selimo se u Split.","We're moving to Split."],"se":true},
+ {"i":"naučiti","en":"to learn (properly)","p":["naučim","naučiš","nauči","naučimo","naučite","nauče"],"pm":"naučio","pf":"naučila","fu":"naučit ću","ex":["Naučio sam novu riječ.","I learned a new word. (m)"]},
+ {"i":"posuditi","en":"to lend / borrow","p":["posudim","posudiš","posudi","posudimo","posudite","posude"],"pm":"posudio","pf":"posudila","fu":"posudit ću","ex":["Možeš li mi posuditi olovku?","Can you lend me a pen?"]},
+ {"i":"slaviti","en":"to celebrate","p":["slavim","slaviš","slavi","slavimo","slavite","slave"],"pm":"slavio","pf":"slavila","fu":"slavit ću","ex":["Slavimo rođendan.","We're celebrating a birthday."]},
+ {"i":"posjetiti","en":"to visit","p":["posjetim","posjetiš","posjeti","posjetimo","posjetite","posjete"],"pm":"posjetio","pf":"posjetila","fu":"posjetit ću","ex":["Posjetit ću baku.","I'll visit grandma."]},
+ {"i":"družiti se","en":"to hang out","p":["družim se","družiš se","druži se","družimo se","družite se","druže se"],"pm":"družio","pf":"družila","fu":"družit ću se","ex":["Družim se s prijateljima.","I hang out with friends."],"se":true},
+ {"i":"ponuditi","en":"to offer","p":["ponudim","ponudiš","ponudi","ponudimo","ponudite","ponude"],"pm":"ponudio","pf":"ponudila","fu":"ponudit ću","ex":["Mogu li ti ponuditi kavu?","Can I offer you a coffee?"]},
+ {"i":"prihvatiti","en":"to accept","p":["prihvatim","prihvatiš","prihvati","prihvatimo","prihvatite","prihvate"],"pm":"prihvatio","pf":"prihvatila","fu":"prihvatit ću","ex":["Prihvatio sam posao.","I accepted the job. (m)"]},
+ {"i":"puniti","en":"to charge / fill","p":["punim","puniš","puni","punimo","punite","pune"],"pm":"punio","pf":"punila","fu":"punit ću","ex":["Punim mobitel.","I'm charging my phone."]},
+ {"i":"pratiti","en":"to follow","p":["pratim","pratiš","prati","pratimo","pratite","prate"],"pm":"pratio","pf":"pratila","fu":"pratit ću","ex":["Pratim te na Instagramu.","I follow you on Instagram."]},
+ {"i":"ostaviti","en":"to leave (something)","p":["ostavim","ostaviš","ostavi","ostavimo","ostavite","ostave"],"pm":"ostavio","pf":"ostavila","fu":"ostavit ću","ex":["Ostavi poruku.","Leave a message."]},
+ {"i":"izgubiti","en":"to lose","p":["izgubim","izgubiš","izgubi","izgubimo","izgubite","izgube"],"pm":"izgubio","pf":"izgubila","fu":"izgubit ću","ex":["Izgubio sam mobitel.","I lost my phone. (m)"]},
+ {"i":"pobijediti","en":"to win","p":["pobijedim","pobijediš","pobijedi","pobijedimo","pobijedite","pobijede"],"pm":"pobijedio","pf":"pobijedila","fu":"pobijedit ću","ex":["Hrvatska je pobijedila!","Croatia won!"]},
+ {"i":"primijetiti","en":"to notice","p":["primijetim","primijetiš","primijeti","primijetimo","primijetite","primijete"],"pm":"primijetio","pf":"primijetila","fu":"primijetit ću","ex":["Nisam primijetio.","I didn't notice. (m)"]},
+ {"i":"dijeliti","en":"to share","p":["dijelim","dijeliš","dijeli","dijelimo","dijelite","dijele"],"pm":"dijelio","pf":"dijelila","fu":"dijelit ću","ex":["Dijelimo sobu.","We share a room."]},
+ {"i":"moliti","en":"to ask nicely / beg","p":["molim","moliš","moli","molimo","molite","mole"],"pm":"molio","pf":"molila","fu":"molit ću","ex":["Molim te, pomozi mi.","Please help me."]},
+ {"i":"željeti","en":"to wish / want","p":["želim","želiš","želi","želimo","želite","žele"],"pm":"želio","pf":"željela","fu":"željet ću","ex":["Želim ti sretan rođendan.","I wish you a happy birthday."]},
+ {"i":"letjeti","en":"to fly","p":["letim","letiš","leti","letimo","letite","lete"],"pm":"letio","pf":"letjela","fu":"letjet ću","ex":["Letimo u Zagreb.","We're flying to Zagreb."]},
+ {"i":"šutjeti","en":"to be quiet","p":["šutim","šutiš","šuti","šutimo","šutite","šute"],"pm":"šutio","pf":"šutjela","fu":"šutjet ću","ex":["Zašto šutiš?","Why are you so quiet?"]},
+ {"i":"štedjeti","en":"to save (money)","p":["štedim","štediš","štedi","štedimo","štedite","štede"],"pm":"štedio","pf":"štedjela","fu":"štedjet ću","ex":["Štedim za auto.","I'm saving up for a car."]},
+ {"i":"kupovati","en":"to shop","p":["kupujem","kupuješ","kupuje","kupujemo","kupujete","kupuju"],"pm":"kupovao","pf":"kupovala","fu":"kupovat ću","ex":["Kupujem na tržnici.","I shop at the market."]},
+ {"i":"vjerovati","en":"to believe","p":["vjerujem","vjeruješ","vjeruje","vjerujemo","vjerujete","vjeruju"],"pm":"vjerovao","pf":"vjerovala","fu":"vjerovat ću","ex":["Ne vjerujem!","I don't believe it!"]},
+ {"i":"doručkovati","en":"to have breakfast","p":["doručkujem","doručkuješ","doručkuje","doručkujemo","doručkujete","doručkuju"],"pm":"doručkovao","pf":"doručkovala","fu":"doručkovat ću","ex":["Doručkujem u sedam.","I have breakfast at seven."]},
+ {"i":"zarađivati","en":"to earn","p":["zarađujem","zarađuješ","zarađuje","zarađujemo","zarađujete","zarađuju"],"pm":"zarađivao","pf":"zarađivala","fu":"zarađivat ću","ex":["Zarađujem malo novca.","I earn a bit of money."]},
+ {"i":"dosađivati se","en":"to be bored","p":["dosađujem se","dosađuješ se","dosađuje se","dosađujemo se","dosađujete se","dosađuju se"],"pm":"dosađivao","pf":"dosađivala","fu":"dosađivat ću se","ex":["Dosađujem se.","I'm bored."],"se":true},
+ {"i":"krenuti","en":"to set off","p":["krenem","kreneš","krene","krenemo","krenete","krenu"],"pm":"krenuo","pf":"krenula","fu":"krenut ću","ex":["Krenut ćemo u osam.","We'll set off at eight."]},
+ {"i":"brinuti se","en":"to worry","p":["brinem se","brineš se","brine se","brinemo se","brinete se","brinu se"],"pm":"brinuo","pf":"brinula","fu":"brinut ću se","ex":["Ne brini se!","Don't worry!"],"se":true},
+ {"i":"skrenuti","en":"to turn","p":["skrenem","skreneš","skrene","skrenemo","skrenete","skrenu"],"pm":"skrenuo","pf":"skrenula","fu":"skrenut ću","ex":["Skrenite lijevo.","Turn left."]},
+ {"i":"reći","en":"to say / tell","p":["rečem","rečeš","reče","rečemo","rečete","reku"],"pm":"rekao","pf":"rekla","fu":"reći ću","ex":["Što si rekao?","What did you say?"]},
+ {"i":"kazati","en":"to say / tell","p":["kažem","kažeš","kaže","kažemo","kažete","kažu"],"pm":"kazao","pf":"kazala","fu":"kazat ću","ex":["Kaži mi istinu.","Tell me the truth."]},
+ {"i":"pokazati","en":"to show","p":["pokažem","pokažeš","pokaže","pokažemo","pokažete","pokažu"],"pm":"pokazao","pf":"pokazala","fu":"pokazat ću","ex":["Pokaži mi!","Show me!"]},
+ {"i":"napisati","en":"to write (to the end)","p":["napišem","napišeš","napiše","napišemo","napišete","napišu"],"pm":"napisao","pf":"napisala","fu":"napisat ću","ex":["Napisat ću ti poruku.","I'll write you a message."]},
+ {"i":"sjesti","en":"to sit down","p":["sjednem","sjedneš","sjedne","sjednemo","sjednete","sjednu"],"pm":"sjeo","pf":"sjela","fu":"sjest ću","ex":["Sjedni, molim te.","Sit down, please."]},
+ {"i":"ustati","en":"to get up","p":["ustanem","ustaneš","ustane","ustanemo","ustanete","ustanu"],"pm":"ustao","pf":"ustala","fu":"ustat ću","ex":["Ustao sam rano.","I got up early. (m)"]},
+ {"i":"ustajati","en":"to get up (regularly)","p":["ustajem","ustaješ","ustaje","ustajemo","ustajete","ustaju"],"pm":"ustajao","pf":"ustajala","fu":"ustajat ću","ex":["Ustajem u sedam.","I get up at seven."]},
+ {"i":"otići","en":"to leave / go away","p":["odem","odeš","ode","odemo","odete","odu"],"pm":"otišao","pf":"otišla","fu":"otići ću","ex":["Moram otići.","I have to leave."]},
+ {"i":"izaći","en":"to go out / get off","p":["izađem","izađeš","izađe","izađemo","izađete","izađu"],"pm":"izašao","pf":"izašla","fu":"izaći ću","ex":["Izaći ćemo večeras.","We'll go out tonight."]},
+ {"i":"ući","en":"to go in","p":["uđem","uđeš","uđe","uđemo","uđete","uđu"],"pm":"ušao","pf":"ušla","fu":"ući ću","ex":["Mogu li ući?","May I come in?"]},
+ {"i":"naći","en":"to find","p":["nađem","nađeš","nađe","nađemo","nađete","nađu"],"pm":"našao","pf":"našla","fu":"naći ću","ex":["Ne mogu naći ključeve.","I can't find my keys."]},
+ {"i":"proći","en":"to pass / go by","p":["prođem","prođeš","prođe","prođemo","prođete","prođu"],"pm":"prošao","pf":"prošla","fu":"proći ću","ex":["Prošao sam ispit!","I passed the exam! (m)"]},
+ {"i":"stići","en":"to arrive","p":["stignem","stigneš","stigne","stignemo","stignete","stignu"],"pm":"stigao","pf":"stigla","fu":"stići ću","ex":["Stigli smo!","We've arrived!"]},
+ {"i":"postati","en":"to become","p":["postanem","postaneš","postane","postanemo","postanete","postanu"],"pm":"postao","pf":"postala","fu":"postat ću","ex":["Želim postati liječnik.","I want to become a doctor."]},
+ {"i":"ostati","en":"to stay","p":["ostanem","ostaneš","ostane","ostanemo","ostanete","ostanu"],"pm":"ostao","pf":"ostala","fu":"ostat ću","ex":["Ostani još malo.","Stay a bit longer."]},
+ {"i":"prestati","en":"to stop (doing)","p":["prestanem","prestaneš","prestane","prestanemo","prestanete","prestanu"],"pm":"prestao","pf":"prestala","fu":"prestat ću","ex":["Prestani!","Stop it!"]},
+ {"i":"stati","en":"to stop / stand","p":["stanem","staneš","stane","stanemo","stanete","stanu"],"pm":"stao","pf":"stala","fu":"stat ću","ex":["Stani ovdje.","Stop here."]},
+ {"i":"pasti","en":"to fall","p":["padnem","padneš","padne","padnemo","padnete","padnu"],"pm":"pao","pf":"pala","fu":"past ću","ex":["Pao sam s bicikla.","I fell off my bike. (m)"]},
+ {"i":"peći","en":"to bake","p":["pečem","pečeš","peče","pečemo","pečete","peku"],"pm":"pekao","pf":"pekla","fu":"peći ću","ex":["Baka peče kolače.","Grandma is baking cakes."]},
+ {"i":"donijeti","en":"to bring","p":["donesem","doneseš","donese","donesemo","donesete","donesu"],"pm":"donio","pf":"donijela","fu":"donijet ću","ex":["Donijet ću ti kavu.","I'll bring you a coffee."]},
+ {"i":"prevesti","en":"to translate","p":["prevedem","prevedeš","prevede","prevedemo","prevedete","prevedu"],"pm":"preveo","pf":"prevela","fu":"prevest ću","ex":["Možeš li ovo prevesti?","Can you translate this?"]},
+ {"i":"sresti","en":"to run into / meet","p":["sretnem","sretneš","sretne","sretnemo","sretnete","sretnu"],"pm":"sreo","pf":"srela","fu":"srest ću","ex":["Sreo sam Anu u gradu.","I ran into Ana in town. (m)"]},
+ {"i":"smjeti","en":"may / to be allowed","p":["smijem","smiješ","smije","smijemo","smijete","smiju"],"pm":"smio","pf":"smjela","fu":"smjet ću","ex":["Ne smiješ to raditi.","You're not allowed to do that."]},
+ {"i":"uspjeti","en":"to succeed / manage","p":["uspijem","uspiješ","uspije","uspijemo","uspijete","uspiju"],"pm":"uspio","pf":"uspjela","fu":"uspjet ću","ex":["Uspio sam!","I did it! (m)"]},
+ {"i":"poznavati","en":"to know (a person)","p":["poznajem","poznaješ","poznaje","poznajemo","poznajete","poznaju"],"pm":"poznavao","pf":"poznavala","fu":"poznavat ću","ex":["Poznaješ li Marka?","Do you know Marko?"]},
+ {"i":"prodavati","en":"to sell (regularly)","p":["prodajem","prodaješ","prodaje","prodajemo","prodajete","prodaju"],"pm":"prodavao","pf":"prodavala","fu":"prodavat ću","ex":["Prodaju voće na tržnici.","They sell fruit at the market."]},
+ {"i":"davati","en":"to give (regularly)","p":["dajem","daješ","daje","dajemo","dajete","daju"],"pm":"davao","pf":"davala","fu":"davat ću","ex":["Uvijek mi daje savjete.","He always gives me advice."]},
+ {"i":"zaspati","en":"to fall asleep","p":["zaspim","zaspiš","zaspi","zaspimo","zaspite","zaspe"],"pm":"zaspao","pf":"zaspala","fu":"zaspat ću","ex":["Zaspao sam na kauču.","I fell asleep on the sofa. (m)"]},
+ {"i":"ležati","en":"to lie (down)","p":["ležim","ležiš","leži","ležimo","ležite","leže"],"pm":"ležao","pf":"ležala","fu":"ležat ću","ex":["Ležim na plaži.","I'm lying on the beach."]},
+ {"i":"držati","en":"to hold / keep","p":["držim","držiš","drži","držimo","držite","drže"],"pm":"držao","pf":"držala","fu":"držat ću","ex":["Drži ovo, molim te.","Hold this, please."]},
+ {"i":"bojati se","en":"to be afraid","p":["bojim se","bojiš se","boji se","bojimo se","bojite se","boje se"],"pm":"bojao","pf":"bojala","fu":"bojat ću se","ex":["Bojim se pasa.","I'm scared of dogs."],"se":true},
+ {"i":"smijati se","en":"to laugh","p":["smijem se","smiješ se","smije se","smijemo se","smijete se","smiju se"],"pm":"smijao","pf":"smijala","fu":"smijat ću se","ex":["Zašto se smiješ?","Why are you laughing?"],"se":true},
+ {"i":"plakati","en":"to cry","p":["plačem","plačeš","plače","plačemo","plačete","plaču"],"pm":"plakao","pf":"plakala","fu":"plakat ću","ex":["Nemoj plakati.","Don't cry."]},
+ {"i":"skakati","en":"to jump","p":["skačem","skačeš","skače","skačemo","skačete","skaču"],"pm":"skakao","pf":"skakala","fu":"skakat ću","ex":["Djeca skaču u more.","The kids are jumping into the sea."]},
+ {"i":"vikati","en":"to shout","p":["vičem","vičeš","viče","vičemo","vičete","viču"],"pm":"vikao","pf":"vikala","fu":"vikat ću","ex":["Nemoj vikati!","Don't shout!"]},
+ {"i":"lagati","en":"to lie (not tell the truth)","p":["lažem","lažeš","laže","lažemo","lažete","lažu"],"pm":"lagao","pf":"lagala","fu":"lagat ću","ex":["Ne lažem!","I'm not lying!"]},
+ {"i":"slagati se","en":"to agree","p":["slažem se","slažeš se","slaže se","slažemo se","slažete se","slažu se"],"pm":"slagao","pf":"slagala","fu":"slagat ću se","ex":["Slažem se s tobom.","I agree with you."],"se":true},
+ {"i":"penjati se","en":"to climb","p":["penjem se","penješ se","penje se","penjemo se","penjete se","penju se"],"pm":"penjao","pf":"penjala","fu":"penjat ću se","ex":["Penjemo se na planinu.","We're climbing the mountain."],"se":true},
+ {"i":"prati","en":"to wash","p":["perem","pereš","pere","peremo","perete","peru"],"pm":"prao","pf":"prala","fu":"prat ću","ex":["Perem suđe.","I'm doing the dishes."]},
+ {"i":"popiti","en":"to drink (up)","p":["popijem","popiješ","popije","popijemo","popijete","popiju"],"pm":"popio","pf":"popila","fu":"popit ću","ex":["Hoćemo li popiti kavu?","Shall we grab a coffee?"]},
+ {"i":"pojesti","en":"to eat (up)","p":["pojedem","pojedeš","pojede","pojedemo","pojedete","pojedu"],"pm":"pojeo","pf":"pojela","fu":"pojest ću","ex":["Pojeo sam sve.","I ate everything. (m)"]},
+ {"i":"dobiti","en":"to get / receive","p":["dobijem","dobiješ","dobije","dobijemo","dobijete","dobiju"],"pm":"dobio","pf":"dobila","fu":"dobit ću","ex":["Dobio sam peticu!","I got top marks! (m)"]},
+ {"i":"odbiti","en":"to refuse / turn down","p":["odbijem","odbiješ","odbije","odbijemo","odbijete","odbiju"],"pm":"odbio","pf":"odbila","fu":"odbit ću","ex":["Odbio je ponudu.","He turned down the offer."]},
+ {"i":"pozvati","en":"to invite","p":["pozovem","pozoveš","pozove","pozovemo","pozovete","pozovu"],"pm":"pozvao","pf":"pozvala","fu":"pozvat ću","ex":["Pozvat ću te na rođendan.","I'll invite you to my birthday."]},
+ {"i":"nazvati","en":"to call (on the phone)","p":["nazovem","nazoveš","nazove","nazovemo","nazovete","nazovu"],"pm":"nazvao","pf":"nazvala","fu":"nazvat ću","ex":["Nazvat ću te kasnije.","I'll call you later."]},
+ {"i":"poslati","en":"to send","p":["pošaljem","pošalješ","pošalje","pošaljemo","pošaljete","pošalju"],"pm":"poslao","pf":"poslala","fu":"poslat ću","ex":["Pošalji mi poruku.","Send me a message."]},
+ {"i":"izabrati","en":"to choose (decide on)","p":["izaberem","izabereš","izabere","izaberemo","izaberete","izaberu"],"pm":"izabrao","pf":"izabrala","fu":"izabrat ću","ex":["Izabrao sam ovaj.","I chose this one. (m)"]},
+ {"i":"počinjati","en":"to begin (regularly)","p":["počinjem","počinješ","počinje","počinjemo","počinjete","počinju"],"pm":"počinjao","pf":"počinjala","fu":"počinjat ću","ex":["Škola počinje u osam.","School starts at eight."]},
+ {"i":"nedostajati","en":"to miss (someone)","p":["nedostajem","nedostaješ","nedostaje","nedostajemo","nedostajete","nedostaju"],"pm":"nedostajao","pf":"nedostajala","fu":"nedostajat ću","ex":["Nedostaješ mi.","I miss you."]},
+ {"i":"pomagati","en":"to help (regularly)","p":["pomažem","pomažeš","pomaže","pomažemo","pomažete","pomažu"],"pm":"pomagao","pf":"pomagala","fu":"pomagat ću","ex":["Pomažem mami u kuhinji.","I help mum in the kitchen."]}
 ];
 
 /* ---------- grammar reference ---------- */
@@ -2836,7 +3023,35 @@ function nextUnit(){ return UNITS.find(u => u.id === firstOpen()) || UNITS[0]; }
 const pad2 = n => String(n).padStart(2, "0");
 const keyOf = (y, m, d) => `${y}-${pad2(m + 1)}-${pad2(d)}`;          // local calendar date
 const keyOfDate = dt => keyOf(dt.getFullYear(), dt.getMonth(), dt.getDate());
-const todayKey = () => keyOfDate(new Date());
+// Everything daily — word, verb, phrase, streak — rolls over at 7:00 AM
+// New York time (EST/EDT, daylight saving handled), wherever you are.
+const RESET_TZ = "America/New_York", RESET_HOUR = 7;
+let NY_FMT = null;
+function nyParts(t){
+  NY_FMT = NY_FMT || new Intl.DateTimeFormat("en-US", { timeZone: RESET_TZ, hourCycle: "h23",
+    year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", second:"2-digit" });
+  const p = {}; NY_FMT.formatToParts(new Date(t)).forEach(x => p[x.type] = x.value);
+  return { y:+p.year, m:+p.month, d:+p.day, h:(+p.hour) % 24, mi:+p.minute, s:+p.second };
+}
+function learningDayKey(t){
+  const p = nyParts(t == null ? Date.now() : t);
+  const dt = new Date(Date.UTC(p.y, p.m - 1, p.d));
+  if(p.h < RESET_HOUR) dt.setUTCDate(dt.getUTCDate() - 1);    // before 7am it's still yesterday
+  return `${dt.getUTCFullYear()}-${pad2(dt.getUTCMonth() + 1)}-${pad2(dt.getUTCDate())}`;
+}
+const todayKey = () => learningDayKey();
+function nextResetMs(t){
+  const now = t == null ? Date.now() : t;
+  const [y, m, d] = learningDayKey(now).split("-").map(Number);
+  const target = Date.UTC(y, m - 1, d + 1, RESET_HOUR, 0, 0);   // 07:00 tomorrow, as wall-clock
+  let guess = target;
+  for(let i = 0; i < 3; i++){                                     // converge on the real instant
+    const p = nyParts(guess);
+    guess += target - Date.UTC(p.y, p.m - 1, p.d, p.h, p.mi, p.s);
+  }
+  return guess;
+}
+const keyOfIndex = i => { const d = new Date(i * 864e5); return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`; };
 const dayIndex = k => { const [y, m, d] = k.split("-").map(Number); return Math.floor(Date.UTC(y, m - 1, d) / 864e5); };
 
 const MONTHS_HR = ["siječanj","veljača","ožujak","travanj","svibanj","lipanj","srpanj","kolovoz","rujan","listopad","studeni","prosinac"];
@@ -2854,8 +3069,9 @@ function wordPool(){
     if(seen.has(k)) return;
     seen.add(k); out.push([w, en]);
   };
-  PACKS.forEach(p => p.w.forEach(x => add(x[0], x[1])));
-  UNITS.forEach(u => u.vocab.forEach(x => add(x[0], x[1])));
+  const ok = x => !/vocative|\(\+[GDALI]\)/i.test(x[1]);       // skip vocative forms and bare prepositions
+  PACKS.forEach(p => p.w.filter(ok).forEach(x => add(x[0], x[1])));
+  UNITS.forEach(u => u.vocab.filter(ok).forEach(x => add(x[0], x[1])));
   WORD_POOL = out;
   return out;
 }
@@ -2866,10 +3082,10 @@ function todayRec(){ S.daily = S.daily || {}; const k = todayKey(); return S.dai
 function dayDone(k){ const r = (S.daily || {})[k]; return !!(r && r.word && r.verb); }
 
 function dailyStreak(){
-  const d = new Date();
-  if(!dayDone(keyOfDate(d))) d.setDate(d.getDate() - 1);   // an unfinished today doesn't break it
+  let i = dayIndex(todayKey());
+  if(!dayDone(keyOfIndex(i))) i--;                                // an unfinished today doesn't break it
   let n = 0;
-  while(dayDone(keyOfDate(d))){ n++; d.setDate(d.getDate() - 1); }
+  while(dayDone(keyOfIndex(i))){ n++; i--; }
   return n;
 }
 function bestStreak(){
@@ -2886,7 +3102,8 @@ function usesWord(sentence, word){
   return tokens(sentence).some(t => t.startsWith(stem) || (t.length >= 3 && editDistance(t, w) <= 2));
 }
 function verbForms(v){
-  const f = new Set([v.i, ...v.p, v.pm, v.pf, v.fu.replace(" ću", "")]);
+  const strip = s => s.replace(/ se$/, "").replace(/ ću( se)?$/, "");
+  const f = new Set([strip(v.i), ...v.p.map(strip), v.pm, v.pf, strip(v.fu)]);
   f.add(v.pf.replace(/la$/, "li")); f.add(v.pf.replace(/la$/, "le")); f.add(v.pf.replace(/la$/, "lo"));
   return [...f].map(norm);
 }
@@ -2976,7 +3193,7 @@ function verbCardHTML(){
       ${v.p.map((f, i) => `<tr><td class="cs">${who[i]}</td><td class="hr">${esc(f)}</td></tr>`).join("")}
     </table></div>
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:13.5px">
-      <div><span style="color:var(--stone-dim)">past:</span> <span class="hr" style="font-family:var(--display);font-size:16px">${esc(v.pm)} sam</span> <span style="color:var(--stone-dim)">(m)</span> · <span style="font-family:var(--display);font-size:16px">${esc(v.pf)} sam</span> <span style="color:var(--stone-dim)">(f)</span></div>
+      <div><span style="color:var(--stone-dim)">past:</span> <span class="hr" style="font-family:var(--display);font-size:16px">${esc(v.pm)} sam${v.se ? " se" : ""}</span> <span style="color:var(--stone-dim)">(m)</span> · <span style="font-family:var(--display);font-size:16px">${esc(v.pf)} sam${v.se ? " se" : ""}</span> <span style="color:var(--stone-dim)">(f)</span></div>
       <div><span style="color:var(--stone-dim)">future:</span> <span style="font-family:var(--display);font-size:16px">${esc(v.fu)}</span></div>
     </div>
     <div style="margin-top:10px;font-size:14px"><span style="font-family:var(--display);font-size:16px">${esc(v.ex[0])}</span> ${spk(v.ex[0])}<br><span style="color:var(--stone-dim);font-style:italic;font-size:13px">${esc(v.ex[1])}</span></div>`;
@@ -3045,7 +3262,25 @@ function streakCardHTML(){
   </div>`;
 }
 
+function fmtCountdown(ms){
+  ms = Math.max(0, ms);
+  const s = Math.floor(ms / 1000), hh = Math.floor(s / 3600), mm = Math.floor(s % 3600 / 60), ss = s % 60;
+  return `${hh}h ${pad2(mm)}m ${pad2(ss)}s`;
+}
+let CD_T = null;
+function startCountdown(){
+  clearInterval(CD_T);
+  const dayAtStart = todayKey();
+  CD_T = setInterval(() => {
+    const el = $("#dc-countdown");
+    if(!el || CUR !== "home"){ clearInterval(CD_T); return; }
+    if(todayKey() !== dayAtStart){ clearInterval(CD_T); vHome(); return; }   // 7am hit: show the new day
+    el.textContent = fmtCountdown(nextResetMs() - Date.now());
+  }, 1000);
+}
+
 function wireDaily(){
+  startCountdown();
   ["word","verb"].forEach(k => {
     const el = $("#dc-" + k);
     if(el) el.addEventListener("keydown", e => { if(e.key === "Enter") unlockDaily(k); });
@@ -3086,7 +3321,13 @@ function vHome(){
       <div><h3>Today</h3><div class="sub">Danas</div></div>
       <div class="cnt">${((S.daily||{})[todayKey()]||{}).word ? 1 : 0}${((S.daily||{})[todayKey()]||{}).verb ? "+1" : ""} / 2</div>
     </div>
-    <div class="grid g2" style="margin-top:8px">${wordCardHTML()}${verbCardHTML()}</div>
+    <div class="countdown"><span class="cd-dot"></span>New word, verb &amp; phrase in <b id="dc-countdown">${fmtCountdown(nextResetMs() - Date.now())}</b> <span style="opacity:.7">· resets 7:00 AM Eastern</span></div>
+    <div class="card" style="margin-top:10px">
+      <div class="kicker">phrase of the day · fraza dana</div>
+      <div style="font-family:var(--display);font-size:26px;font-weight:700">${esc(phraseOfDay()[0])} ${spk(phraseOfDay()[0])}</div>
+      <div style="color:var(--stone-dim)">${esc(phraseOfDay()[1])}</div>
+    </div>
+    <div class="grid g2" style="margin-top:14px">${wordCardHTML()}${verbCardHTML()}</div>
     <div style="margin-top:14px">${streakCardHTML()}</div>
 
     <div class="grid g3" style="margin-top:14px">
@@ -3096,11 +3337,6 @@ function vHome(){
       <div class="card"><div class="kicker">flashcards · kartice</div><div style="font-family:var(--mono);font-size:30px;color:var(--brass)">${Object.keys(S.cards||{}).length}</div><div style="font-size:13px;color:var(--stone-dim)">saved for review</div></div>
     </div>
 
-    <div class="card" style="margin-top:14px">
-      <div class="kicker">phrase of the day · fraza dana</div>
-      <div style="font-family:var(--display);font-size:28px;font-weight:700">${esc(POTD[0])} ${spk(POTD[0])}</div>
-      <div style="color:var(--stone-dim)">${esc(POTD[1])}</div>
-    </div>
 
     <div class="card" style="margin-top:14px">
       <div class="kicker">how to use this · kako ovo radi</div>
@@ -3109,7 +3345,9 @@ function vHome(){
   wireDaily();
 }
 const ALLP = UNITS.flatMap(u=>u.phrases);
-const POTD = ALLP[Math.floor(Date.now()/864e5) % ALLP.length];
+const ALLP2 = ALLP.concat(SKILLS.flatMap(s => s.blocks.flatMap(b => b.lines)))
+  .filter(p => p[0].length > 3 && !/[…]/.test(p[0]));
+function phraseOfDay(){ return ALLP2[(dayIndex(todayKey()) * 31337) % ALLP2.length]; }
 
 /* ============================================================
    LEKCIJE
