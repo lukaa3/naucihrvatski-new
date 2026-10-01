@@ -180,6 +180,21 @@ td.cs{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transfo
 .pack span{font-size:12.5px;color:var(--stone-dim)}
 .pack .n{font-family:var(--mono);font-size:11px;color:var(--brass);margin-top:7px;display:block;letter-spacing:.06em}
 
+/* ---------- daily challenge ---------- */
+.daily .dword{font-family:var(--display);font-size:34px;font-weight:800;line-height:1.1;margin:2px 0}
+.daily.won{border-color:rgba(63,185,138,.4)}
+.unlocked{margin-top:12px;font-size:13.5px;font-weight:600;color:var(--olive)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cal-h{font-size:10.5px;text-align:center;color:var(--stone-dim);letter-spacing:.06em;text-transform:uppercase;padding-bottom:3px}
+.cal-d{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;
+  font-family:var(--mono);font-size:12.5px;background:rgba(234,240,250,.04);color:var(--stone-dim);border:1.5px solid transparent}
+.cal-d.half{background:rgba(107,166,255,.24);color:var(--stone)}
+.cal-d.full{background:var(--olive);color:#05132B;font-weight:700}
+.cal-d.today{border-color:var(--brass)}
+.cal-d.future{opacity:.35}
+.cal-key{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:4px;background:rgba(234,240,250,.04)}
+.cal-key.full{background:var(--olive)} .cal-key.half{background:rgba(107,166,255,.24)} .cal-key.today{border:1.5px solid var(--brass)}
+
 /* ---------- learning path ---------- */
 .secthead{display:flex;align-items:center;gap:13px;margin:28px 0 6px;padding:12px 16px;
   background:linear-gradient(90deg, rgba(107,166,255,.13), rgba(107,166,255,.02));
@@ -415,15 +430,15 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "8.2";
+const VERSION = "8.5";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
    Both values are safe to publish: the anon key only ever grants
    what your row-level-security rules allow.
    ============================================================ */
-const SUPABASE_URL = "https://pknwqovojwpopuohljoc.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_-xDtrsRuva6dYG2RAU_2JQ_uv1S__Hr";
+const SUPABASE_URL = "PASTE_YOUR_PROJECT_URL_HERE";
+const SUPABASE_ANON_KEY = "PASTE_YOUR_ANON_KEY_HERE";
 const SB_READY = () => SUPABASE_URL.indexOf("http") === 0 && SUPABASE_ANON_KEY.length > 20;
 const SECTIONS = [
   {id:1, name:"First steps",      hr:"Prvi koraci",    color:"#6BA6FF"},
@@ -468,6 +483,8 @@ const UNITS = [
   grammar:[
     {h:"ti or vi — decide before you open your mouth",
      b:"<b>ti</b> = one person you know: friends, classmates, family, anyone your age.<br><b>vi</b> = a stranger, an older person, a teacher, a waiter, a shop assistant. Also any group.<br><br>Kako <b>si</b>? (ti) · Kako <b>ste</b>? (vi)<br>Kako se <b>zoveš</b>? (ti) · Kako se <b>zovete</b>? (vi)<br><br>With an adult you don't know: <b>vi</b>. Croatians will often say <em>možemo na ti</em> — we can switch to ti — when they want to drop it."},
+    {h:"More than one way to say most things",
+     b:"Croatian usually gives you several options. Here are the everyday ones, roughly casual to formal:<table><tr><th>meaning</th><th>options</th></tr><tr><td class='cs'>hi</td><td class='hr'>Bok · Ej · Dobar dan</td></tr><tr><td class='cs'>bye</td><td class='hr'>Bok · Vidimo se · Doviđenja</td></tr><tr><td class='cs'>how are you</td><td class='hr'>Kako si? · Kako ide? · Što ima? · Kako ste?</td></tr><tr><td class='cs'>I'm fine</td><td class='hr'>Dobro sam · Ne mogu se žaliti · Ide</td></tr><tr><td class='cs'>thanks</td><td class='hr'>Hvala · Hvala ti · Hvala puno · Hvala lijepa</td></tr><tr><td class='cs'>you're welcome</td><td class='hr'>Nema na čemu · Nema frke · Molim</td></tr><tr><td class='cs'>sorry</td><td class='hr'>Oprosti · Oprostite · Žao mi je · Pardon</td></tr><tr><td class='cs'>yes / no</td><td class='hr'>Da · Aha · Može &nbsp;/&nbsp; Ne · Neću</td></tr></table>You only need <b>one</b> of each to get by. The rest are there so you recognise them when they come at you — which is most of what listening actually is.<br><br><b>Bok</b> and <b>Dobar dan</b> alone will carry you through any first conversation."},
     {h:"Greetings by time of day",
      b:"<b>Bok</b> — hi AND bye, informal, the one you'll use most<br><b>Dobro jutro</b> — until about 10am<br><b>Dobar dan</b> — the safe neutral one, all day<br><b>Dobra večer</b> — evening<br><b>Laku noć</b> — only when someone is going to bed<br><b>Doviđenja</b> — polite goodbye · <b>Vidimo se</b> — see you<br><br><em>Bok</em> to a stranger in a shop is slightly casual but fine. <em>Dobar dan</em> is never wrong."},
     {h:"Saying your name",
@@ -504,7 +521,7 @@ const UNITS = [
     {h:"Asking yes-no questions",
      b:"Two ways, both using the little word <b>li</b>, which always sits second:<br><b>Jesi li</b> ti student? — Are you a student?<br><b>Je li</b> ovo kava? — Is this coffee? (often heard as <em>jel'</em>)<br><br>Or just raise your intonation: <em>Ti si student?</em> Common in speech."},
     {h:"Adjectives change with the speaker",
-     b:"Because the adjective describes <em>you</em>, it takes your gender:<br>Umoran sam (m) / Umorna sam (f) — I'm tired<br>Gladan sam / Gladna sam — I'm hungry<br>Sretan sam / Sretna sam — I'm happy<br><br>Learn your own form now; you'll say these constantly."}
+     b:"Croatian words change ending by gender. <em>Unit 4 teaches the whole system</em> — for now you only need one piece of it: <b>a word describing you takes your own gender.</b> Men keep the plain form, women add <b>-a</b>.<br><br>Umoran sam (m) / Umorna sam (f) — I'm tired<br>Gladan sam / Gladna sam — I'm hungry<br>Sretan sam / Sretna sam — I'm happy<br><br>Learn your own form now; you'll say these constantly."}
   ],
   vocab:[["student / studentica","student m/f"],["učenik / učenica","pupil m/f"],
     ["prijatelj / prijateljica","friend m/f"],["umoran / umorna","tired"],["gladan / gladna","hungry"],
@@ -627,7 +644,7 @@ const UNITS = [
     {h:"Counting things — three phrases for now",
      b:"Numbers slightly change the word that follows them. The reason is the case system, which starts in Unit 8, so we'll leave the rule until <b>Unit 9</b> where it can be explained properly.<br><br>For now, just learn these three by heart. They cover almost everything you'll order:<br><br><b>jedna kava</b> — one coffee<br><b>dvije kave</b> — two coffees<br><b>pet kava</b> — five coffees<br><br>Say them out loud a few times. That's genuinely all you need at this stage — and when the rule arrives in Unit 9, you'll already have the pattern in your ear."},
     {h:"Telling the time",
-     b:"<b>Koliko je sati?</b> — What time is it?<br>Jedan sat · Dva sata · Pet sati (the number rule again)<br><br><b>Pola tri = 2:30.</b> Literally <em>half three</em>, meaning half way <b>to</b> three. This trips up every English speaker. Pola tri is NOT 3:30.<br><br>Deset i petnaest — 10:15 · Petnaest do pet — 4:45<br><b>U koliko sati?</b> — At what time? → <b>U</b> osam."},
+     b:"<b>Koliko je sati?</b> — What time is it?<br><br><b>On the hour</b>, say the number then the word for hour:<br>Jedan sat · Dva sata · Pet sati · Deset sati<br><br><b>Half past — the one that catches everyone.</b> Croatian counts <em>towards</em> the next hour:<table><tr><th>time</th><th>Croatian</th><th>literally</th></tr><tr><td class='cs'>2:30</td><td class='hr'>pola tri</td><td>half to three</td></tr><tr><td class='cs'>3:30</td><td class='hr'>pola četiri</td><td>half to four</td></tr><tr><td class='cs'>7:30</td><td class='hr'>pola osam</td><td>half to eight</td></tr></table>So <b>pola tri is 2:30, not 3:30.</b> Take the hour you're heading towards and put <em>pola</em> in front.<br><br><b>Careful — <em>tri i pol</em> is not a time.</b> It means <em>three and a half</em> as an amount: <em>tri i pol sata</em> = three and a half <b>hours</b>.<br><br><b>Other ways to say the same time</b> — all used:<table><tr><th>time</th><th>everyday</th><th>digital / official</th></tr><tr><td class='cs'>2:30</td><td class='hr'>pola tri</td><td class='hr'>dva i trideset</td></tr><tr><td class='cs'>2:15</td><td class='hr'>dva i petnaest</td><td class='hr'>dva i petnaest</td></tr><tr><td class='cs'>2:45</td><td class='hr'>petnaest do tri</td><td class='hr'>dva i četrdeset pet</td></tr></table>Digital forms are what you hear at stations and on the radio; <em>pola</em> and <em>do</em> are what people say to each other. Recognise both, use whichever is easier.<br><br><b>Arranging a time:</b><br><b>U koliko sati?</b> / <b>Kad?</b> — At what time? / When?<br><b>U osam.</b> — At eight. · <b>Oko osam.</b> — Around eight.<br><em>U osam ujutro</em> — 8am · <em>U osam navečer</em> — 8pm"},
     {h:"Days and months",
      b:"<b>Dani:</b> ponedjeljak, utorak, srijeda, četvrtak, petak, subota, nedjelja. The week starts Monday. <em>Nedjelja</em> = Sunday; <b>tjedan</b> = week.<br><br><b>Mjeseci</b> — old Slavic names describing nature, not Roman emperors:<br>siječanj, veljača, ožujak, travanj, svibanj, lipanj, srpanj, kolovoz, rujan, listopad, studeni, prosinac.<br><em>Listopad</em> = leaf-fall (October). <em>Travanj</em> = grass month (April). No shortcut — memorise them."}
   ],
@@ -641,10 +658,10 @@ const UNITS = [
     ["Imam sedamnaest godina.","I'm seventeen."],["Rođen sam u lipnju.","I was born in June. (m)"],
     ["Vidimo se u osam.","See you at eight."]],
   drills:[
-    {t:"type",q:"What is 'pola tri' in digits?",a:["2:30","230","14:30"],e:"2:30 — half way TO three."},
+    {t:"type",q:"What is 'pola tri' in digits?",a:["2:30","230","14:30"],e:"2:30 — Croatian counts towards the next hour."},
     {t:"mc",q:"Which is October?",o:["kolovoz","listopad","studeni","rujan"],a:1,e:"listopad. kolovoz=August, rujan=September, studeni=November."},
     {t:"type",q:"Say: See you at eight.",a:["vidimo se u osam","vidimo se u osam sati"],e:"Vidimo se u osam."},
-    {t:"mc",q:"Which is Wednesday?",o:["utorak","srijeda","četvrtak","subota"],a:1,e:"srijeda. utorak=Tuesday, četvrtak=Thursday, subota=Saturday."},
+    {t:"mc",q:"How do you say 3:30?",o:["tri i pol","pola tri","pola četiri","tri sata pol"],a:2,e:"pola četiri — half TO four. tri i pol means three and a half hours."},
     {t:"type",q:"Say: I'm seventeen years old.",a:["imam sedamnaest godina"],e:"Imam sedamnaest godina — literally 'I have 17 years'."},
     {t:"mc",q:"'tjedan' means:",o:["Sunday","week","month","Tuesday"],a:1,e:"tjedan = week; nedjelja = Sunday."}
   ]
@@ -660,6 +677,8 @@ const UNITS = [
      b:"<table><tr><th></th><th>N</th><th>A</th></tr><tr><td class='cs'>f</td><td class='hr'>kava</td><td class='hr'>kavu</td></tr><tr><td class='cs'>n</td><td class='hr'>pivo</td><td class='hr'>pivo</td></tr><tr><td class='cs'>m thing</td><td class='hr'>stol</td><td class='hr'>stol</td></tr><tr><td class='cs'>m alive</td><td class='hr'>pas</td><td class='hr'>psa</td></tr></table><b>Feminine -a → -u.</b> The single most useful ending in the language.<br>Neuter never changes. Masculine changes <b>only if it's alive</b>."},
     {h:"Alive or not",
      b:"Vidim <b>stol</b>. — I see the table (thing, no change)<br>Vidim <b>psa</b>. — I see the dog (alive, takes -a)<br>Vidim <b>Marka</b>. — I see Marko (person, takes -a)<br><br>Adjectives follow: Imam <b>velikog</b> psa. Imam <b>veliku</b> kuću."},
+    {h:"Several ways to order the same coffee",
+     b:"All of these get you a coffee. They differ in politeness, not meaning:<table><tr><th>Croatian</th><th>feel</th></tr><tr><td class='hr'>Kavu, molim.</td><td>short and fine</td></tr><tr><td class='hr'>Molim vas jednu kavu.</td><td>polite, very standard</td></tr><tr><td class='hr'>Htio bih kavu.</td><td>polite (male speaker)</td></tr><tr><td class='hr'>Htjela bih kavu.</td><td>polite (female speaker)</td></tr><tr><td class='hr'>Može jedna kava?</td><td>casual, friendly</td></tr><tr><td class='hr'>Dajte mi kavu.</td><td>blunt — avoid with strangers</td></tr><tr><td class='hr'>Hoću kavu.</td><td>demanding — avoid</td></tr></table>Pick <b>Molim vas jednu kavu</b> and you will never be wrong. <em>Može jedna kava?</em> is what you'll hear friends say.<br><br>Notice <b>kava → kavu</b> in every one of them. That change is this unit's whole subject."},
     {h:"Ordering politely",
      b:"<b>Molim vas jednu kavu.</b> — A coffee please<br><b>Htio bih</b> / <b>Htjela bih</b> jedno pivo. — I'd like a beer (m/f)<br><br><em>Htio bih</em> is much softer than <em>hoću</em>. Use it in shops and cafés — <em>hoću kavu</em> sounds demanding."}
   ],
@@ -2083,6 +2102,60 @@ const SKILLS = [
 ];
 
 
+
+/* ============================================================
+   VERB OF THE DAY — present (ja, ti, on/ona, mi, vi, oni),
+   past (m / f), future (ja). Everyday verbs only.
+   ============================================================ */
+const VERBS = [
+ {i:"biti", en:"to be", p:["sam","si","je","smo","ste","su"], pm:"bio", pf:"bila", fu:"bit ću", ex:["Umoran sam danas.","I'm tired today."]},
+ {i:"imati", en:"to have", p:["imam","imaš","ima","imamo","imate","imaju"], pm:"imao", pf:"imala", fu:"imat ću", ex:["Imam jednog brata.","I have one brother."]},
+ {i:"raditi", en:"to work / to do", p:["radim","radiš","radi","radimo","radite","rade"], pm:"radio", pf:"radila", fu:"radit ću", ex:["Što radiš večeras?","What are you doing tonight?"]},
+ {i:"govoriti", en:"to speak", p:["govorim","govoriš","govori","govorimo","govorite","govore"], pm:"govorio", pf:"govorila", fu:"govorit ću", ex:["Govorim malo hrvatski.","I speak a little Croatian."]},
+ {i:"učiti", en:"to learn / study", p:["učim","učiš","uči","učimo","učite","uče"], pm:"učio", pf:"učila", fu:"učit ću", ex:["Učim hrvatski svaki dan.","I study Croatian every day."]},
+ {i:"znati", en:"to know", p:["znam","znaš","zna","znamo","znate","znaju"], pm:"znao", pf:"znala", fu:"znat ću", ex:["Ne znam gdje je.","I don't know where it is."]},
+ {i:"misliti", en:"to think", p:["mislim","misliš","misli","mislimo","mislite","misle"], pm:"mislio", pf:"mislila", fu:"mislit ću", ex:["Mislim da je to dobro.","I think that's good."]},
+ {i:"živjeti", en:"to live", p:["živim","živiš","živi","živimo","živite","žive"], pm:"živio", pf:"živjela", fu:"živjet ću", ex:["Živim u New Yorku.","I live in New York."]},
+ {i:"gledati", en:"to watch / look", p:["gledam","gledaš","gleda","gledamo","gledate","gledaju"], pm:"gledao", pf:"gledala", fu:"gledat ću", ex:["Gledamo film večeras.","We're watching a film tonight."]},
+ {i:"slušati", en:"to listen", p:["slušam","slušaš","sluša","slušamo","slušate","slušaju"], pm:"slušao", pf:"slušala", fu:"slušat ću", ex:["Slušam hrvatsku glazbu.","I listen to Croatian music."]},
+ {i:"čitati", en:"to read", p:["čitam","čitaš","čita","čitamo","čitate","čitaju"], pm:"čitao", pf:"čitala", fu:"čitat ću", ex:["Čitam knjigu.","I'm reading a book."]},
+ {i:"pisati", en:"to write", p:["pišem","pišeš","piše","pišemo","pišete","pišu"], pm:"pisao", pf:"pisala", fu:"pisat ću", ex:["Pišem poruku prijatelju.","I'm writing a message to a friend."]},
+ {i:"jesti", en:"to eat", p:["jedem","jedeš","jede","jedemo","jedete","jedu"], pm:"jeo", pf:"jela", fu:"jest ću", ex:["Jedem pizzu.","I'm eating pizza."]},
+ {i:"piti", en:"to drink", p:["pijem","piješ","pije","pijemo","pijete","piju"], pm:"pio", pf:"pila", fu:"pit ću", ex:["Pijem kavu ujutro.","I drink coffee in the morning."]},
+ {i:"ići", en:"to go", p:["idem","ideš","ide","idemo","idete","idu"], pm:"išao", pf:"išla", fu:"ići ću", ex:["Idem u školu.","I'm going to school."]},
+ {i:"doći", en:"to come", p:["dođem","dođeš","dođe","dođemo","dođete","dođu"], pm:"došao", pf:"došla", fu:"doći ću", ex:["Kad ćeš doći?","When will you come?"]},
+ {i:"moći", en:"can / to be able", p:["mogu","možeš","može","možemo","možete","mogu"], pm:"mogao", pf:"mogla", fu:"moći ću", ex:["Možeš li mi pomoći?","Can you help me?"]},
+ {i:"htjeti", en:"to want", p:["hoću","hoćeš","hoće","hoćemo","hoćete","hoće"], pm:"htio", pf:"htjela", fu:"htjet ću", ex:["Hoćeš li kavu?","Do you want a coffee?"]},
+ {i:"trebati", en:"to need", p:["trebam","trebaš","treba","trebamo","trebate","trebaju"], pm:"trebao", pf:"trebala", fu:"trebat ću", ex:["Trebam pomoć.","I need help."]},
+ {i:"voljeti", en:"to love / like", p:["volim","voliš","voli","volimo","volite","vole"], pm:"volio", pf:"voljela", fu:"voljet ću", ex:["Volim more.","I love the sea."]},
+ {i:"razumjeti", en:"to understand", p:["razumijem","razumiješ","razumije","razumijemo","razumijete","razumiju"], pm:"razumio", pf:"razumjela", fu:"razumjet ću", ex:["Ne razumijem pitanje.","I don't understand the question."]},
+ {i:"spavati", en:"to sleep", p:["spavam","spavaš","spava","spavamo","spavate","spavaju"], pm:"spavao", pf:"spavala", fu:"spavat ću", ex:["Spavam osam sati.","I sleep eight hours."]},
+ {i:"kupiti", en:"to buy", p:["kupim","kupiš","kupi","kupimo","kupite","kupe"], pm:"kupio", pf:"kupila", fu:"kupit ću", ex:["Kupit ću kruh.","I'll buy bread."]},
+ {i:"vidjeti", en:"to see", p:["vidim","vidiš","vidi","vidimo","vidite","vide"], pm:"vidio", pf:"vidjela", fu:"vidjet ću", ex:["Vidim more!","I can see the sea!"]},
+ {i:"čuti", en:"to hear", p:["čujem","čuješ","čuje","čujemo","čujete","čuju"], pm:"čuo", pf:"čula", fu:"čut ću", ex:["Ne čujem te.","I can't hear you."]},
+ {i:"dati", en:"to give", p:["dam","daš","da","damo","date","daju"], pm:"dao", pf:"dala", fu:"dat ću", ex:["Dat ću ti knjigu.","I'll give you the book."]},
+ {i:"uzeti", en:"to take", p:["uzmem","uzmeš","uzme","uzmemo","uzmete","uzmu"], pm:"uzeo", pf:"uzela", fu:"uzet ću", ex:["Uzet ću taksi.","I'll take a taxi."]},
+ {i:"igrati", en:"to play", p:["igram","igraš","igra","igramo","igrate","igraju"], pm:"igrao", pf:"igrala", fu:"igrat ću", ex:["Igramo nogomet.","We're playing football."]},
+ {i:"putovati", en:"to travel", p:["putujem","putuješ","putuje","putujemo","putujete","putuju"], pm:"putovao", pf:"putovala", fu:"putovat ću", ex:["Ljeti putujem u Hrvatsku.","In summer I travel to Croatia."]},
+ {i:"kuhati", en:"to cook", p:["kuham","kuhaš","kuha","kuhamo","kuhate","kuhaju"], pm:"kuhao", pf:"kuhala", fu:"kuhat ću", ex:["Baka kuha ručak.","Grandma is cooking lunch."]},
+ {i:"plivati", en:"to swim", p:["plivam","plivaš","pliva","plivamo","plivate","plivaju"], pm:"plivao", pf:"plivala", fu:"plivat ću", ex:["Plivamo u moru.","We're swimming in the sea."]},
+ {i:"pjevati", en:"to sing", p:["pjevam","pjevaš","pjeva","pjevamo","pjevate","pjevaju"], pm:"pjevao", pf:"pjevala", fu:"pjevat ću", ex:["Ona lijepo pjeva.","She sings beautifully."]},
+ {i:"plesati", en:"to dance", p:["plešem","plešeš","pleše","plešemo","plešete","plešu"], pm:"plesao", pf:"plesala", fu:"plesat ću", ex:["Ne znam plesati.","I don't know how to dance."]},
+ {i:"čekati", en:"to wait", p:["čekam","čekaš","čeka","čekamo","čekate","čekaju"], pm:"čekao", pf:"čekala", fu:"čekat ću", ex:["Čekam autobus.","I'm waiting for the bus."]},
+ {i:"tražiti", en:"to look for", p:["tražim","tražiš","traži","tražimo","tražite","traže"], pm:"tražio", pf:"tražila", fu:"tražit ću", ex:["Tražim ključeve.","I'm looking for my keys."]},
+ {i:"nositi", en:"to carry / wear", p:["nosim","nosiš","nosi","nosimo","nosite","nose"], pm:"nosio", pf:"nosila", fu:"nosit ću", ex:["Nosim crnu jaknu.","I'm wearing a black jacket."]},
+ {i:"pitati", en:"to ask", p:["pitam","pitaš","pita","pitamo","pitate","pitaju"], pm:"pitao", pf:"pitala", fu:"pitat ću", ex:["Mogu li nešto pitati?","Can I ask something?"]},
+ {i:"pomoći", en:"to help", p:["pomognem","pomogneš","pomogne","pomognemo","pomognete","pomognu"], pm:"pomogao", pf:"pomogla", fu:"pomoći ću", ex:["Pomoći ću ti sutra.","I'll help you tomorrow."]},
+ {i:"platiti", en:"to pay", p:["platim","platiš","plati","platimo","platite","plate"], pm:"platio", pf:"platila", fu:"platit ću", ex:["Ja ću platiti.","I'll pay."]},
+ {i:"početi", en:"to start", p:["počnem","počneš","počne","počnemo","počnete","počnu"], pm:"počeo", pf:"počela", fu:"počet ću", ex:["Film počinje u osam.","The film starts at eight."]},
+ {i:"zvati", en:"to call", p:["zovem","zoveš","zove","zovemo","zovete","zovu"], pm:"zvao", pf:"zvala", fu:"zvat ću", ex:["Zovem mamu.","I'm calling mum."]},
+ {i:"sjediti", en:"to sit", p:["sjedim","sjediš","sjedi","sjedimo","sjedite","sjede"], pm:"sjedio", pf:"sjedila", fu:"sjedit ću", ex:["Sjedimo u kafiću.","We're sitting in a café."]},
+ {i:"trčati", en:"to run", p:["trčim","trčiš","trči","trčimo","trčite","trče"], pm:"trčao", pf:"trčala", fu:"trčat ću", ex:["Trčim svako jutro.","I run every morning."]},
+ {i:"voziti", en:"to drive", p:["vozim","voziš","vozi","vozimo","vozite","voze"], pm:"vozio", pf:"vozila", fu:"vozit ću", ex:["Tata vozi auto.","Dad is driving the car."]},
+ {i:"stanovati", en:"to live (reside)", p:["stanujem","stanuješ","stanuje","stanujemo","stanujete","stanuju"], pm:"stanovao", pf:"stanovala", fu:"stanovat ću", ex:["Stanujem blizu škole.","I live near the school."]},
+ {i:"odgovoriti", en:"to answer", p:["odgovorim","odgovoriš","odgovori","odgovorimo","odgovorite","odgovore"], pm:"odgovorio", pf:"odgovorila", fu:"odgovorit ću", ex:["Odgovorit ću ti sutra.","I'll answer you tomorrow."]}
+];
+
 /* ---------- grammar reference ---------- */
 const CASES = {
   head:["padež","žena (f)","grad (m)","more (n)","pitanje"],
@@ -2201,7 +2274,7 @@ async function loadKey(){
 const maskKey = k => !k ? "" : k.length<12 ? "•".repeat(k.length) : k.slice(0,6)+"…"+k.slice(-4);
 
 let S = {
-  skills:{}, name:"", xp:0, streak:0, lastDay:null,
+  daily:{}, skills:{}, name:"", xp:0, streak:0, lastDay:null,
   done:{},                 // unitId -> {read:true, drill:score}
   cards:{},                // "hr|en" -> {box:1..5, seen:n}
   level:"A1",
@@ -2237,7 +2310,7 @@ function paintStats(){
   let d = 0;
   UNITS.forEach(u=>{ const x=S.done[u.id]; if(x){ if(x.read) d++; if(x.drill!=null) d++; } });
   $("#s-xp").textContent = S.xp||0;
-  $("#s-streak").textContent = S.streak||0;
+  $("#s-streak").textContent = dailyStreak();
   $("#s-words").textContent = Object.keys(S.cards||{}).length;
   const pct = Math.min(1, d/total);
 
@@ -2562,15 +2635,22 @@ function trimHistory(hist, maxTurns, maxChars){
   maxTurns = maxTurns || HISTORY_TURNS;
   maxChars = maxChars || HISTORY_CHARS;
 
-  let out = hist.slice(-maxTurns);
+  // Drop anything with no text — an empty turn makes Gemini reject the
+  // whole request — then collapse same-speaker runs so roles alternate.
+  const clean = [];
+  for(const m of hist){
+    if(!m || typeof m.hr !== "string" || !m.hr.trim()) continue;
+    const last = clean[clean.length - 1];
+    if(last && last.who === m.who){ last.hr += "\n\n" + m.hr.trim(); continue; }
+    clean.push({ who: m.who, hr: m.hr.trim() });
+  }
 
-  // A window must open on a learner turn, or the model sees its own reply
-  // with nothing to reply to.
-  while(out.length && out[0].who !== "me") out.shift();
+  let out = clean.slice(-maxTurns);
+  while(out.length && out[0].who !== "me") out.shift();          // open on a learner turn
+  if(!out.length) out = clean.filter(m => m.who === "me").slice(-1);
 
-  const size = m => (m.hr || "").length;
+  const size = m => m.hr.length;
   let total = out.reduce((n, m) => n + size(m), 0);
-
   while(out.length > 2 && total > maxChars){
     total -= size(out.shift());
     while(out.length && out[0].who !== "me") total -= size(out.shift());
@@ -2749,12 +2829,237 @@ function shell(eyebrow, title, lede, body){
    POČETNA
    ============================================================ */
 function nextUnit(){ return UNITS.find(u => u.id === firstOpen()) || UNITS[0]; }
+
+/* ============================================================
+   DAILY CHALLENGE — word + verb of the day, streak, calendar
+   ============================================================ */
+const pad2 = n => String(n).padStart(2, "0");
+const keyOf = (y, m, d) => `${y}-${pad2(m + 1)}-${pad2(d)}`;          // local calendar date
+const keyOfDate = dt => keyOf(dt.getFullYear(), dt.getMonth(), dt.getDate());
+const todayKey = () => keyOfDate(new Date());
+const dayIndex = k => { const [y, m, d] = k.split("-").map(Number); return Math.floor(Date.UTC(y, m - 1, d) / 864e5); };
+
+const MONTHS_HR = ["siječanj","veljača","ožujak","travanj","svibanj","lipanj","srpanj","kolovoz","rujan","listopad","studeni","prosinac"];
+const MONTHS_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+let WORD_POOL = null;
+function wordPool(){
+  if(WORD_POOL) return WORD_POOL;
+  const seen = new Set(), out = [];
+  const add = (hr, en) => {
+    const w = String(hr).trim();
+    if(!/^[a-zčćđšž]{3,12}$/i.test(w)) return;          // single real words only
+    if(/(ti|ći)$/i.test(w)) return;                        // verbs have their own slot
+    const k = w.toLowerCase();
+    if(seen.has(k)) return;
+    seen.add(k); out.push([w, en]);
+  };
+  PACKS.forEach(p => p.w.forEach(x => add(x[0], x[1])));
+  UNITS.forEach(u => u.vocab.forEach(x => add(x[0], x[1])));
+  WORD_POOL = out;
+  return out;
+}
+function wordOfDay(k){ const p = wordPool(); return p[(dayIndex(k || todayKey()) * 7919) % p.length]; }
+function verbOfDay(k){ return VERBS[(dayIndex(k || todayKey()) * 104729) % VERBS.length]; }
+
+function todayRec(){ S.daily = S.daily || {}; const k = todayKey(); return S.daily[k] = S.daily[k] || {}; }
+function dayDone(k){ const r = (S.daily || {})[k]; return !!(r && r.word && r.verb); }
+
+function dailyStreak(){
+  const d = new Date();
+  if(!dayDone(keyOfDate(d))) d.setDate(d.getDate() - 1);   // an unfinished today doesn't break it
+  let n = 0;
+  while(dayDone(keyOfDate(d))){ n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+function bestStreak(){
+  const idx = Object.keys(S.daily || {}).filter(dayDone).map(dayIndex).sort((a, b) => a - b);
+  let best = 0, run = 0, prev = null;
+  idx.forEach(i => { run = (prev !== null && i === prev + 1) ? run + 1 : 1; best = Math.max(best, run); prev = i; });
+  return best;
+}
+
+/* ---- does the sentence actually use the word? ---- */
+function tokens(s){ return norm(s).split(/[^a-z]+/).filter(Boolean); }
+function usesWord(sentence, word){
+  const w = norm(word), stem = w.slice(0, Math.max(3, w.length - 2));
+  return tokens(sentence).some(t => t.startsWith(stem) || (t.length >= 3 && editDistance(t, w) <= 2));
+}
+function verbForms(v){
+  const f = new Set([v.i, ...v.p, v.pm, v.pf, v.fu.replace(" ću", "")]);
+  f.add(v.pf.replace(/la$/, "li")); f.add(v.pf.replace(/la$/, "le")); f.add(v.pf.replace(/la$/, "lo"));
+  return [...f].map(norm);
+}
+function usesVerb(sentence, v){
+  const forms = verbForms(v);
+  return tokens(sentence).some(t => forms.includes(t) || (t.length >= 4 && forms.some(f => f.length >= 4 && editDistance(t, f) <= 1)));
+}
+
+function unlockDaily(kind){
+  const input = $("#dc-" + kind), msg = $("#dcm-" + kind);
+  const s = (input && input.value || "").trim();
+  const target = kind === "word" ? wordOfDay()[0] : verbOfDay().i;
+  if(tokens(s).length < 3){ msg.innerHTML = `<span style="color:var(--madder)">Write a full sentence — at least 3 words.</span>`; return; }
+  const ok = kind === "word" ? usesWord(s, target) : usesVerb(s, verbOfDay());
+  if(!ok){
+    msg.innerHTML = `<span style="color:var(--madder)">Use <b>${esc(target)}</b> in your sentence — any form counts.</span>`;
+    return;
+  }
+  const r = todayRec();
+  r[kind] = true; r[kind + "S"] = s;
+  if(kind === "word"){ const w = wordOfDay(); S.cards = S.cards || {}; const ck = cardKey(w[0], w[1]); if(!S.cards[ck]) S.cards[ck] = {box:1, seen:0}; }
+  else { const v = verbOfDay(); S.cards = S.cards || {}; const ck = cardKey(v.i, v.en); if(!S.cards[ck]) S.cards[ck] = {box:1, seen:0}; }
+  addXP(10);
+  save();
+  vHome();                                                  // wireDaily() starts the AI check
+}
+
+const DC_BUSY = new Set();
+async function checkDailySentence(kind){
+  const r = todayRec(), slot = $("#dcf-" + kind);
+  if(!slot || !r[kind + "S"]) return;
+  if(r[kind + "F"] || DC_BUSY.has(kind)) return;            // already checked, or in flight
+  DC_BUSY.add(kind);
+  const target = kind === "word" ? wordOfDay()[0] : verbOfDay().i;
+  slot.innerHTML = `<span class="spin"></span> <span style="font-size:13px;color:var(--stone-dim)">Checking your sentence…</span>`;
+  try{
+    const txt = await ask(STYLE_RULES + "You are a friendly Croatian teacher checking a single learner sentence. Be encouraging and brief.",
+      [{role:"user", content:`The learner had to write a sentence using the ${kind === "word" ? "word" : "verb"} "${target}". They wrote: "${r[kind + "S"]}".
+Ignore missing diacritics. Small slips are fine if it's understandable.
+Return ONLY JSON, no markdown: {"ok":true or false,"fixed":"<the corrected sentence, or identical if already fine>","en":"<English translation>","note":"<one short, kind English sentence of feedback>"}`}], 400);
+    const j = parseJSON(txt);
+    r[kind + "F"] = { ok: !!j.ok, fixed: String(j.fixed || ""), en: String(j.en || ""), note: String(j.note || "") };
+    save();
+  }catch(e){
+    const s2 = $("#dcf-" + kind);
+    if(s2) s2.innerHTML = `<span style="font-size:13px;color:var(--stone-dim)">Couldn't check it right now — it still counts.</span>`;
+    DC_BUSY.delete(kind);
+    return;
+  }
+  DC_BUSY.delete(kind);
+  if(CUR === "home") vHome();
+}
+
+function feedbackHTML(r, kind){
+  const f = r[kind + "F"];
+  const mine = `<div style="margin-top:8px;font-size:14px"><span style="color:var(--stone-dim)">Your sentence:</span> <span style="font-family:var(--display);font-size:17px">${esc(r[kind + "S"] || "")}</span></div>`;
+  if(!f) return mine + `<div id="dcf-${kind}" style="margin-top:6px"></div>`;
+  const changed = norm(f.fixed) !== norm(r[kind + "S"] || "");
+  return mine + `<div id="dcf-${kind}" class="${f.ok && !changed ? "verdict ok" : "fix"}" style="margin-top:8px">
+      ${f.ok && !changed ? `<b style="color:var(--olive)">Perfect.</b>` : `<b>Better:</b> <span style="font-family:var(--display);font-size:16px">${esc(f.fixed)}</span>`}
+      ${f.en ? `<div style="font-size:13px;color:var(--stone-dim);font-style:italic;margin-top:3px">${esc(f.en)}</div>` : ""}
+      ${f.note ? `<div style="font-size:13px;margin-top:4px">${esc(f.note)}</div>` : ""}
+    </div>`;
+}
+
+function wordCardHTML(){
+  const w = wordOfDay(), r = (S.daily || {})[todayKey()] || {};
+  return `<div class="card daily ${r.word ? "won" : ""}">
+    <div class="kicker">word of the day · riječ dana</div>
+    <div class="dword">${esc(w[0])} ${spk(w[0])}</div>
+    <div style="color:var(--stone-dim);font-size:15px">${esc(w[1])}</div>
+    ${r.word
+      ? `<div class="unlocked">\u2713 Learned today · added to your flashcards</div>${feedbackHTML(r, "word")}`
+      : `<p style="font-size:13.5px;color:var(--stone-dim);margin:12px 0 8px">Write a sentence that uses it to unlock it. Any form counts.</p>
+         <div style="display:flex;gap:8px;flex-wrap:wrap">
+           <input class="answer" id="dc-word" placeholder="Napiši rečenicu…" autocomplete="off" style="flex:1;min-width:180px;font-size:16px">
+           <button class="btn" onclick="unlockDaily('word')">${dual("Unlock","Otključaj")}</button>
+         </div><div id="dcm-word" style="margin-top:7px;font-size:13.5px;min-height:1em"></div>`}
+  </div>`;
+}
+
+function verbCardHTML(){
+  const v = verbOfDay(), r = (S.daily || {})[todayKey()] || {};
+  const who = ["ja","ti","on / ona","mi","vi","oni"];
+  const table = `<div class="tblwrap" style="margin-top:12px"><table>
+      <tr><th>present</th><th></th></tr>
+      ${v.p.map((f, i) => `<tr><td class="cs">${who[i]}</td><td class="hr">${esc(f)}</td></tr>`).join("")}
+    </table></div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:13.5px">
+      <div><span style="color:var(--stone-dim)">past:</span> <span class="hr" style="font-family:var(--display);font-size:16px">${esc(v.pm)} sam</span> <span style="color:var(--stone-dim)">(m)</span> · <span style="font-family:var(--display);font-size:16px">${esc(v.pf)} sam</span> <span style="color:var(--stone-dim)">(f)</span></div>
+      <div><span style="color:var(--stone-dim)">future:</span> <span style="font-family:var(--display);font-size:16px">${esc(v.fu)}</span></div>
+    </div>
+    <div style="margin-top:10px;font-size:14px"><span style="font-family:var(--display);font-size:16px">${esc(v.ex[0])}</span> ${spk(v.ex[0])}<br><span style="color:var(--stone-dim);font-style:italic;font-size:13px">${esc(v.ex[1])}</span></div>`;
+  return `<div class="card daily ${r.verb ? "won" : ""}">
+    <div class="kicker">verb of the day · glagol dana</div>
+    <div class="dword">${esc(v.i)} ${spk(v.i)}</div>
+    <div style="color:var(--stone-dim);font-size:15px">${esc(v.en)}</div>
+    ${table}
+    ${r.verb
+      ? `<div class="unlocked">\u2713 Learned today · added to your flashcards</div>${feedbackHTML(r, "verb")}`
+      : `<p style="font-size:13.5px;color:var(--stone-dim);margin:14px 0 8px">Write a sentence with it to unlock — any tense or person.</p>
+         <div style="display:flex;gap:8px;flex-wrap:wrap">
+           <input class="answer" id="dc-verb" placeholder="Napiši rečenicu…" autocomplete="off" style="flex:1;min-width:180px;font-size:16px">
+           <button class="btn" onclick="unlockDaily('verb')">${dual("Unlock","Otključaj")}</button>
+         </div><div id="dcm-verb" style="margin-top:7px;font-size:13.5px;min-height:1em"></div>`}
+  </div>`;
+}
+
+let CAL_OFFSET = 0;
+function calendarHTML(){
+  const now = new Date();
+  const base = new Date(now.getFullYear(), now.getMonth() + CAL_OFFSET, 1);
+  const y = base.getFullYear(), m = base.getMonth();
+  const lead = (base.getDay() + 6) % 7;                    // Monday-first, like Croatian calendars
+  const days = new Date(y, m + 1, 0).getDate();
+  const tk = todayKey(), ti = dayIndex(tk);
+  let cells = ["Pon","Uto","Sri","Čet","Pet","Sub","Ned"].map(d => `<div class="cal-h">${d}</div>`).join("");
+  for(let i = 0; i < lead; i++) cells += `<div></div>`;
+  for(let d = 1; d <= days; d++){
+    const k = keyOf(y, m, d), r = (S.daily || {})[k] || {};
+    const n = (r.word ? 1 : 0) + (r.verb ? 1 : 0);
+    const cls = n === 2 ? "full" : n === 1 ? "half" : "";
+    cells += `<div class="cal-d ${cls} ${k === tk ? "today" : ""} ${dayIndex(k) > ti ? "future" : ""}">${d}</div>`;
+  }
+  return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <button class="btn ghost sm" onclick="CAL_OFFSET--;vHome()">\u2190</button>
+      <div style="text-align:center"><b style="font-family:var(--display);font-size:18px">${MONTHS_EN[m]} ${y}</b>
+        <div style="font-size:11px;color:var(--stone-dim);letter-spacing:.06em">${MONTHS_HR[m]}</div></div>
+      <button class="btn ghost sm" onclick="CAL_OFFSET=Math.min(0,CAL_OFFSET+1);vHome()" ${CAL_OFFSET >= 0 ? "disabled" : ""}>\u2192</button>
+    </div>
+    <div class="cal">${cells}</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--stone-dim)">
+      <span><span class="cal-key full"></span> both done</span>
+      <span><span class="cal-key half"></span> one done</span>
+      <span><span class="cal-key today"></span> today</span>
+    </div>`;
+}
+
+function streakCardHTML(){
+  const s = dailyStreak(), b = bestStreak(), r = (S.daily || {})[todayKey()] || {};
+  const doneToday = (r.word ? 1 : 0) + (r.verb ? 1 : 0);
+  return `<div class="card">
+    <div class="kicker">daily streak · dani zaredom</div>
+    <div style="display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;margin-bottom:14px">
+      <div><div style="font-family:var(--mono);font-size:46px;line-height:1;color:${s ? "var(--olive)" : "var(--stone-dim)"}">${s}</div>
+        <div style="font-size:12px;color:var(--stone-dim)">day${s === 1 ? "" : "s"} in a row</div></div>
+      <div style="font-size:13.5px;color:var(--stone-dim);padding-bottom:4px">
+        Best: <b style="color:var(--stone)">${b}</b><br>
+        Today: <b style="color:${doneToday === 2 ? "var(--olive)" : "var(--brass)"}">${doneToday} of 2</b> done
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--stone-dim);margin:0 0 12px">${doneToday === 2
+      ? "Both done — today counts. See you tomorrow."
+      : "Unlock both the word and the verb of the day to keep your streak going."}</p>
+    ${calendarHTML()}
+  </div>`;
+}
+
+function wireDaily(){
+  ["word","verb"].forEach(k => {
+    const el = $("#dc-" + k);
+    if(el) el.addEventListener("keydown", e => { if(e.key === "Enter") unlockDaily(k); });
+    const r = (S.daily || {})[todayKey()] || {};
+    if(r[k] && !r[k + "F"]) checkDailySentence(k);         // resume a check interrupted by a reload
+  });
+}
+
 function vHome(){
   const u = nextUnit();
   const doneCount = UNITS.filter(u => unitState(u) === "done").length;
   const wordCount = UNITS.reduce((n,x)=>n+x.vocab.length+x.phrases.length,0) + PACKS.reduce((n,p)=>n+p.w.length,0);
   shell(S.name ? `bok, ${esc(S.name)} — nastavljamo` : "dobro došao — welcome", `Naučimo <i>hrvatski</i>.`,
-    "Seven cases, one alphabet where every letter says exactly what it looks like, and a country that will talk back to you. Twelve units, a tutor who only speaks standard Croatian, and as much practice as you want.",
+    "Seven cases, one alphabet where every letter says exactly what it looks like, and a country that will talk back to you. Twenty-six grammar units, twelve speaking lessons, a word and a verb every day, a tutor who only speaks standard Croatian, and as much practice as you want.",
     `<div class="grid g2">
       <div class="card">
         <div class="kicker">pick up here · nastavi ovdje</div>
@@ -2776,6 +3081,14 @@ function vHome(){
       </div>
     </div>
 
+    <div class="secthead" style="margin-top:22px">
+      <div class="bar" style="background:var(--olive)"></div>
+      <div><h3>Today</h3><div class="sub">Danas</div></div>
+      <div class="cnt">${((S.daily||{})[todayKey()]||{}).word ? 1 : 0}${((S.daily||{})[todayKey()]||{}).verb ? "+1" : ""} / 2</div>
+    </div>
+    <div class="grid g2" style="margin-top:8px">${wordCardHTML()}${verbCardHTML()}</div>
+    <div style="margin-top:14px">${streakCardHTML()}</div>
+
     <div class="grid g3" style="margin-top:14px">
       <div class="card"><div class="kicker">grammar · gramatika</div><div style="font-family:var(--mono);font-size:30px;color:var(--brass)">${doneCount}<span style="font-size:16px;color:var(--stone-dim)">/${UNITS.length}</span></div><div style="font-size:13px;color:var(--stone-dim)">grammar units completed</div></div>
       <div class="card"><div class="kicker">speaking · govor</div><div style="font-family:var(--mono);font-size:30px;color:var(--brass)">${SKILLS.filter(skillDone).length}<span style="font-size:16px;color:var(--stone-dim)">/${SKILLS.length}</span></div><div style="font-size:13px;color:var(--stone-dim)">speaking lessons completed</div></div>
@@ -2793,6 +3106,7 @@ function vHome(){
       <div class="kicker">how to use this · kako ovo radi</div>
       <p style="font-size:14.5px;color:var(--stone-dim);margin:0">Read a unit, do its six drills, then take the same material into <b style="color:var(--stone)">Razgovor</b> and try to use it on a real question. That loop — learn it, test it, then be forced to produce it under mild pressure — is what moves a word from recognised to owned. Star any word you want back later; it lands in <b style="color:var(--stone)">Kartice</b>.</p>
     </div>`);
+  wireDaily();
 }
 const ALLP = UNITS.flatMap(u=>u.phrases);
 const POTD = ALLP[Math.floor(Date.now()/864e5) % ALLP.length];
@@ -3519,21 +3833,62 @@ function packQuiz(k){
    KARTICE — Leitner flashcards
    ============================================================ */
 let FC = null;
+function addCardForm(){
+  return `<div class="card" style="margin-bottom:14px">
+    <div class="kicker">add your own word · dodaj riječ</div>
+    <p style="font-size:14px;color:var(--stone-dim);margin:0 0 12px">Saw a word online? Add it here and it joins your flashcards in box 1.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input class="field" id="nc-hr" placeholder="Croatian  (e.g. sladoled)" autocomplete="off" spellcheck="false"
+             style="flex:1;min-width:160px;font-family:var(--display);font-size:17px">
+      <input class="field" id="nc-en" placeholder="English  (e.g. ice cream)" autocomplete="off"
+             style="flex:1;min-width:160px;font-family:var(--body);font-size:16px">
+      <button class="btn" onclick="addCustomCard()">${dual("Add card","Dodaj")}</button>
+    </div>
+    <div id="nc-msg" style="margin-top:9px;font-size:13.5px;min-height:1em"></div>
+  </div>`;
+}
+function addCustomCard(){
+  const hrEl = $("#nc-hr"), enEl = $("#nc-en"), msg = $("#nc-msg");
+  const hr = (hrEl.value || "").replace(/\|/g,"/").trim(), en = (enEl.value || "").replace(/\|/g,"/").trim();
+  if(!hr || !en){ msg.innerHTML = `<span style="color:var(--madder)">Fill in both the Croatian and the English.</span>`; return; }
+  S.cards = S.cards || {};
+  const k = cardKey(hr, en);
+  if(S.cards[k]){ msg.innerHTML = `<span style="color:var(--brass)">“${esc(hr)}” is already in your cards.</span>`; return; }
+  S.cards[k] = { box:1, seen:0, custom:true, added:Date.now() };
+  save();
+  vCards();
+  const m2 = $("#nc-msg");
+  if(m2) m2.innerHTML = `<span style="color:var(--olive)">Added “${esc(hr)}” — ${esc(en)}.</span>`;
+  const f = $("#nc-hr"); if(f) f.focus();
+}
+function wireCardForm(){
+  ["#nc-hr","#nc-en"].forEach(id => {
+    const el = $(id);
+    if(el) el.addEventListener("keydown", e => {
+      if(e.key !== "Enter") return;
+      if(id === "#nc-hr" && !($("#nc-en").value || "").trim()) $("#nc-en").focus();
+      else addCustomCard();
+    });
+  });
+}
+
 function vCards(){
   const keys = Object.keys(S.cards||{});
   if(!keys.length){
     return shell("kartice · flashcards", "Tvoje <i>kartice</i>", "",
-      `<div class="card" style="text-align:center;padding:44px">
+      addCardForm() + `<div class="card" style="text-align:center;padding:44px">
         <p style="font-family:var(--display);font-size:22px">No flashcards yet.</p>
         <p style="color:var(--stone-dim);font-size:14.5px;max-width:44ch;margin:0 auto 16px">Star any word in a lesson, a reading, or a generated sentence list and it lands here. Cards you get right move up a box and come back less often; ones you miss drop to box one.</p>
         <button class="btn" onclick="go('lekcije')">${dual("Go to lessons","Idi na lekcije")}</button>
         <button class="btn ghost" onclick="seedCards()">${dual("Load 40 starter words","40 osnovnih riječi")}</button>
       </div>`);
+    wireCardForm();
+    return;
   }
   const boxes = [1,2,3,4,5].map(b=>keys.filter(k=>(S.cards[k].box||1)===b).length);
   shell("kartice · flashcards", "Tvoje <i>kartice</i>",
     "Leitner boxes. Box one comes back every session, box five almost never. Getting a card wrong sends it straight back to box one — that's the point.",
-    `<div class="card">
+    addCardForm() + `<div class="card">
       <div class="kicker">distribution · raspored</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">${boxes.map((n,i)=>
         `<div style="flex:1;min-width:70px;text-align:center;padding:10px;border:1px solid var(--line);border-radius:10px">
@@ -3546,8 +3901,12 @@ function vCards(){
     </div>
     <div class="card" style="margin-top:14px">
       <div class="kicker">all cards · sve kartice (${keys.length})</div>
-      <div class="wordlist">${keys.map(k=>{const p=k.split("|");return wordRow(p[0],p[1]);}).join("")}</div>
+      <div class="wordlist">${keys.map(k=>{const p=k.split("|");
+        return S.cards[k].custom
+          ? wordRow(p[0],p[1]).replace('<span class="en">','<span class="en"><span class="pill" style="margin-right:7px;font-size:9px;padding:1px 7px">mine</span>')
+          : wordRow(p[0],p[1]);}).join("")}</div>
     </div>`);
+  wireCardForm();
 }
 function seedCards(){
   S.cards = S.cards||{};
@@ -3968,7 +4327,7 @@ function uploadSave(input){
 }
 
 function applyState(obj){
-  const base = {name:"", xp:0, streak:0, lastDay:null, done:{}, skills:{}, cards:{}, chats:{}, chatId:null,
+  const base = {name:"", xp:0, streak:0, lastDay:null, done:{}, skills:{}, daily:{}, cards:{}, chats:{}, chatId:null,
                 level:"A1", scenario:"kafic", showEn:true};
   const keepChats = obj.chats ? obj.chats : S.chats;      // a progress-only code shouldn't wipe your conversations
   const keepId    = obj.chats ? obj.chatId : S.chatId;
