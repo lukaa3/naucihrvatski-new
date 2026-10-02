@@ -183,6 +183,9 @@ td.cs{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transfo
 /* ---------- daily challenge ---------- */
 .daily .dword{font-family:var(--display);font-size:34px;font-weight:800;line-height:1.1;margin:2px 0}
 .daily.won{border-color:rgba(63,185,138,.4)}
+.dmean{margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(107,166,255,.08);
+  border:1px solid rgba(107,166,255,.2);font-size:14px;line-height:1.5}
+.dmean b{color:var(--brass)}
 .unlocked{margin-top:12px;font-size:13.5px;font-weight:600;color:var(--olive)}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
 .cal-h{font-size:10.5px;text-align:center;color:var(--stone-dim);letter-spacing:.06em;text-transform:uppercase;padding-bottom:3px}
@@ -435,7 +438,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "8.6";
+const VERSION = "8.7";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -3112,20 +3115,127 @@ function usesVerb(sentence, v){
   return tokens(sentence).some(t => forms.includes(t) || (t.length >= 4 && forms.some(f => f.length >= 4 && editDistance(t, f) <= 1)));
 }
 
+/* ---- Today's word and verb are pinned the first time you see them, and a
+   finished day keeps the exact word you did, even if the lists change later. ---- */
+function todayWord(){
+  const r = (S.daily || {})[todayKey()] || {};
+  return r.wordHr ? [r.wordHr, r.wordEn || ""] : wordOfDay();
+}
+function todayVerb(){
+  const r = (S.daily || {})[todayKey()] || {};
+  if(r.verbI){ const v = VERBS.find(x => x.i === r.verbI); if(v) return v; }
+  return verbOfDay();
+}
+function pinToday(){
+  const r = todayRec(); let ch = false;
+  if(!r.wordHr){ const w = wordOfDay(); r.wordHr = w[0]; r.wordEn = w[1]; ch = true; }
+  if(!r.verbI){ const v = verbOfDay(); r.verbI = v.i; r.verbEn = v.en; ch = true; }
+  return ch;
+}
+
+// Days finished before words were pinned: recover which word that day really
+// used. Try the formula as it was before the lists grew, then the current one,
+// and only keep a match the learner's own sentence confirms.
+function legacyPool(){
+  const seen = new Set(), out = [];
+  const add = (hr, en) => {
+    const w = String(hr).trim();
+    if(!/^[a-zčćđšž]{3,12}$/i.test(w) || /(ti|ći)$/i.test(w)) return;
+    const k = w.toLowerCase(); if(seen.has(k)) return; seen.add(k); out.push([w, en]);
+  };
+  PACKS.forEach(p => p.w.forEach(x => add(x[0], x[1])));
+  UNITS.forEach(u => u.vocab.forEach(x => add(x[0], x[1])));
+  return out;
+}
+function migrateDaily(){
+  let ch = false, old = null;
+  Object.keys(S.daily || {}).forEach(k => {
+    const r = S.daily[k], di = dayIndex(k);
+    if(r.word && !r.wordHr && r.wordS){
+      old = old || legacyPool();
+      const tries = [old[(di * 7919) % old.length], wordPool()[(di * 7919) % wordPool().length]];
+      const hit = tries.find(w => w && usesWord(r.wordS, w[0]));
+      if(hit){ r.wordHr = hit[0]; r.wordEn = hit[1]; ch = true; }
+    }
+    if(r.verb && !r.verbI && r.verbS){
+      const tries = [VERBS[(di * 104729) % 46], VERBS[(di * 104729) % VERBS.length]];
+      const hit = tries.find(v => v && usesVerb(r.verbS, v));
+      if(hit){ r.verbI = hit.i; r.verbEn = hit.en; ch = true; }
+    }
+  });
+  return ch;
+}
+
+function inCards(hr, en){ return !!(S.cards || {})[cardKey(hr, en)]; }
+function toggleDailyCard(kind){
+  const v = todayVerb(), w = todayWord();
+  const hr = kind === "word" ? w[0] : v.i, en = kind === "word" ? w[1] : v.en;
+  S.cards = S.cards || {};
+  const k = cardKey(hr, en);
+  if(S.cards[k]) delete S.cards[k]; else S.cards[k] = { box:1, seen:0 };
+  save(); vHome();
+}
+function cardToggleHTML(kind){
+  const v = todayVerb(), w = todayWord();
+  const on = kind === "word" ? inCards(w[0], w[1]) : inCards(v.i, v.en);
+  return `<button class="btn ${on ? "ghost" : ""} sm" style="margin-top:10px" onclick="toggleDailyCard('${kind}')">${
+    on ? "\u2605 In your flashcards" : "\u2606 Add to flashcards"}</button>${
+    on ? `<span style="font-size:12px;color:var(--stone-dim);margin-left:8px">tap to remove</span>` : ""}`;
+}
+
+// A plain-English note on what the word really means and when it's used,
+// because one English translation often covers several different senses.
+const NOTE_BUSY = new Set(), NOTE_FAIL = new Set();
+async function fetchNote(kind){
+  const r = todayRec();
+  if(r[kind + "Note"] || NOTE_BUSY.has(kind) || NOTE_FAIL.has(kind)) return;
+  NOTE_BUSY.add(kind);
+  const w = todayWord(), v = todayVerb();
+  const prompt = kind === "word"
+    ? `Croatian word: "${w[0]}" (rough English: "${w[1]}").
+In ONE or TWO very simple English sentences, explain what it actually means and when Croatians use it — so a learner knows which sense of the English word it covers, and not to confuse it with other senses. No grammar jargon.
+Then give one short, natural, everyday Croatian sentence using it, with its English translation.
+Return ONLY JSON, no markdown: {"meaning":"...","ex":"...","exEn":"..."}`
+    : `Croatian verb: "${v.i}" (rough English: "${v.en}").
+In ONE or TWO very simple English sentences, explain what it actually means and when Croatians use it — which sense of the English verb it covers, and anything a learner might confuse it with. No grammar jargon.
+Return ONLY JSON, no markdown: {"meaning":"..."}`;
+  try{
+    const txt = await ask(STYLE_RULES + "You explain Croatian vocabulary to beginners, simply and briefly.", [{role:"user", content:prompt}], 400);
+    const j = parseJSON(txt);
+    if(!j || !j.meaning) throw new Error("no meaning");
+    r[kind + "Note"] = { meaning:String(j.meaning), ex:String(j.ex || ""), exEn:String(j.exEn || "") };
+    save();
+  }catch(e){ NOTE_FAIL.add(kind); }
+  NOTE_BUSY.delete(kind);
+  if(CUR === "home") vHome();
+}
+function noteHTML(kind){
+  const n = ((S.daily || {})[todayKey()] || {})[kind + "Note"];
+  if(NOTE_FAIL.has(kind) && !n) return "";
+  if(!n) return `<div class="dmean"><span class="spin"></span> <span style="color:var(--stone-dim)">Looking up how it's used…</span></div>`;
+  return `<div class="dmean"><b>Meaning:</b> ${esc(n.meaning)}${n.ex
+    ? `<div style="margin-top:6px"><span style="font-family:var(--display);font-size:16px">${esc(n.ex)}</span> ${spk(n.ex)}<br><span style="color:var(--stone-dim);font-style:italic;font-size:13px">${esc(n.exEn)}</span></div>` : ""}</div>`;
+}
+
 function unlockDaily(kind){
   const input = $("#dc-" + kind), msg = $("#dcm-" + kind);
   const s = (input && input.value || "").trim();
-  const target = kind === "word" ? wordOfDay()[0] : verbOfDay().i;
+  const target = kind === "word" ? todayWord()[0] : todayVerb().i;
   if(tokens(s).length < 3){ msg.innerHTML = `<span style="color:var(--madder)">Write a full sentence — at least 3 words.</span>`; return; }
-  const ok = kind === "word" ? usesWord(s, target) : usesVerb(s, verbOfDay());
+  const ok = kind === "word" ? usesWord(s, target) : usesVerb(s, todayVerb());
   if(!ok){
     msg.innerHTML = `<span style="color:var(--madder)">Use <b>${esc(target)}</b> in your sentence — any form counts.</span>`;
     return;
   }
   const r = todayRec();
   r[kind] = true; r[kind + "S"] = s;
-  if(kind === "word"){ const w = wordOfDay(); S.cards = S.cards || {}; const ck = cardKey(w[0], w[1]); if(!S.cards[ck]) S.cards[ck] = {box:1, seen:0}; }
-  else { const v = verbOfDay(); S.cards = S.cards || {}; const ck = cardKey(v.i, v.en); if(!S.cards[ck]) S.cards[ck] = {box:1, seen:0}; }
+  // learning it once = it goes into your flashcards automatically (unstar any time)
+  const w = todayWord(), v = todayVerb();
+  if(kind === "word"){ r.wordHr = w[0]; r.wordEn = w[1]; }
+  else { r.verbI = v.i; r.verbEn = v.en; }
+  const hr = kind === "word" ? w[0] : v.i, en = kind === "word" ? w[1] : v.en;
+  S.cards = S.cards || {};
+  if(!S.cards[cardKey(hr, en)]) S.cards[cardKey(hr, en)] = { box:1, seen:0 };
   addXP(10);
   save();
   vHome();                                                  // wireDaily() starts the AI check
@@ -3137,7 +3247,7 @@ async function checkDailySentence(kind){
   if(!slot || !r[kind + "S"]) return;
   if(r[kind + "F"] || DC_BUSY.has(kind)) return;            // already checked, or in flight
   DC_BUSY.add(kind);
-  const target = kind === "word" ? wordOfDay()[0] : verbOfDay().i;
+  const target = kind === "word" ? todayWord()[0] : todayVerb().i;
   slot.innerHTML = `<span class="spin"></span> <span style="font-size:13px;color:var(--stone-dim)">Checking your sentence…</span>`;
   try{
     const txt = await ask(STYLE_RULES + "You are a friendly Croatian teacher checking a single learner sentence. Be encouraging and brief.",
@@ -3170,13 +3280,14 @@ function feedbackHTML(r, kind){
 }
 
 function wordCardHTML(){
-  const w = wordOfDay(), r = (S.daily || {})[todayKey()] || {};
+  const w = todayWord(), r = (S.daily || {})[todayKey()] || {};
   return `<div class="card daily ${r.word ? "won" : ""}">
     <div class="kicker">word of the day · riječ dana</div>
     <div class="dword">${esc(w[0])} ${spk(w[0])}</div>
     <div style="color:var(--stone-dim);font-size:15px">${esc(w[1])}</div>
+    ${noteHTML("word")}
     ${r.word
-      ? `<div class="unlocked">\u2713 Learned today · added to your flashcards</div>${feedbackHTML(r, "word")}`
+      ? `<div class="unlocked">\u2713 Learned today</div>${cardToggleHTML("word")}${feedbackHTML(r, "word")}`
       : `<p style="font-size:13.5px;color:var(--stone-dim);margin:12px 0 8px">Write a sentence that uses it to unlock it. Any form counts.</p>
          <div style="display:flex;gap:8px;flex-wrap:wrap">
            <input class="answer" id="dc-word" placeholder="Napiši rečenicu…" autocomplete="off" style="flex:1;min-width:180px;font-size:16px">
@@ -3186,7 +3297,7 @@ function wordCardHTML(){
 }
 
 function verbCardHTML(){
-  const v = verbOfDay(), r = (S.daily || {})[todayKey()] || {};
+  const v = todayVerb(), r = (S.daily || {})[todayKey()] || {};
   const who = ["ja","ti","on / ona","mi","vi","oni"];
   const table = `<div class="tblwrap" style="margin-top:12px"><table>
       <tr><th>present</th><th></th></tr>
@@ -3201,9 +3312,10 @@ function verbCardHTML(){
     <div class="kicker">verb of the day · glagol dana</div>
     <div class="dword">${esc(v.i)} ${spk(v.i)}</div>
     <div style="color:var(--stone-dim);font-size:15px">${esc(v.en)}</div>
+    ${noteHTML("verb")}
     ${table}
     ${r.verb
-      ? `<div class="unlocked">\u2713 Learned today · added to your flashcards</div>${feedbackHTML(r, "verb")}`
+      ? `<div class="unlocked">\u2713 Learned today</div>${cardToggleHTML("verb")}${feedbackHTML(r, "verb")}`
       : `<p style="font-size:13.5px;color:var(--stone-dim);margin:14px 0 8px">Write a sentence with it to unlock — any tense or person.</p>
          <div style="display:flex;gap:8px;flex-wrap:wrap">
            <input class="answer" id="dc-verb" placeholder="Napiši rečenicu…" autocomplete="off" style="flex:1;min-width:180px;font-size:16px">
@@ -3286,10 +3398,12 @@ function wireDaily(){
     if(el) el.addEventListener("keydown", e => { if(e.key === "Enter") unlockDaily(k); });
     const r = (S.daily || {})[todayKey()] || {};
     if(r[k] && !r[k + "F"]) checkDailySentence(k);         // resume a check interrupted by a reload
+    fetchNote(k);
   });
 }
 
 function vHome(){
+  if(migrateDaily() | pinToday()) save();               // single | on purpose: run both
   const u = nextUnit();
   const doneCount = UNITS.filter(u => unitState(u) === "done").length;
   const wordCount = UNITS.reduce((n,x)=>n+x.vocab.length+x.phrases.length,0) + PACKS.reduce((n,p)=>n+p.w.length,0);
