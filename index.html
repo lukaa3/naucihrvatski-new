@@ -203,6 +203,10 @@ td.cs{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transfo
 .cd-dot{width:7px;height:7px;border-radius:50%;background:var(--olive);box-shadow:0 0 8px var(--olive);animation:cdp 2s ease-in-out infinite}
 @keyframes cdp{50%{opacity:.35}}
 
+.savebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;padding:10px 14px;border-radius:11px;
+  font-size:14px;background:rgba(224,54,47,.12);border:1px solid rgba(224,54,47,.4)}
+.savebar.warn{background:rgba(107,166,255,.1);border-color:rgba(107,166,255,.35)}
+
 /* ---------- learning path ---------- */
 .secthead{display:flex;align-items:center;gap:13px;margin:28px 0 6px;padding:12px 16px;
   background:linear-gradient(90deg, rgba(107,166,255,.13), rgba(107,166,255,.02));
@@ -413,6 +417,7 @@ select.field{font-family:var(--body);font-size:15px}
 
     <button class="gear" onclick="openSettings()"><span class="dot" id="dot"></span><span id="gearlbl">Settings</span></button>
     <div id="cloudbadge" style="font-size:11.5px;color:var(--olive);letter-spacing:.04em"></div>
+    <div id="savestat" style="font-size:11px;letter-spacing:.03em;margin-top:2px"></div>
 
     <nav class="nav" id="nav"></nav>
 
@@ -438,15 +443,15 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "8.8";
+const VERSION = "9.0";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
    Both values are safe to publish: the anon key only ever grants
    what your row-level-security rules allow.
    ============================================================ */
-const SUPABASE_URL = "https://pknwqovojwpopuohljoc.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_-xDtrsRuva6dYG2RAU_2JQ_uv1S__Hr";
+const SUPABASE_URL = "PASTE_YOUR_PROJECT_URL_HERE";
+const SUPABASE_ANON_KEY = "PASTE_YOUR_ANON_KEY_HERE";
 const SB_READY = () => SUPABASE_URL.indexOf("http") === 0 && SUPABASE_ANON_KEY.length > 20;
 const SECTIONS = [
   {id:1, name:"First steps",      hr:"Prvi koraci",    color:"#6BA6FF"},
@@ -2463,34 +2468,25 @@ async function loadKey(){
 }
 const maskKey = k => !k ? "" : k.length<12 ? "•".repeat(k.length) : k.slice(0,6)+"…"+k.slice(-4);
 
-let S = {
-  daily:{}, skills:{}, name:"", xp:0, streak:0, lastDay:null,
-  done:{},                 // unitId -> {read:true, drill:score}
-  cards:{},                // "hr|en" -> {box:1..5, seen:n}
-  level:"A1",
-  scenario:"kafic",
-  showEn:true
-};
-
-async function loadState(){
-  const saved = await Store.get("nh:state");
-  if(saved) S = Object.assign(S, saved);
-  const today = new Date().toISOString().slice(0,10);
-  if(S.lastDay !== today){
-    const y = new Date(Date.now()-864e5).toISOString().slice(0,10);
-    S.streak = (S.lastDay === y) ? (S.streak||0)+1 : 1;
-    S.lastDay = today;
-    await save();
-  }
+function blankState(){
+  return { name:"", xp:0, streak:0, lastDay:null, done:{}, skills:{}, daily:{}, cards:{}, chats:{}, chatId:null,
+           removed:{}, removedChats:{}, level:"A1", scenario:"kafic", showEn:true };
 }
+// Progress lives in your account only. This is just the in-memory copy.
+let S = blankState();
+const fromCloud = o => { const s = Object.assign(blankState(), o || {}); delete s._v; return s; };
+
+async function loadState(){ /* progress comes from your account once you're signed in */ }
+
 let PUSH_T = null;
 async function save(){
   S.updatedAt = Date.now();
-  await Store.set("nh:state", S);
   paintStats();
-  if(CLOUD.user){                       // debounced background push
+  // Signed out: nothing is saved. Signed in: written to your account shortly after a change.
+  if(CLOUD.user && CLOUD.loaded){
+    CLOUD.dirty = true; paintCloud();
     clearTimeout(PUSH_T);
-    PUSH_T = setTimeout(()=>CLOUD.push(true), 4000);
+    PUSH_T = setTimeout(() => CLOUD.write(), 1500);
   }
 }
 function addXP(n){ S.xp = (S.xp||0) + n; save(); }
@@ -3010,8 +3006,15 @@ function go(v, arg){
   ({home:vHome, lekcije:vSkills, skill:vSkill, unit:vUnit, razgovor:vTalk, provjera:vQuiz,
     citanje:vRead, rjecnik:vPacks, kartice:vCards, gramatika:vGrammar, napredak:vSave}[v] || vHome)(arg);
 }
+function saveBanner(){
+  if(!CLOUD.ready || !SB_READY()) return "";
+  if(!CLOUD.user) return `<div class="savebar">You're not signed in, so <b>nothing you do is saved.</b>
+      <button class="btn sm" onclick="openAuth('in')">Sign in</button></div>`;
+  if(!CLOUD.loaded) return `<div class="savebar warn"><span class="spin"></span> ${CLOUD.loadErr ? "Can't reach your account — retrying…" : "Loading your progress…"}</div>`;
+  return "";
+}
 function shell(eyebrow, title, lede, body){
-  $("#main").innerHTML = `<div class="view"><div class="eyebrow">${eyebrow}</div>
+  $("#main").innerHTML = `<div class="view">${saveBanner()}<div class="eyebrow">${eyebrow}</div>
     <h1 class="page-h">${title}</h1>${lede?`<p class="lede">${lede}</p>`:""}${body}</div>`;
 }
 
@@ -4494,7 +4497,8 @@ const CLOUD = {
       this.email = this.user ? this.user.email : "";
       paintCloud();
       if(event === "PASSWORD_RECOVERY"){ openAuth("reset"); return; }
-      if(this.user && event === "SIGNED_IN") this.sync();
+      if(this.user && this.loadedFor !== this.user.id) this.load();   // just signed in
+      if(!this.user && event === "SIGNED_OUT") this.reset();
       if(CUR === "napredak") vSave();
     });
 
@@ -4502,7 +4506,7 @@ const CLOUD = {
     if(data && data.session){ this.user = data.session.user; this.email = this.user.email; }
     this.ready = true;
     paintCloud();
-    if(this.user) this.sync();
+    if(this.user) this.load(); else go(CUR);
   },
 
   async signIn(email, password){
@@ -4534,57 +4538,132 @@ const CLOUD = {
   async acceptInvite(password){ return this.resetPassword(password); },
 
   async signOut(){
+    if(this.dirty){ clearTimeout(PUSH_T); await this.write(); }      // don't lose the last change
     try{ if(SB) await SB.auth.signOut(); }catch(e){}
-    this.user = null; this.email = ""; paintCloud();
-    if(CUR === "napredak") vSave();
+    this.reset();
+  },
+  reset(){
+    this.user = null; this.email = ""; this.loaded = false; this.loadedFor = null;
+    this.version = null; this.dirty = false;
+    S = blankState(); paintStats(); paintCloud(); go(CUR === "napredak" ? "napredak" : "home");
   },
 
-  /* ---- progress sync ---- */
-  // Read the account, combine it with this device, write the result back.
-  // Used for sign-in, for the auto-save, and for the manual buttons.
-  async mergeAndSave(quiet){
+  /* ---- your account is the one copy of your progress ---- */
+  loaded:false, loadedFor:null, version:null, dirty:false, saving:false, again:false,
+  failCount:0, loadErr:"", backupErr:"",
+
+  async load(){
     if(!this.user || !SB) return;
-    if(this.busy){ this.again = true; return; }
-    this.busy = true; this.lastErr = "";
+    const uid = this.user.id;
+    this.loaded = false; this.loadErr = ""; paintCloud();
     try{
-      const { data, error } = await SB.from("progress")
-        .select("state, updated_at").eq("user_id", this.user.id).maybeSingle();
+      const { data, error } = await SB.from("progress").select("state, updated_at").eq("user_id", uid).maybeSingle();
       if(error) throw new Error(error.message);
-      if(data && data.state){
-        const merged = mergeState(S, data.state);
-        const grew = JSON.stringify(Object.assign({}, merged, {updatedAt:0})) !==
-                     JSON.stringify(Object.assign({}, S, {updatedAt:0}));
-        S = merged;
-        await Store.set("nh:state", S);
-        if(grew){
-          paintStats(); paintCloud();
-          // refresh what's on screen, but never mid-conversation or mid-quiz
-          if(["home","kartice","napredak","gramatika","lekcije","rjecnik"].includes(CUR)) go(CUR);
-        }
+      if(!this.user || this.user.id !== uid) return;               // signed out while loading
+      if(data){
+        S = fromCloud(data.state); this.version = data.updated_at;
+      }else{
+        S = blankState(); S.updatedAt = Date.now();                  // brand-new account
+        const now = Date.now();
+        const { error: e2 } = await SB.from("progress").insert({ user_id: uid, state: S, updated_at: now });
+        if(e2) throw new Error(e2.message);
+        this.version = now;
       }
-      const now = Date.now();
-      const { error: e2 } = await SB.from("progress").upsert({ user_id: this.user.id, state: S, updated_at: now });
-      if(e2) throw new Error(e2.message);
-      this.lastSync = now;
-    }catch(e){ this.lastErr = String(e.message || e); }
-    this.busy = false; paintCloud();
-    if(!quiet && CUR === "napredak") vSave();
-    if(this.again){ this.again = false; setTimeout(() => this.mergeAndSave(true), 500); }
-  },
-  async sync(){ return this.mergeAndSave(true); },
-  async push(quiet){ return this.mergeAndSave(quiet); },
-  async pull(){
-    if(!SB){ this.lastErr = "NOLIB"; if(CUR === "napredak") vSave(); return; }
-    return this.mergeAndSave(false);
+      this.loaded = true; this.loadedFor = uid; this.dirty = false; this.failCount = 0;
+      this.lastSync = Date.now();
+      paintStats(); paintCloud(); go(CUR);
+      this.snapshot("daily");
+    }catch(e){
+      this.loadErr = String(e.message || e); paintCloud();
+      if(CUR === "napredak") vSave();
+      setTimeout(() => { if(this.user && !this.loaded) this.load(); }, 5000);   // retry
+    }
   },
 
-  // Only for "erase all progress": the one time the account should be replaced.
-  async overwrite(){
+  async write(){
+    if(!this.user || !SB || !this.loaded || !this.dirty) return;
+    if(this.saving){ this.again = true; return; }
+    this.saving = true; this.dirty = false; paintCloud();
+    const uid = this.user.id, now = Date.now();
+    try{
+      // Only write if nobody else saved since we last loaded — otherwise you'd
+      // overwrite what you did on your phone with an older copy from your laptop.
+      const { data, error } = await SB.from("progress").update({ state: S, updated_at: now })
+        .eq("user_id", uid).eq("updated_at", this.version).select("updated_at");
+      if(error) throw new Error(error.message);
+      if(!data || !data.length){
+        // another of your devices saved first: fold both together, then save again
+        const { data: row, error: e2 } = await SB.from("progress").select("state, updated_at").eq("user_id", uid).maybeSingle();
+        if(e2) throw new Error(e2.message);
+        if(row){ S = mergeState(S, row.state); this.version = row.updated_at; }
+        this.dirty = true; this.again = true;
+        if(["home","kartice","napredak","gramatika","lekcije","rjecnik"].includes(CUR)) go(CUR);
+      }else{
+        this.version = data[0].updated_at; this.lastSync = now; this.failCount = 0; this.loadErr = "";
+      }
+    }catch(e){
+      this.dirty = true; this.failCount++;
+      this.loadErr = String(e.message || e);
+      const wait = [2000, 5000, 15000, 30000][Math.min(this.failCount - 1, 3)];
+      clearTimeout(PUSH_T); PUSH_T = setTimeout(() => this.write(), wait);
+    }
+    this.saving = false; paintCloud();
+    if(this.again){ this.again = false; setTimeout(() => this.write(), 300); }
+  },
+
+  // Coming back to a tab after using another device: pick up what changed there.
+  async refresh(){
+    if(!this.user || !SB || !this.loaded || this.dirty || this.saving) return;
+    const uid = this.user.id;
+    const { data, error } = await SB.from("progress").select("state, updated_at").eq("user_id", uid).maybeSingle();
+    if(error || !data || data.updated_at === this.version) return;
+    if(this.dirty || this.saving) return;
+    S = fromCloud(data.state); this.version = data.updated_at;
+    paintStats(); paintCloud();
+    if(["home","kartice","napredak","gramatika","lekcije","rjecnik"].includes(CUR)) go(CUR);
+    this.snapshot("daily");
+  },
+
+  /* ---- backups: one per day automatically, plus one before any restore or erase.
+     The newest 14 are kept. ---- */
+  async snapshot(reason){
     if(!this.user || !SB) return;
+    const uid = this.user.id;
+    const empty = !(S.xp || Object.keys(S.cards || {}).length || Object.keys(S.done || {}).length);
+    if(empty && reason === "daily") return;                          // nothing worth backing up yet
+    try{
+      if(reason === "daily"){
+        const { data, error } = await SB.from("progress_history").select("created_at")
+          .eq("user_id", uid).order("created_at", { ascending:false }).limit(1);
+        if(error) throw new Error(error.message);
+        if(data && data.length && learningDayKey(Date.parse(data[0].created_at)) === todayKey()) return;
+      }
+      const { error: e1 } = await SB.from("progress_history").insert({ user_id: uid, state: S });
+      if(e1) throw new Error(e1.message);
+      const { data: all, error: e2 } = await SB.from("progress_history").select("id")
+        .eq("user_id", uid).order("created_at", { ascending:false });
+      if(e2) throw new Error(e2.message);
+      const extra = (all || []).slice(14).map(r => r.id);
+      if(extra.length) await SB.from("progress_history").delete().in("id", extra);
+      this.backupErr = "";
+    }catch(e){ this.backupErr = String(e.message || e); }
+  },
+  async listBackups(){
+    const { data, error } = await SB.from("progress_history").select("id, created_at, state")
+      .eq("user_id", this.user.id).order("created_at", { ascending:false }).limit(14);
+    if(error) throw new Error(error.message);
+    return data || [];
+  },
+  // Replace your account with a given state — used by restore, backup file, and erase.
+  async replaceWith(state, reason){
+    if(!this.user || !SB || !this.loaded) throw new Error("Sign in first.");
+    await this.snapshot(reason);                                      // so this can be undone too
+    S = fromCloud(state); S.updatedAt = Date.now();
     const now = Date.now();
     const { error } = await SB.from("progress").upsert({ user_id: this.user.id, state: S, updated_at: now });
-    if(error) this.lastErr = String(error.message);
-    else this.lastSync = now;
+    if(error) throw new Error(error.message);
+    this.version = now; this.dirty = false; this.lastSync = now;
+    paintStats(); paintCloud();
   }
 };
 
@@ -4604,6 +4683,16 @@ function cloudErrText(m){
 }
 
 function paintCloud(){
+  const st = $("#savestat");
+  if(st){
+    const [txt, col] = !CLOUD.ready ? ["", ""]
+      : !CLOUD.user ? ["● Not signed in — not saving", "var(--madder)"]
+      : !CLOUD.loaded ? (CLOUD.loadErr ? ["⚠ Can't reach your account — retrying", "var(--madder)"] : ["● Loading your progress…", "var(--brass)"])
+      : CLOUD.failCount ? ["⚠ Not saved — retrying", "var(--madder)"]
+      : (CLOUD.dirty || CLOUD.saving) ? ["● Saving…", "var(--brass)"]
+      : ["● Saved", "var(--olive)"];
+    st.textContent = txt; st.style.color = col;
+  }
   const el = $("#cloudbadge"); if(!el) return;
   if(!CLOUD.user){ el.textContent = ""; return; }
   const who = (S.name || "").trim() || (CLOUD.email || "").split("@")[0];
@@ -4746,82 +4835,58 @@ function uploadSave(input){
     try{
       const obj = JSON.parse(r.result);
       if(typeof obj !== "object" || obj === null) throw new Error("shape");
-      applyState(obj);
-      await save();
+      if(!(CLOUD.user && CLOUD.loaded)) throw new Error("SIGNIN");
+      await CLOUD.replaceWith(obj, "before-file");
       m.innerHTML = `<div class="verdict ok"><b style="color:var(--olive)">Loaded.</b> ${S.xp||0} points · ${Object.keys(S.cards||{}).length} cards · ${Object.keys(S.chats||{}).length} conversations.</div>`;
       setTimeout(()=>go("napredak"), 1100);
-    }catch(e){ m.innerHTML = `<div class="err">That file isn't a Nauči hrvatski backup.</div>`; }
+    }catch(e){ m.innerHTML = `<div class="err">${e.message === "SIGNIN" ? "Sign in first — a backup file is loaded into your account." : "That file isn't a Nauči hrvatski backup."}</div>`; }
   };
   r.readAsText(f);
 }
 
-function applyState(obj){
-  const base = {name:"", xp:0, streak:0, lastDay:null, done:{}, skills:{}, daily:{}, removed:{}, removedChats:{}, cards:{}, chats:{}, chatId:null,
-                level:"A1", scenario:"kafic", showEn:true};
-  const keepChats = obj.chats ? obj.chats : S.chats;      // a progress-only code shouldn't wipe your conversations
-  const keepId    = obj.chats ? obj.chatId : S.chatId;
-  S = Object.assign(base, obj, {chats: keepChats || {}, chatId: keepId || null});
-  delete S._v;
-}
+function applyState(obj){ S = fromCloud(obj); }
 
 function vSave(){
-  const p = Store.persistent;
-  const units = UNITS.filter(u=>S.done[u.id] && S.done[u.id].read).length;
-  const drilled = UNITS.filter(u=>S.done[u.id] && S.done[u.id].drill!=null).length;
-  shell("napredak · your save", "Gdje ti je <i>napredak</i>",
-    "There's no account and no server here — this is one file. Instead your progress lives in the app, and a save code lets you carry it anywhere: another browser, another laptop, or a downloaded copy of the file.",
-    `<div class="card">
-      <div class="kicker">account</div>
-      ${CLOUD.user ? `
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span style="font-family:var(--display);font-size:22px;font-weight:700;color:var(--olive)">${
-            (S.name||"").trim() ? "Bok, " + esc(S.name.trim()) + "!" : "Signed in"}</span>
-          <span class="pill">${esc(CLOUD.email)}</span>
-        </div>
-        <p style="font-size:14.5px;color:var(--stone-dim);margin-top:8px">Progress and conversations save to your account automatically. Sign in on any other device with the same email and everything follows you — no codes.</p>
-        <div style="font-size:12.5px;color:var(--stone-dim)">${CLOUD.lastSync ? "Last saved: " + new Date(CLOUD.lastSync).toLocaleString() : "Not synced yet."}</div>
-        ${CLOUD.lastErr ? `<div class="err" style="margin-top:10px">${esc(cloudErrText(CLOUD.lastErr))}</div>` : ""}
-        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn sm" onclick="CLOUD.push()">Save now</button>
-          <button class="btn ghost sm" onclick="CLOUD.pull()">Load from account</button>
-          <button class="btn ghost sm" onclick="CLOUD.signOut()">Sign out</button>
-        </div>`
-      : `
-        <div style="font-family:var(--display);font-size:22px;font-weight:700">Sign in — no more save codes</div>
-        ${!CLOUD.ready ? `<div style="font-size:13px;color:var(--stone-dim);margin-top:6px"><span class="spin"></span> Loading sign-in…</div>`
-          : (CLOUD.lastErr === "NOCONFIG" || CLOUD.lastErr === "NOLIB")
-            ? `<div class="err" style="margin-top:10px">${esc(cloudErrText(CLOUD.lastErr))}</div>` : ""}
-        
-        <p style="font-size:14.5px;color:var(--stone-dim);margin-top:6px">Make an account with an email and password and your progress follows you to every device automatically. Passwords are handled by Netlify — this app never sees them.</p>
-        ${CLOUD.lastErr ? `<div class="err" style="margin-top:10px">${esc(cloudErrText(CLOUD.lastErr))}</div>` : ""}
-        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn" onclick="openAuth('up')">Create account</button>
-          <button class="btn ghost" onclick="openAuth('in')">Sign in</button>
-        </div>
-        <p style="font-size:12.5px;color:var(--stone-dim);margin-top:12px;margin-bottom:0">Don't want an account? The save code below still works exactly as before.</p>`}
-    </div>
+  const signedIn = CLOUD.user && CLOUD.loaded;
+  const unitsDone = UNITS.filter(u => unitState(u) === "done").length;
+  const stat = (n, l) => `<div><div style="font-family:var(--mono);font-size:26px;color:var(--brass)">${n}</div><div style="font-size:12px;color:var(--stone-dim)">${l}</div></div>`;
 
-    <div class="card" style="margin-top:14px">
-      <div class="kicker">device storage</div>
-      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-        <span style="font-family:var(--display);font-size:24px;font-weight:700;color:${p?'var(--olive)':'var(--madder)'}">${p?'Saving automatically':'Not saving'}</span>
-        <span class="pill">${Store.mode === "local" ? "localStorage · ovaj preglednik" : Store.mode === "claude" ? "Claude · ova aplikacija" : "samo u memoriji"}</span>
+  const account = CLOUD.user ? `
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-family:var(--display);font-size:22px;font-weight:700;color:var(--olive)">${
+          (S.name || "").trim() ? "Bok, " + esc(S.name.trim()) + "!" : "Signed in"}</span>
+        <span class="pill">${esc(CLOUD.email)}</span>
       </div>
-      <p style="font-size:14.5px;color:var(--stone-dim);margin-top:8px;margin-bottom:0">${
-        Store.mode === "local"
-        ? "Everything saves as you go — XP, streak, finished units, flashcard boxes — in this browser on this device. Clearing your browser data wipes it, and a different browser or phone starts fresh. That's what the save code below is for."
-        : Store.mode === "claude"
-        ? "Everything saves as you go, tied to this app inside Claude. Close the tab and come back and it'll be here."
-        : "Nothing persists in this environment. Copy your save code before you close the tab, or your progress goes with it."}</p>
-      <hr class="rule">
+      <p style="font-size:14.5px;color:var(--stone-dim);margin:8px 0 6px">Everything saves to your account as you go. Sign in on any device and it's the same progress.</p>
+      <div style="font-size:13px">${
+        !CLOUD.loaded ? (CLOUD.loadErr ? `<span style="color:var(--madder)">Can't reach your account — retrying…</span>` : `<span class="spin"></span> Loading your progress…`)
+        : CLOUD.failCount ? `<span style="color:var(--madder)">Your latest change hasn't saved yet — retrying.</span>`
+        : (CLOUD.dirty || CLOUD.saving) ? `<span style="color:var(--brass)">Saving…</span>`
+        : `<span style="color:var(--olive)">All saved</span>${CLOUD.lastSync ? ` <span style="color:var(--stone-dim)">· ${new Date(CLOUD.lastSync).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})}</span>` : ""}`}</div>
+      ${CLOUD.loadErr && CLOUD.loaded ? `<div class="err" style="margin-top:10px">${esc(cloudErrText(CLOUD.loadErr))}</div>` : ""}
+      <div style="margin-top:14px"><button class="btn ghost sm" onclick="CLOUD.signOut()">${dual("Sign out","Odjava")}</button></div>`
+    : `
+      <div style="font-family:var(--display);font-size:22px;font-weight:700">Sign in to save your progress</div>
+      <p style="font-size:14.5px;color:var(--stone-dim);margin-top:6px">Your progress is saved to your account, so it's the same on every device. <b style="color:var(--stone)">While you're signed out, nothing is saved</b> — you can try lessons, but it's gone when you close the page.</p>
+      ${CLOUD.lastErr === "NOCONFIG" || CLOUD.lastErr === "NOLIB" ? `<div class="err" style="margin-top:10px">${esc(cloudErrText(CLOUD.lastErr))}</div>` : ""}
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="openAuth('up')">${dual("Create account","Otvori račun")}</button>
+        <button class="btn ghost" onclick="openAuth('in')">${dual("Sign in","Prijava")}</button>
+      </div>`;
+
+  shell("your account · račun", "Your <i>progress</i>", "",
+    `<div class="card"><div class="kicker">account</div>${account}</div>
+
+    ${signedIn ? `
+    <div class="card" style="margin-top:14px">
       <div class="kicker">summary</div>
       <div class="grid g3">
-        <div><div style="font-family:var(--mono);font-size:26px;color:var(--brass)">${S.xp||0}</div><div style="font-size:12px;color:var(--stone-dim)">bodova</div></div>
-        <div><div style="font-family:var(--mono);font-size:26px;color:var(--brass)">${units}/${UNITS.length}</div><div style="font-size:12px;color:var(--stone-dim)">lekcija pročitano</div></div>
-        <div><div style="font-family:var(--mono);font-size:26px;color:var(--brass)">${drilled}/${UNITS.length}</div><div style="font-size:12px;color:var(--stone-dim)">vježbi riješeno</div></div>
-        <div><div style="font-family:var(--mono);font-size:26px;color:var(--brass)">${Object.keys(S.cards||{}).length}</div><div style="font-size:12px;color:var(--stone-dim)">kartica</div></div>
-        <div><div style="font-family:var(--mono);font-size:26px;color:var(--brass)">${S.streak||0}</div><div style="font-size:12px;color:var(--stone-dim)">dana zaredom</div></div>
-        <div><div style="font-family:var(--mono);font-size:26px;color:var(--brass)">${Object.keys(S.chats||{}).length}</div><div style="font-size:12px;color:var(--stone-dim)">razgovora</div></div>
+        ${stat(S.xp || 0, "points")}
+        ${stat(unitsDone + "/" + UNITS.length, "grammar units")}
+        ${stat(SKILLS.filter(skillDone).length + "/" + SKILLS.length, "speaking lessons")}
+        ${stat(Object.keys(S.cards || {}).length, "flashcards")}
+        ${stat(dailyStreak(), "day streak")}
+        ${stat(Object.keys(S.chats || {}).length, "conversations")}
       </div>
       <div style="margin-top:14px"><span class="pill">Nauči hrvatski v${VERSION}</span></div>
     </div>
@@ -4829,14 +4894,20 @@ function vSave(){
     <div class="card" style="margin-top:14px">
       <div class="kicker">your name</div>
       <div style="display:flex;gap:9px;flex-wrap:wrap">
-        <input class="answer" id="nm" style="flex:1;min-width:180px;font-size:17px" value="${esc(S.name||"")}" placeholder="npr. Yur" maxlength="24">
-        <button class="btn ghost" onclick="S.name=$('#nm').value.trim();save();paintCloud();vSave()">Save name</button>
+        <input class="answer" id="nm" style="flex:1;min-width:180px;font-size:17px" value="${esc(S.name || "")}" placeholder="e.g. Yur" maxlength="24">
+        <button class="btn ghost" onclick="S.name=$('#nm').value.trim();save();paintCloud();vSave()">${dual("Save name","Spremi")}</button>
       </div>
     </div>
 
     <div class="card" style="margin-top:14px">
+      <div class="kicker">backups · sigurnosne kopije</div>
+      <p style="font-size:14px;color:var(--stone-dim);margin:0 0 12px">A backup is made automatically every day, and the newest 14 are kept. Restoring backs up what you have now first, so a restore can always be undone too.</p>
+      <div id="bk-list"><span class="spin"></span> <span style="font-size:13px;color:var(--stone-dim)">Loading backups…</span></div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
       <div class="kicker">backup file</div>
-      <p style="font-size:14.5px;color:var(--stone-dim)">Your account already syncs everything. This is just an extra copy you can keep on your own computer.</p>
+      <p style="font-size:14px;color:var(--stone-dim)">An extra copy you can keep on your own computer. Loading one replaces your account's progress — what you have now is backed up first.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn ghost" onclick="downloadSave()">${dual("Download backup","Preuzmi")}</button>
         <label class="btn ghost" style="cursor:pointer">${dual("Load backup file","Učitaj")}<input type="file" accept=".json,application/json" style="display:none" onchange="uploadSave(this)"></label>
@@ -4846,22 +4917,75 @@ function vSave(){
 
     <div class="card" style="margin-top:14px">
       <div class="kicker">start over</div>
-      <p style="font-size:14.5px;color:var(--stone-dim)">Wipes XP, streak, finished units and every flashcard. Grab your save code first if you might want it back.</p>
-      <button class="btn ghost" id="wipe" onclick="wipe()">Erase all progress</button>
-    </div>`);
+      <p style="font-size:14px;color:var(--stone-dim)">Erases everything in your account. It's backed up first, so you could still restore it from the list above.</p>
+      <button class="btn ghost" id="wipe" onclick="wipe()">${dual("Erase all progress","Obriši sve")}</button>
+    </div>` : ""}`);
+  if(signedIn) loadBackupsUI();
 }
 
-
+function toast(msg){
+  const el = document.createElement("div");
+  el.className = "invite";
+  el.innerHTML = `<p>${msg}</p><button class="btn sm" onclick="this.parentNode.remove()">OK</button>`;
+  document.body.appendChild(el);
+  setTimeout(() => { if(el.parentNode) el.remove(); }, 5000);
+}
+function backupErrText(m){
+  return /progress_history|does not exist|schema cache/i.test(String(m))
+    ? "Backups aren't set up yet. In Supabase, open SQL Editor → New query, paste supabase-setup.sql and press Run."
+    : String(m);
+}
+async function loadBackupsUI(){
+  const box = $("#bk-list"); if(!box) return;
+  try{
+    const rows = await CLOUD.listBackups();
+    if(!$("#bk-list")) return;
+    if(!rows.length){
+      box.innerHTML = `<p style="font-size:13.5px;color:var(--stone-dim);margin:0">No backups yet. The first one is made automatically once you've made some progress.</p>`;
+      return;
+    }
+    box.innerHTML = `<div class="wordlist">${rows.map(r => {
+      const s = r.state || {};
+      const cards = Object.keys(s.cards || {}).length;
+      const units = Object.values(s.done || {}).filter(d => d && d.read && d.drill != null && d.drill >= 60).length;
+      const when = new Date(r.created_at).toLocaleString([], { weekday:"short", month:"short", day:"numeric", hour:"numeric", minute:"2-digit" });
+      return `<div class="word">
+        <span class="hr" style="min-width:0;flex:1;font-size:15px">${esc(when)}</span>
+        <span class="en" style="flex:none;font-size:12.5px">${cards} cards · ${units} units · ${s.xp || 0} pts</span>
+        <button class="btn ghost sm" id="rs-${r.id}" onclick="restoreBackup(${r.id})">Restore</button></div>`;
+    }).join("")}</div>`;
+  }catch(e){ if($("#bk-list")) box.innerHTML = `<div class="err">${esc(backupErrText(e.message))}</div>`; }
+}
+let RESTOREARM = null;
+async function restoreBackup(id){
+  const b = $("#rs-" + id);
+  if(RESTOREARM !== id){
+    RESTOREARM = id;
+    if(b){ b.textContent = "Sure? Tap again"; b.style.color = "var(--madder)"; }
+    setTimeout(() => { if(RESTOREARM === id){ RESTOREARM = null; const x = $("#rs-" + id); if(x){ x.textContent = "Restore"; x.style.color = ""; } } }, 4000);
+    return;
+  }
+  RESTOREARM = null;
+  if(b){ b.disabled = true; b.textContent = "Restoring…"; }
+  try{
+    const { data, error } = await SB.from("progress_history").select("state").eq("id", id).maybeSingle();
+    if(error || !data) throw new Error(error ? error.message : "That backup wasn't found.");
+    await CLOUD.replaceWith(data.state, "before-restore");
+    go("napredak");
+    toast("<b>Restored.</b> What you had before was backed up first, so you can undo this from the same list.");
+  }catch(e){ toast("<b>Couldn't restore.</b> " + esc(backupErrText(e.message))); go("napredak"); }
+}
 
 let WIPEARM = false;
 async function wipe(){
   const b = $("#wipe");
   if(!WIPEARM){ WIPEARM = true; b.textContent = "Are you sure? Click again."; b.style.borderColor = "var(--madder)"; b.style.color = "var(--madder)";
-    setTimeout(()=>{ WIPEARM = false; if($("#wipe")){ $("#wipe").textContent = "Obriši sav napredak"; $("#wipe").style.borderColor=""; $("#wipe").style.color=""; } }, 4000);
+    setTimeout(()=>{ WIPEARM = false; if($("#wipe")){ $("#wipe").innerHTML = dual("Erase all progress","Obriši sve"); $("#wipe").style.borderColor=""; $("#wipe").style.color=""; } }, 4000);
     return; }
   WIPEARM = false;
-  S = {name:"", xp:0, streak:0, lastDay:new Date().toISOString().slice(0,10), done:{}, cards:{}, level:"A1", scenario:"kafic", showEn:true};
-  await save(); await CLOUD.overwrite(); go("napredak");
+  try{ await CLOUD.replaceWith(blankState(), "before-erase"); toast("<b>Erased.</b> A backup was saved first, in case you change your mind."); }
+  catch(e){ toast("<b>Couldn't erase.</b> " + esc(String(e.message || e))); }
+  go("napredak");
 }
 
 /* ============================================================
@@ -4951,7 +5075,7 @@ function openSettings(){
         <button class="btn ghost" onclick="saveKey()">Save key</button>
         ${GKEY ? `<button class="btn ghost" onclick="clearKey()">Remove key</button>` : ""}
       </div>
-      <p style="font-size:12.5px;color:var(--stone-dim);margin-top:12px;margin-bottom:0">A personal key is stored in this browser only and is deliberately excluded from your save codes and backups. If a key of yours has ever been pasted somewhere public, delete it in AI Studio and make a new one.</p>
+      <p style="font-size:12.5px;color:var(--stone-dim);margin-top:12px;margin-bottom:0">A personal key is stored in this browser only and is never saved to your account — it stays on this device. If a key of yours has ever been pasted somewhere public, delete it in AI Studio and make a new one.</p>
     </details>
 
     <div style="margin-top:18px"><button class="btn ghost" onclick="closeSettings()">Close</button></div>
@@ -5011,6 +5135,12 @@ async function testKey(){
 /* ============================================================
    INIT
    ============================================================ */
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState === "hidden"){ if(CLOUD.dirty){ clearTimeout(PUSH_T); CLOUD.write(); } }
+  else CLOUD.refresh();
+});
+window.addEventListener("pagehide", () => { if(CLOUD.dirty) CLOUD.write(); });
+
 (async function(){
   await loadKey();
   if(!GKEY) probe();          // non-blocking; paints the indicator when it lands
