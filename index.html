@@ -438,15 +438,15 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "8.7";
+const VERSION = "8.8";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
    Both values are safe to publish: the anon key only ever grants
    what your row-level-security rules allow.
    ============================================================ */
-const SUPABASE_URL = "https://pknwqovojwpopuohljoc.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_-xDtrsRuva6dYG2RAU_2JQ_uv1S__Hr";
+const SUPABASE_URL = "PASTE_YOUR_PROJECT_URL_HERE";
+const SUPABASE_ANON_KEY = "PASTE_YOUR_ANON_KEY_HERE";
 const SB_READY = () => SUPABASE_URL.indexOf("http") === 0 && SUPABASE_ANON_KEY.length > 20;
 const SECTIONS = [
   {id:1, name:"First steps",      hr:"Prvi koraci",    color:"#6BA6FF"},
@@ -2663,8 +2663,8 @@ document.addEventListener("click", e=>{
   const b = e.target.closest("[data-card]"); if(!b) return;
   const k = b.getAttribute("data-card");
   S.cards = S.cards||{};
-  if(S.cards[k]){ delete S.cards[k]; b.setAttribute("aria-pressed","false"); b.textContent="☆"; }
-  else { S.cards[k] = {box:1, seen:0}; b.setAttribute("aria-pressed","true"); b.textContent="★"; }
+  if(S.cards[k]){ dropCard(k); b.setAttribute("aria-pressed","false"); b.textContent="☆"; }
+  else { putCard(k); b.setAttribute("aria-pressed","true"); b.textContent="★"; }
   save();
 });
 
@@ -3172,7 +3172,7 @@ function toggleDailyCard(kind){
   const hr = kind === "word" ? w[0] : v.i, en = kind === "word" ? w[1] : v.en;
   S.cards = S.cards || {};
   const k = cardKey(hr, en);
-  if(S.cards[k]) delete S.cards[k]; else S.cards[k] = { box:1, seen:0 };
+  if(S.cards[k]) dropCard(k); else putCard(k);
   save(); vHome();
 }
 function cardToggleHTML(kind){
@@ -3235,7 +3235,7 @@ function unlockDaily(kind){
   else { r.verbI = v.i; r.verbEn = v.en; }
   const hr = kind === "word" ? w[0] : v.i, en = kind === "word" ? w[1] : v.en;
   S.cards = S.cards || {};
-  if(!S.cards[cardKey(hr, en)]) S.cards[cardKey(hr, en)] = { box:1, seen:0 };
+  if(!S.cards[cardKey(hr, en)]) putCard(cardKey(hr, en));
   addXP(10);
   save();
   vHome();                                                  // wireDaily() starts the AI check
@@ -3769,7 +3769,7 @@ function delChat(id, ev){
   ev.stopPropagation();
   if(DELARM !== id){ DELARM = id; vTalk(); setTimeout(()=>{ if(DELARM===id){ DELARM=null; if(CUR==="razgovor") vTalk(); } }, 3500); return; }
   DELARM = null;
-  delete S.chats[id];
+  delete S.chats[id]; S.removedChats = S.removedChats || {}; S.removedChats[id] = Date.now();
   if(S.chatId === id){ S.chatId = Object.keys(S.chats)[0] || null; if(!S.chatId) newChat(); }
   save(); vTalk();
 }
@@ -4166,7 +4166,7 @@ function vPacks(){
 function addPack(k){
   const p = PACKS.find(x => x.k === k); if(!p) return;
   S.cards = S.cards || {};
-  p.w.forEach(w => { S.cards[cardKey(w[0], w[1])] = S.cards[cardKey(w[0], w[1])] || {box:1, seen:0}; });
+  p.w.forEach(w => { if(!S.cards[cardKey(w[0], w[1])]) putCard(cardKey(w[0], w[1])); });
   save(); vPacks();
 }
 function packQuiz(k){
@@ -4206,7 +4206,7 @@ function addCustomCard(){
   S.cards = S.cards || {};
   const k = cardKey(hr, en);
   if(S.cards[k]){ msg.innerHTML = `<span style="color:var(--brass)">“${esc(hr)}” is already in your cards.</span>`; return; }
-  S.cards[k] = { box:1, seen:0, custom:true, added:Date.now() };
+  putCard(k, { custom:true, added:Date.now() });
   save();
   vCards();
   const m2 = $("#nc-msg");
@@ -4262,7 +4262,7 @@ function vCards(){
 }
 function seedCards(){
   S.cards = S.cards||{};
-  UNITS.slice(0,4).forEach(u=>u.vocab.slice(0,10).forEach(v=>{ S.cards[cardKey(v[0],v[1])] = {box:1,seen:0}; }));
+  UNITS.slice(0,4).forEach(u=>u.vocab.slice(0,10).forEach(v=>{ if(!S.cards[cardKey(v[0],v[1])]) putCard(cardKey(v[0],v[1])); }));
   save(); vCards();
 }
 function startCards(dir){
@@ -4385,6 +4385,80 @@ function vGrammarBody(path){
     </div>`);
 }
 
+/* ---- Adding/removing flashcards. A removal leaves a dated marker so the
+   merge knows you unstarred it, instead of copying it back from another device. ---- */
+function putCard(k, extra){
+  S.cards = S.cards || {};
+  S.cards[k] = Object.assign({ box:1, seen:0, t:Date.now() }, extra || {});
+  if(S.removed) delete S.removed[k];
+}
+function dropCard(k){
+  if(S.cards) delete S.cards[k];
+  S.removed = S.removed || {}; S.removed[k] = Date.now();
+}
+
+/* ---- Combining two copies of progress. Nothing is ever thrown away just for
+   being older: every card, finished unit, streak day and chat from both is
+   kept, and the better result wins wherever they overlap. ---- */
+function mergeState(a, b){
+  a = a || {}; b = b || {};
+  const keys = f => [...new Set([...Object.keys(a[f] || {}), ...Object.keys(b[f] || {})])];
+  const out = Object.assign({}, b, a);                       // settings: this device wins
+
+  out.xp = Math.max(a.xp || 0, b.xp || 0);
+  out.streak = Math.max(a.streak || 0, b.streak || 0);
+  out.name = (a.name || "").trim() || (b.name || "").trim() || "";
+
+  out.done = {};
+  keys("done").forEach(k => {
+    const x = (a.done || {})[k] || {}, y = (b.done || {})[k] || {};
+    const d = [x.drill, y.drill].filter(v => v != null);
+    out.done[k] = Object.assign({ read: !!(x.read || y.read) }, d.length ? { drill: Math.max(...d) } : {});
+  });
+
+  out.skills = {};
+  keys("skills").forEach(k => out.skills[k] = Math.max((a.skills || {})[k] || 0, (b.skills || {})[k] || 0));
+
+  out.removed = {};
+  keys("removed").forEach(k => out.removed[k] = Math.max((a.removed || {})[k] || 0, (b.removed || {})[k] || 0));
+  out.cards = {};
+  keys("cards").forEach(k => {
+    const x = (a.cards || {})[k], y = (b.cards || {})[k];
+    const c = (x && y) ? Object.assign({}, y, x, { box: Math.max(x.box || 1, y.box || 1),
+                                                   seen: Math.max(x.seen || 0, y.seen || 0),
+                                                   t: Math.max(x.t || 0, y.t || 0) })
+                       : Object.assign({}, x || y);
+    if(out.removed[k] && (c.t || 0) <= out.removed[k]) return;   // unstarred after it was added
+    out.cards[k] = c;
+    delete out.removed[k];
+  });
+
+  out.daily = {};
+  keys("daily").forEach(k => {
+    const x = (a.daily || {})[k] || {}, y = (b.daily || {})[k] || {};
+    const m = Object.assign({}, y, x);
+    m.word = !!(x.word || y.word); m.verb = !!(x.verb || y.verb);
+    // a finished day keeps the word that was actually done
+    if(y.word && !x.word){ ["wordHr","wordEn","wordS","wordF"].forEach(f => { if(y[f] !== undefined) m[f] = y[f]; }); }
+    if(y.verb && !x.verb){ ["verbI","verbEn","verbS","verbF"].forEach(f => { if(y[f] !== undefined) m[f] = y[f]; }); }
+    ["wordNote","verbNote","wordF","verbF"].forEach(f => { if(!m[f] && (x[f] || y[f])) m[f] = x[f] || y[f]; });
+    out.daily[k] = m;
+  });
+
+  out.removedChats = {};
+  keys("removedChats").forEach(k => out.removedChats[k] = Math.max((a.removedChats || {})[k] || 0, (b.removedChats || {})[k] || 0));
+  out.chats = {};
+  keys("chats").forEach(k => {
+    if(out.removedChats[k]) return;
+    const x = (a.chats || {})[k], y = (b.chats || {})[k];
+    out.chats[k] = (x && y) ? (((x.updated || 0) >= (y.updated || 0)) ? x : y) : (x || y);
+  });
+  out.chatId = (a.chatId && out.chats[a.chatId]) ? a.chatId : ((b.chatId && out.chats[b.chatId]) ? b.chatId : null);
+
+  out.updatedAt = Date.now();
+  return out;
+}
+
 /* ============================================================
    ACCOUNTS — Supabase handles signup, password hashing,
    sessions and password resets. This app never sees a password.
@@ -4466,48 +4540,51 @@ const CLOUD = {
   },
 
   /* ---- progress sync ---- */
-  async sync(){
-    if(this.busy || !this.user || !SB) return;
+  // Read the account, combine it with this device, write the result back.
+  // Used for sign-in, for the auto-save, and for the manual buttons.
+  async mergeAndSave(quiet){
+    if(!this.user || !SB) return;
+    if(this.busy){ this.again = true; return; }
     this.busy = true; this.lastErr = "";
     try{
       const { data, error } = await SB.from("progress")
         .select("state, updated_at").eq("user_id", this.user.id).maybeSingle();
       if(error) throw new Error(error.message);
-      if(!data){ await this.push(true); }
-      else if((data.updated_at || 0) > (S.updatedAt || 0)){
-        applyState(data.state); await Store.set("nh:state", S);
-        this.lastSync = data.updated_at; paintStats();
-      }else{ await this.push(true); }
+      if(data && data.state){
+        const merged = mergeState(S, data.state);
+        const grew = JSON.stringify(Object.assign({}, merged, {updatedAt:0})) !==
+                     JSON.stringify(Object.assign({}, S, {updatedAt:0}));
+        S = merged;
+        await Store.set("nh:state", S);
+        if(grew){
+          paintStats(); paintCloud();
+          // refresh what's on screen, but never mid-conversation or mid-quiz
+          if(["home","kartice","napredak","gramatika","lekcije","rjecnik"].includes(CUR)) go(CUR);
+        }
+      }
+      const now = Date.now();
+      const { error: e2 } = await SB.from("progress").upsert({ user_id: this.user.id, state: S, updated_at: now });
+      if(e2) throw new Error(e2.message);
+      this.lastSync = now;
     }catch(e){ this.lastErr = String(e.message || e); }
     this.busy = false; paintCloud();
-    if(CUR === "napredak") vSave();
-  },
-
-  async push(quiet){
-    if(!this.user || !SB) return;
-    try{
-      const now = Date.now();
-      const { error } = await SB.from("progress").upsert({
-        user_id: this.user.id, state: S, updated_at: now
-      });
-      if(error) throw new Error(error.message);
-      this.lastSync = now; this.lastErr = "";
-    }catch(e){ this.lastErr = String(e.message || e); }
-    paintCloud();
     if(!quiet && CUR === "napredak") vSave();
+    if(this.again){ this.again = false; setTimeout(() => this.mergeAndSave(true), 500); }
   },
-
+  async sync(){ return this.mergeAndSave(true); },
+  async push(quiet){ return this.mergeAndSave(quiet); },
   async pull(){
     if(!SB){ this.lastErr = "NOLIB"; if(CUR === "napredak") vSave(); return; }
-    try{
-      const { data, error } = await SB.from("progress")
-        .select("state, updated_at").eq("user_id", this.user.id).maybeSingle();
-      if(error) throw new Error(error.message);
-      if(!data) this.lastErr = "EMPTY";
-      else { applyState(data.state); await Store.set("nh:state", S);
-             this.lastSync = data.updated_at; this.lastErr = ""; paintStats(); }
-    }catch(e){ this.lastErr = String(e.message || e); }
-    if(CUR === "napredak") vSave();
+    return this.mergeAndSave(false);
+  },
+
+  // Only for "erase all progress": the one time the account should be replaced.
+  async overwrite(){
+    if(!this.user || !SB) return;
+    const now = Date.now();
+    const { error } = await SB.from("progress").upsert({ user_id: this.user.id, state: S, updated_at: now });
+    if(error) this.lastErr = String(error.message);
+    else this.lastSync = now;
   }
 };
 
@@ -4679,7 +4756,7 @@ function uploadSave(input){
 }
 
 function applyState(obj){
-  const base = {name:"", xp:0, streak:0, lastDay:null, done:{}, skills:{}, daily:{}, cards:{}, chats:{}, chatId:null,
+  const base = {name:"", xp:0, streak:0, lastDay:null, done:{}, skills:{}, daily:{}, removed:{}, removedChats:{}, cards:{}, chats:{}, chatId:null,
                 level:"A1", scenario:"kafic", showEn:true};
   const keepChats = obj.chats ? obj.chats : S.chats;      // a progress-only code shouldn't wipe your conversations
   const keepId    = obj.chats ? obj.chatId : S.chatId;
@@ -4784,7 +4861,7 @@ async function wipe(){
     return; }
   WIPEARM = false;
   S = {name:"", xp:0, streak:0, lastDay:new Date().toISOString().slice(0,10), done:{}, cards:{}, level:"A1", scenario:"kafic", showEn:true};
-  await save(); go("napredak");
+  await save(); await CLOUD.overwrite(); go("napredak");
 }
 
 /* ============================================================
