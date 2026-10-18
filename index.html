@@ -443,7 +443,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "9.0";
+const VERSION = "9.2";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -451,7 +451,7 @@ const VERSION = "9.0";
    what your row-level-security rules allow.
    ============================================================ */
 const SUPABASE_URL = "https://pknwqovojwpopuohljoc.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_-xDtrsRuva6dYG2RAU_2JQ_uv1S__Hr";
+const SUPABASE_ANON_KEY = "Psb_publishable_-xDtrsRuva6dYG2RAU_2JQ_uv1S__Hr";
 const SB_READY = () => SUPABASE_URL.indexOf("http") === 0 && SUPABASE_ANON_KEY.length > 20;
 const SECTIONS = [
   {id:1, name:"First steps",      hr:"Prvi koraci",    color:"#6BA6FF"},
@@ -4039,7 +4039,10 @@ Return ONLY a JSON array of 8 objects. No markdown, no commentary.`}], 1600);
 /* ============================================================
    ČITANJE — generated readings
    ============================================================ */
-let RD = null, GLOSSCACHE = {};
+let RD = null;
+// Word translations, kept for the whole visit — not wiped when a new reading loads.
+const translationCache = {};
+const GLOSSCACHE = translationCache;            // older code refers to it by this name
 function vRead(){
   shell("čitanje · reading", "Pročitaj pa <i>odgovori</i>",
     "A short text written at your level, then questions about it. Tap any word you don't know and it'll tell you — including what its dictionary form is, which matters a lot in a language where every noun has seven shapes.",
@@ -4065,7 +4068,7 @@ Write a short original text in standard Croatian: ${S.level==="A1"?"60-90":S.lev
 Then: a glossary of the 10-14 hardest words (give the DICTIONARY form plus the English), and 4 comprehension questions in Croatian with 4 options each.
 Return ONLY this JSON, no markdown:
 {"title":"<Croatian title>","text":"<the text>","translation":"<full English translation>","glossary":[["<dictionary form>","<English>"]],"questions":[{"q":"<question in Croatian>","o":["","","",""],"a":<index>,"e":"<short English explanation>"}]}`}], 2000);
-    RD = parseJSON(txt); RD.topic = topic; GLOSSCACHE = {};
+    RD = parseJSON(txt); RD.topic = topic;
     (RD.glossary||[]).forEach(g=>{ GLOSSCACHE[norm(g[0])] = g[1]; });
     paintRead(); addXP(8);
   }catch(e){ out.innerHTML = apiError(e); }
@@ -4104,29 +4107,139 @@ function readQuiz(){
   paintDrill();
 }
 
+const GLOSS_COOLDOWN = 400;                   // ms between API calls
+const GLOSS_PAUSE = 15000;                    // ms to back off after a rate-limit error
+let glossLastCall = 0, glossPausedUntil = 0;
+const glossInFlight = {};                     // word -> pending promise, so a double-tap is one request
+
+function glossLookupCached(key){
+  if(translationCache[key]) return translationCache[key];
+  // inflected forms: "kući" can reuse the glossary entry for "kuća"
+  const k = Object.keys(translationCache).find(x => x.length >= 4 && key.startsWith(x.slice(0, Math.max(3, x.length - 2))));
+  return k ? translationCache[k] : null;
+}
+
+/* ---- On the first tap, translate every word in the passage at once
+   (about 60 words per request), so every later tap is instant and free. ---- */
+let glossBatch = null;                        // { text, promise } for the passage on screen
+const GLOSS_CHUNK = 60;
+
+function passageWords(text){
+  const seen = new Set(), out = [];
+  (String(text || "").match(/[A-Za-zČčĆćŠšŽžĐđ]{2,}/g) || []).forEach(w => {
+    const k = norm(w); if(!seen.has(k)){ seen.add(k); out.push(w); }
+  });
+  return out;
+}
+
+async function glossChunk(words, text){
+  const txt = await ask(STYLE_RULES + "You are a Croatian dictionary. Be terse and accurate.",
+    [{role:"user", content:`Croatian text:
+"${text.slice(0, 2400)}"
+
+For EACH of these words exactly as written, give how it is used in this text:
+${JSON.stringify(words)}
+
+Each value must be one line in exactly this format:
+<dictionary form> — <English meaning> (<short grammatical note in English, e.g. genitive singular, 1st person present>)
+
+Return ONLY a JSON object mapping each word to its line. No markdown, no other text.`}], 4000);
+  const j = parseJSON(txt);
+  if(!j || typeof j !== "object" || Array.isArray(j)) throw new Error("bad batch");
+  let n = 0;
+  Object.keys(j).forEach(w => {
+    const v = String(j[w] || "").trim();
+    if(v && v.indexOf("—") > -1){ translationCache[norm(w)] = v; n++; }
+  });
+  return n;
+}
+
+function prefetchPassage(){
+  if(!RD || !RD.text) return Promise.resolve();
+  if(glossBatch && glossBatch.text === RD.text) return glossBatch.promise;
+  const text = RD.text;
+  const todo = passageWords(text).filter(w => !batchDone(norm(w)));
+  const job = { text, promise: null };
+  job.promise = (async () => {
+    for(let i = 0; i < todo.length; i += GLOSS_CHUNK){
+      if(!RD || RD.text !== text) return;                       // reading changed — stop
+      await glossChunk(todo.slice(i, i + GLOSS_CHUNK), text);
+    }
+  })().catch(e => { if(glossBatch === job) glossBatch = null; throw e; });  // let a later tap retry
+  glossBatch = job;
+  return job.promise;
+}
+// A word counts as looked up only once it has a full popup line (not just a glossary meaning).
+function batchDone(key){ const v = translationCache[key]; return !!(v && v.indexOf("—") > -1); }
+
 async function gloss(ev, word){
   const g = $("#gloss");
   const key = norm(word);
-  const put = txt=>{
+  const target = ev.target;
+  const put = txt => {
     g.innerHTML = `<b>${esc(word)}</b>${txt}`;
     g.classList.remove("hidden");
-    const r = ev.target.getBoundingClientRect();
-    g.style.left = Math.min(window.innerWidth-260, Math.max(8, r.left)) + "px";
+    const r = target.getBoundingClientRect();
+    g.style.left = Math.min(window.innerWidth - 260, Math.max(8, r.left)) + "px";
     g.style.top  = (r.bottom + 8) + "px";
-    clearTimeout(g._t); g._t = setTimeout(()=>g.classList.add("hidden"), 4500);
+    clearTimeout(g._t); g._t = setTimeout(() => g.classList.add("hidden"), 4500);
   };
-  let hit = GLOSSCACHE[key];
-  if(!hit){ const k = Object.keys(GLOSSCACHE).find(x => key.startsWith(x.slice(0, Math.max(3, x.length-2)))); if(k) hit = GLOSSCACHE[k]; }
-  if(hit) return put(esc(hit));
-  put(`<span class="spin"></span>`);
-  try{
-    const txt = await ask(STYLE_RULES + "You are a Croatian dictionary. Be terse.",
-      [{role:"user", content:`The word "${word}" appears in this Croatian text: "${String(RD&&RD.text||"").slice(0,400)}".
+  const wait = msg => put(`<span style="color:var(--stone-dim)">${msg}</span>`);
+
+  // 1. Already know it — instant, no API call.
+  if(batchDone(key)) return put(esc(translationCache[key]));
+
+  // 2. Backing off after a rate-limit error.
+  if(Date.now() < glossPausedUntil){
+    return wait(`Please wait a moment before clicking another word.<br><span style="font-size:12px">(about ${Math.ceil((glossPausedUntil - Date.now()) / 1000)}s)</span>`);
+  }
+
+  // 3. Look up the whole passage at once (or wait for that lookup if it's already running).
+  if(RD && RD.text && RD.text.indexOf(word) > -1){
+    put(`<span class="spin"></span> <span style="color:var(--stone-dim);font-size:12px">translating the passage\u2026</span>`);
+    try{
+      await prefetchPassage();
+      if(batchDone(key)) return put(esc(translationCache[key]));
+    }catch(e){
+      const m = String((e && e.message) || "");
+      if(/QUOTA|RATE|429|BUSY|50[0-3]|Too fast|Daily limit|overload|TIMEOUT/i.test(m)){
+        glossPausedUntil = Date.now() + GLOSS_PAUSE;
+        const fb = glossLookupCached(key);
+        return fb ? put(esc(fb)) : wait("Please wait a moment before clicking another word.");
+      }
+      // anything else: fall through to looking up just this word
+    }
+  }
+
+  // 4. Fallback — this single word, if the passage lookup missed it.
+  const fb = glossLookupCached(key);
+  if(fb && glossBatch && glossBatch.text === (RD && RD.text)) return put(esc(fb));
+  if(!glossInFlight[key]){
+    // cooldown between single-word calls
+    const since = Date.now() - glossLastCall;
+    if(since < GLOSS_COOLDOWN) return wait("Please wait a moment before clicking another word.");
+    glossLastCall = Date.now();
+    glossInFlight[key] = ask(STYLE_RULES + "You are a Croatian dictionary. Be terse.",
+      [{role:"user", content:`The word "${word}" appears in this Croatian text: "${String(RD && RD.text || "").slice(0, 400)}".
 Reply with ONLY this, one line, no JSON, no extra words:
-<dictionary form> — <English meaning> (<grammatical note, e.g. genitiv jednine, 1. lice prezenta>)`}], 200);
-    GLOSSCACHE[key] = txt;
-    put(esc(txt));
-  }catch(e){ put(" — nije dostupno"); }
+<dictionary form> — <English meaning> (<short grammatical note in English, e.g. genitive singular, 1st person present>)`}], 200)
+      .then(txt => { const t = String(txt || "").trim(); if(!t) throw new Error("empty"); translationCache[key] = t; return t; })
+      .finally(() => { delete glossInFlight[key]; });
+  }
+  put(`<span class="spin"></span>`);
+
+  try{
+    const txt = await glossInFlight[key] || translationCache[key];
+    put(esc(txt || translationCache[key]));
+  }catch(e){
+    const m = String((e && e.message) || "");
+    if(/QUOTA|RATE|429|BUSY|50[0-3]|Too fast|Daily limit|overload|TIMEOUT/i.test(m)){
+      glossPausedUntil = Date.now() + GLOSS_PAUSE;
+      wait("Please wait a moment before clicking another word.");
+    }else{
+      wait("Couldn't look that word up right now. Try again in a moment.");
+    }
+  }
 }
 document.addEventListener("scroll", ()=>{ const g=$("#gloss"); if(g) g.classList.add("hidden"); }, true);
 
