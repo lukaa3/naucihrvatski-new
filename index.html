@@ -443,7 +443,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "9.2";
+const VERSION = "9.3";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -2975,7 +2975,12 @@ function apiError(e){
   if(m === "NOMODEL") return `<div class="err"><b>Model nije pronađen.</b> Your key doesn't have access to <b>${esc(GMODEL)}</b>. Pick a different one in <b>Postavke</b>.<div style="margin-top:9px"><button class="btn sm" onclick="openSettings()">Promijeni model</button></div></div>`;
   if(m === "RATE")    return `<div class="err"><b>Previše zahtjeva.</b> You've hit Gemini's rate limit. Wait a minute and try again — the free tier is generous but not unlimited.</div>`;
   if(m === "TIMEOUT") return `<div class="err"><b>That took too long.</b> Gemini didn't answer within 45 seconds — usually it's briefly overloaded. Send your message again.</div>`;
-  if(/^BUSY/.test(m) || /50[023]/.test(m)) return `<div class="err"><b>Gemini was busy.</b> It was temporarily overloaded — this clears in a few seconds. Just send your message again.</div>`;
+  if(/CUTOFF/.test(m)) return `<div class="err"><b>The reply was too long and got cut off.</b> Try again — it usually works on a second go. Picking a lower level (A1 or A2) also makes readings shorter.</div>`;
+  if(/SAFETY/.test(m)) return `<div class="err"><b>Gemini blocked that reply.</b> Try a different topic.</div>`;
+  if(/EMPTY/.test(m)) return `<div class="err"><b>Gemini sent back an empty reply.</b> Try again.</div>`;
+  if(/BADJSON/.test(m)) return `<div class="err"><b>The reply came back incomplete.</b> Try again.</div>`;
+  if(/Could not reach Gemini/.test(m)) return `<div class="err"><b>Couldn't reach Gemini.</b> Check your connection and try again.</div>`;
+  if(/BUSY|overload|\b503\b/i.test(m)) return `<div class="err"><b>Gemini was busy.</b> It was temporarily overloaded — this clears in a few seconds. Just send your message again.</div>`;
   if(!GKEY) return `<div class="err"><b>AI is not connected.</b> Lessons, grammar, drills and flashcards all work without it.<div style="font-family:var(--mono);font-size:11px;margin-top:8px;color:var(--stone-dim);word-break:break-all">${esc(m) || "no error message"}</div><div style="margin-top:9px"><button class="btn sm" onclick="openSettings()">Otvori postavke</button></div></div>`;
   return `<div class="err"><b>That did not work.</b> ${esc(m) || "Unknown error."} Try again, or check your key in <b>Postavke</b>.</div>`;
 }
@@ -4058,7 +4063,7 @@ function vRead(){
 }
 function setLevelR(k){ S.level=k; save(); vRead(); }
 
-async function genRead(topic){
+async function genRead(topic, retried){
   const out = $("#rout");
   out.innerHTML = `<div class="card" style="margin-top:14px"><span class="spin"></span> Writing a text about “${esc(topic)}”…</div>`;
   try{
@@ -4067,11 +4072,21 @@ async function genRead(topic){
 Write a short original text in standard Croatian: ${S.level==="A1"?"60-90":S.level==="A2"?"110-150":"170-220"} words. Natural, warm, specific, with real Croatian detail. Present tense dominant at A1.
 Then: a glossary of the 10-14 hardest words (give the DICTIONARY form plus the English), and 4 comprehension questions in Croatian with 4 options each.
 Return ONLY this JSON, no markdown:
-{"title":"<Croatian title>","text":"<the text>","translation":"<full English translation>","glossary":[["<dictionary form>","<English>"]],"questions":[{"q":"<question in Croatian>","o":["","","",""],"a":<index>,"e":"<short English explanation>"}]}`}], 2000);
-    RD = parseJSON(txt); RD.topic = topic;
+{"title":"<Croatian title>","text":"<the text>","translation":"<full English translation>","glossary":[["<dictionary form>","<English>"]],"questions":[{"q":"<question in Croatian>","o":["","","",""],"a":<index>,"e":"<short English explanation>"}]}`}], 6000);
+    let parsed;
+    try{ parsed = parseJSON(txt); }catch(pe){ throw new Error("BADJSON"); }
+    if(!parsed || !parsed.text) throw new Error("BADJSON");
+    RD = parsed; RD.topic = topic;
     (RD.glossary||[]).forEach(g=>{ GLOSSCACHE[norm(g[0])] = g[1]; });
     paintRead(); addXP(8);
-  }catch(e){ out.innerHTML = apiError(e); }
+  }catch(e){
+    const m = String((e && e.message) || "");
+    if(!retried && /BUSY|overload|\b503\b|CUTOFF|EMPTY|BADJSON/i.test(m)){
+      out.innerHTML = `<div class="card" style="margin-top:14px"><span class="spin"></span> Gemini hiccupped — trying once more…</div>`;
+      return setTimeout(() => genRead(topic, true), 2500);
+    }
+    out.innerHTML = apiError(e);
+  }
 }
 
 function markup(t){
