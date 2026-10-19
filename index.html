@@ -207,6 +207,17 @@ td.cs{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transfo
   font-size:14px;background:rgba(224,54,47,.12);border:1px solid rgba(224,54,47,.4)}
 .savebar.warn{background:rgba(107,166,255,.1);border-color:rgba(107,166,255,.35)}
 
+.cstats{display:flex;gap:10px;flex-wrap:wrap}
+.cstat{flex:1;min-width:90px;text-align:center;padding:12px 8px;border:1px solid var(--line);border-radius:12px;background:var(--deep)}
+.cstat b{display:block;font-family:var(--mono);font-size:26px;line-height:1.1}
+.cstat b small{font-size:14px;color:var(--stone-dim)}
+.cstat span{font-size:11.5px;color:var(--stone-dim);letter-spacing:.04em}
+.boxdots{display:inline-flex;gap:3px;margin-right:8px;vertical-align:1px}
+.boxdots i{width:6px;height:6px;border-radius:50%;background:var(--line-2)}
+.boxdots i.on{background:var(--brass)}
+details.card > summary{list-style:none}
+details.card > summary::-webkit-details-marker{display:none}
+
 /* ---------- learning path ---------- */
 .secthead{display:flex;align-items:center;gap:13px;margin:28px 0 6px;padding:12px 16px;
   background:linear-gradient(90deg, rgba(107,166,255,.13), rgba(107,166,255,.02));
@@ -443,7 +454,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "9.4";
+const VERSION = "9.6";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -2650,6 +2661,7 @@ function voiceHelp(){
 const spk = t => `<button class="spk" title="Poslušaj" onclick="speak(${JSON.stringify(t).replace(/"/g,'&quot;')})">🔊</button>`;
 
 /* --- word rows --- */
+let CARD_SRC = "Other";
 function wordRow(hr,en){
   const k = cardKey(hr,en), on = cardSet().has(k);
   return `<div class="word">${spk(hr)}<span class="hr">${esc(hr)}</span><span class="en">${esc(en)}</span>
@@ -3180,7 +3192,7 @@ function toggleDailyCard(kind){
   const hr = kind === "word" ? w[0] : v.i, en = kind === "word" ? w[1] : v.en;
   S.cards = S.cards || {};
   const k = cardKey(hr, en);
-  if(S.cards[k]) dropCard(k); else putCard(k);
+  if(S.cards[k]) dropCard(k); else putCard(k, { src: kind === "word" ? "Word of the day" : "Verb of the day" });
   save(); vHome();
 }
 function cardToggleHTML(kind){
@@ -3243,7 +3255,7 @@ function unlockDaily(kind){
   else { r.verbI = v.i; r.verbEn = v.en; }
   const hr = kind === "word" ? w[0] : v.i, en = kind === "word" ? w[1] : v.en;
   S.cards = S.cards || {};
-  if(!S.cards[cardKey(hr, en)]) putCard(cardKey(hr, en));
+  if(!S.cards[cardKey(hr, en)]) putCard(cardKey(hr, en), { src: kind === "word" ? "Word of the day" : "Verb of the day" });
   addXP(10);
   save();
   vHome();                                                  // wireDaily() starts the AI check
@@ -3506,6 +3518,7 @@ function vSkills(){
 }
 
 function vSkill(id){
+  CARD_SRC = "Speaking: " + ((SKILLS.find(x=>x.id===id)||SKILLS[0]).title);
   const s = SKILLS.find(x => x.id === id) || SKILLS[0];
   const i = SKILLS.indexOf(s);
   const next = SKILLS[i + 1];
@@ -3585,6 +3598,7 @@ function lockedMsg(){
 }
 
 function vUnit(id){
+  CARD_SRC = "Grammar: " + ((UNITS.find(x=>x.id===id)||{}).title || "");
   const u = UNITS.find(x=>x.id===id) || UNITS[0];
   const gram = u.grammar.map((g,i)=>`<div class="card">
       <div class="gsec"><span class="n">${i+1}</span><h3>${g.h}</h3></div>
@@ -4100,6 +4114,7 @@ function markup(t){
   return out + esc(t.slice(last));
 }
 function paintRead(){
+  CARD_SRC = "Reading: " + ((RD && RD.topic) || "");
   const out = $("#rout"); if(!out || !RD) return;
   const body = String(RD.text||"").split(/\n+/).map(p=>"<p>"+markup(p)+"</p>").join("");
   out.innerHTML = `<div class="card" style="margin-top:14px">
@@ -4197,7 +4212,7 @@ async function gloss(ev, word){
     const r = target.getBoundingClientRect();
     g.style.left = Math.min(window.innerWidth - 260, Math.max(8, r.left)) + "px";
     g.style.top  = (r.bottom + 8) + "px";
-    clearTimeout(g._t); g._t = setTimeout(() => g.classList.add("hidden"), 4500);
+    clearTimeout(g._t);
   };
   const wait = msg => put(`<span style="color:var(--stone-dim)">${msg}</span>`);
 
@@ -4256,6 +4271,14 @@ Reply with ONLY this, one line, no JSON, no extra words:
     }
   }
 }
+function hideGloss(){ const g = $("#gloss"); if(g) g.classList.add("hidden"); }
+document.addEventListener("click", e => {
+  const g = $("#gloss");
+  if(!g || g.classList.contains("hidden")) return;
+  if(e.target.closest && e.target.closest(".read w")) return;     // tapping another word switches to it
+  hideGloss();
+}, true);
+document.addEventListener("keydown", e => { if(e.key === "Escape") hideGloss(); });
 document.addEventListener("scroll", ()=>{ const g=$("#gloss"); if(g) g.classList.add("hidden"); }, true);
 
 /* ============================================================
@@ -4273,6 +4296,7 @@ function packDone(p){
   return p.w.filter(w => set.has(cardKey(w[0], w[1]))).length;
 }
 function vPacks(){
+  { const _p = PACKOPEN && PACKS.find(x => x.k === PACKOPEN); CARD_SRC = _p ? "Vocab: " + _p.en : "Vocab"; }
   if(PACKOPEN){
     const p = PACKS.find(x => x.k === PACKOPEN);
     if(p) return shell("vocabulary · rječnik", esc(p.en),
@@ -4297,7 +4321,7 @@ function vPacks(){
 function addPack(k){
   const p = PACKS.find(x => x.k === k); if(!p) return;
   S.cards = S.cards || {};
-  p.w.forEach(w => { if(!S.cards[cardKey(w[0], w[1])]) putCard(cardKey(w[0], w[1])); });
+  p.w.forEach(w => { if(!S.cards[cardKey(w[0], w[1])]) putCard(cardKey(w[0], w[1]), { src: "Vocab: " + p.en }); });
   save(); vPacks();
 }
 function packQuiz(k){
@@ -4337,7 +4361,7 @@ function addCustomCard(){
   S.cards = S.cards || {};
   const k = cardKey(hr, en);
   if(S.cards[k]){ msg.innerHTML = `<span style="color:var(--brass)">“${esc(hr)}” is already in your cards.</span>`; return; }
-  putCard(k, { custom:true, added:Date.now() });
+  putCard(k, { custom:true, added:Date.now(), src:"My words" });
   save();
   vCards();
   const m2 = $("#nc-msg");
@@ -4355,81 +4379,154 @@ function wireCardForm(){
   });
 }
 
+const LEARN_SIZE = 40, ROUND_SIZE = 10;
+let CARD_TOPIC = "all", CARD_DIR = "hr";
+
+// All derived from the cards themselves, so it never gets out of sync:
+// mastered = reached the top box; learning = the 40 oldest-starred of the rest;
+// up next = everything else, waiting its turn.
+function cardGroups(){
+  const all = Object.keys(S.cards || {});
+  const order = k => S.cards[k].t || S.cards[k].added || 0;
+  const mastered = all.filter(k => (S.cards[k].box || 1) >= 5);
+  const rest = all.filter(k => (S.cards[k].box || 1) < 5).sort((a, b) => order(a) - order(b));
+  return { mastered, learning: rest.slice(0, LEARN_SIZE), upnext: rest.slice(LEARN_SIZE) };
+}
+const cardTopic = k => (S.cards[k] && S.cards[k].src) || "Earlier";
+function cardRowHTML(k){
+  const p = k.split("|"), c = S.cards[k];
+  const box = Math.min(5, c.box || 1);
+  const dots = `<span class="boxdots" title="box ${box} of 5">${[1,2,3,4].map(i => `<i class="${i < box ? "on" : ""}"></i>`).join("")}</span>`;
+  return wordRow(p[0], p[1]).replace('<span class="en">', `<span class="en">${box < 5 ? dots : ""}${c.custom ? '<span class="pill" style="margin-right:7px;font-size:9px;padding:1px 7px">mine</span>' : ""}`);
+}
+
 function vCards(){
-  const keys = Object.keys(S.cards||{});
+  CARD_SRC = "My words";
+  const keys = Object.keys(S.cards || {});
   if(!keys.length){
-    return shell("kartice · flashcards", "Tvoje <i>kartice</i>", "",
+    shell("flashcards · kartice", "Your <i>flashcards</i>", "",
       addCardForm() + `<div class="card" style="text-align:center;padding:44px">
         <p style="font-family:var(--display);font-size:22px">No flashcards yet.</p>
-        <p style="color:var(--stone-dim);font-size:14.5px;max-width:44ch;margin:0 auto 16px">Star any word in a lesson, a reading, or a generated sentence list and it lands here. Cards you get right move up a box and come back less often; ones you miss drop to box one.</p>
-        <button class="btn" onclick="go('lekcije')">${dual("Go to lessons","Idi na lekcije")}</button>
+        <p style="color:var(--stone-dim);font-size:14.5px;max-width:44ch;margin:0 auto 16px">Star any word in a lesson, a reading or the Vocab tab and it lands here.</p>
+        <button class="btn" onclick="go('rjecnik')">${dual("Go to vocab","Idi na rječnik")}</button>
         <button class="btn ghost" onclick="seedCards()">${dual("Load 40 starter words","40 osnovnih riječi")}</button>
       </div>`);
-    wireCardForm();
-    return;
+    wireCardForm(); return;
   }
-  const boxes = [1,2,3,4,5].map(b=>keys.filter(k=>(S.cards[k].box||1)===b).length);
-  shell("kartice · flashcards", "Tvoje <i>kartice</i>",
-    "Leitner boxes. Box one comes back every session, box five almost never. Getting a card wrong sends it straight back to box one — that's the point.",
+  const g = cardGroups();
+  const topics = [...new Set(keys.map(cardTopic))].sort();
+  if(CARD_TOPIC !== "all" && !topics.includes(CARD_TOPIC)) CARD_TOPIC = "all";
+  const inTopic = k => CARD_TOPIC === "all" || cardTopic(k) === CARD_TOPIC;
+  const L = g.learning.filter(inTopic), U = g.upnext.filter(inTopic), M = g.mastered.filter(inTopic);
+  const studyPool = CARD_TOPIC === "all" ? g.learning.length : L.length + U.length;
+  const stat = (n, l, col) => `<div class="cstat"><b style="color:${col}">${n}</b><span>${l}</span></div>`;
+
+  shell("flashcards · kartice", "Your <i>flashcards</i>",
+    `You learn <b>${LEARN_SIZE} words at a time</b>, ${ROUND_SIZE} per round. Get a word right 4 times in a row and it's mastered — then the next word waiting in line takes its place.`,
     addCardForm() + `<div class="card">
-      <div class="kicker">distribution · raspored</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">${boxes.map((n,i)=>
-        `<div style="flex:1;min-width:70px;text-align:center;padding:10px;border:1px solid var(--line);border-radius:10px">
-          <div style="font-family:var(--mono);font-size:22px;color:${i===0?'var(--madder)':i===4?'var(--olive)':'var(--brass)'}">${n}</div>
-          <div style="font-size:11px;color:var(--stone-dim)">box ${i+1}</div></div>`).join("")}</div>
-      <div style="margin-top:16px;display:flex;gap:9px;flex-wrap:wrap">
-        <button class="btn" onclick="startCards('hr')">${dual("Practise: Croatian → English","hrvatski → engleski")}</button>
-        <button class="btn ghost" onclick="startCards('en')">${dual("Reverse: English → Croatian","engleski → hrvatski")}</button>
+      <div class="cstats">
+        ${stat(g.learning.length + "<small>/" + LEARN_SIZE + "</small>", "learning now", "var(--brass)")}
+        ${stat(g.upnext.length, "up next", "var(--stone)")}
+        ${stat(g.mastered.length, "mastered", "var(--olive)")}
+      </div>
+      <div class="chips" style="margin-top:14px">
+        <button class="chip" aria-pressed="${CARD_DIR==='hr'}" onclick="CARD_DIR='hr';vCards()">${dual("Croatian → English","hr → en")}</button>
+        <button class="chip" aria-pressed="${CARD_DIR==='en'}" onclick="CARD_DIR='en';vCards()">${dual("English → Croatian","en → hr")}</button>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:9px;flex-wrap:wrap">
+        <button class="btn" onclick="startCards()" ${studyPool ? "" : "disabled"}>${dual("Study " + Math.min(ROUND_SIZE, studyPool || ROUND_SIZE) + " cards" + (CARD_TOPIC !== "all" ? " · " + CARD_TOPIC : ""), "Vježbaj")}</button>
+        ${M.length ? `<button class="btn ghost" onclick="startCards('review')">${dual("Review mastered","Ponovi naučeno")}</button>` : ""}
       </div>
     </div>
+
+    ${topics.length > 1 ? `<div class="card" style="margin-top:14px">
+      <div class="kicker">topics · teme</div>
+      <p style="font-size:13px;color:var(--stone-dim);margin:0 0 10px">Grouped by where you starred them. Pick one to study only those words.</p>
+      <div class="chips">
+        <button class="chip" aria-pressed="${CARD_TOPIC==='all'}" onclick="CARD_TOPIC='all';vCards()">${dual("All","Sve")}</button>
+        ${topics.map(t => `<button class="chip" aria-pressed="${CARD_TOPIC===t}" onclick='CARD_TOPIC=${JSON.stringify(t).replace(/'/g,"&#39;")};vCards()'>${esc(t)} <span style="opacity:.6">${keys.filter(k => cardTopic(k) === t).length}</span></button>`).join("")}
+      </div>
+    </div>` : ""}
+
     <div class="card" style="margin-top:14px">
-      <div class="kicker">all cards · sve kartice (${keys.length})</div>
-      <div class="wordlist">${keys.map(k=>{const p=k.split("|");
-        return S.cards[k].custom
-          ? wordRow(p[0],p[1]).replace('<span class="en">','<span class="en"><span class="pill" style="margin-right:7px;font-size:9px;padding:1px 7px">mine</span>')
-          : wordRow(p[0],p[1]);}).join("")}</div>
-    </div>`);
+      <div class="kicker">learning now · učim (${L.length})</div>
+      ${L.length ? `<div class="wordlist">${L.map(cardRowHTML).join("")}</div>` : `<p style="font-size:13.5px;color:var(--stone-dim);margin:0">Nothing here right now.</p>`}
+    </div>
+    ${U.length ? `<details class="card" style="margin-top:14px"><summary class="kicker" style="cursor:pointer;margin:0">up next · na redu (${U.length}) — joins as you master words</summary>
+      <div class="wordlist" style="margin-top:10px">${U.map(cardRowHTML).join("")}</div></details>` : ""}
+    ${M.length ? `<details class="card" style="margin-top:14px"><summary class="kicker" style="cursor:pointer;margin:0">mastered · naučeno (${M.length})</summary>
+      <div class="wordlist" style="margin-top:10px">${M.map(cardRowHTML).join("")}</div></details>` : ""}`);
   wireCardForm();
 }
 function seedCards(){
   S.cards = S.cards||{};
-  UNITS.slice(0,4).forEach(u=>u.vocab.slice(0,10).forEach(v=>{ if(!S.cards[cardKey(v[0],v[1])]) putCard(cardKey(v[0],v[1])); }));
+  UNITS.slice(0,4).forEach(u=>u.vocab.slice(0,10).forEach(v=>{ if(!S.cards[cardKey(v[0],v[1])]) putCard(cardKey(v[0],v[1]), { src:"Starter words" }); }));
   save(); vCards();
 }
-function startCards(dir){
-  const keys = shuffle(Object.keys(S.cards)).sort((a,b)=>(S.cards[a].box||1)-(S.cards[b].box||1)).slice(0,20);
-  FC = {q:keys, i:0, dir, right:0, flipped:false};
+function startCards(mode){
+  const g = cardGroups();
+  const inTopic = k => CARD_TOPIC === "all" || cardTopic(k) === CARD_TOPIC;
+  const seen = k => S.cards[k].last || 0;
+  let q;
+  if(mode === "review"){
+    q = g.mastered.filter(inTopic).sort((a, b) => seen(a) - seen(b)).slice(0, ROUND_SIZE);
+  }else{
+    // a topic you picked pulls from all its unmastered words; otherwise just the learning set
+    const pool = (CARD_TOPIC === "all" ? g.learning : g.learning.concat(g.upnext).filter(inTopic));
+    q = shuffle(pool.slice()).sort((a, b) => (S.cards[a].box || 1) - (S.cards[b].box || 1) || seen(a) - seen(b))
+        .slice(0, ROUND_SIZE);
+    // keep old words fresh: swap one slot for the mastered word you saw longest ago
+    const old = g.mastered.filter(inTopic).sort((a, b) => seen(a) - seen(b))[0];
+    if(old && q.length >= ROUND_SIZE) q[q.length - 1] = old;
+    q = shuffle(q);
+  }
+  if(!q.length) return vCards();
+  FC = { q, i:0, dir: CARD_DIR, right:0, flipped:false, mode: mode || "learn", graduated:[], before: cardGroups().learning.length };
   paintCard();
 }
 function paintCard(){
   if(FC.i >= FC.q.length){
-    return shell("done · gotovo", "Round finished", "",
-      `<div class="card" style="text-align:center;padding:40px">
+    const g = cardGroups();
+    const grad = FC.graduated.map(k => k.split("|")[0]);
+    return shell("checkpoint · gotovo", "Nice work!", "",
+      `<div class="card" style="text-align:center;padding:36px 20px">
         <div style="font-family:var(--mono);font-size:52px;color:var(--brass)">${FC.right}<span style="font-size:24px;color:var(--stone-dim)">/${FC.q.length}</span></div>
-        <div class="chips" style="justify-content:center;margin-top:16px">
-          <button class="btn" onclick="startCards('${FC.dir}')">${dual("Another round","Još jedna runda")}</button>
-          <button class="btn ghost" onclick="go('kartice')">${dual("Back","Natrag")}</button></div></div>`);
+        <div style="color:var(--stone-dim);margin-top:4px">right this round</div>
+        ${grad.length ? `<div class="verdict ok" style="margin:18px auto 0;max-width:420px;text-align:left"><b style="color:var(--olive)">Mastered ${grad.length}:</b> ${grad.map(esc).join(", ")}${g.upnext.length ? `<br><span style="font-size:13px;color:var(--stone-dim)">New words moved in from up next.</span>` : ""}</div>` : ""}
+        <div style="margin:20px auto 0;max-width:340px">
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--stone-dim);margin-bottom:5px"><span>mastered</span><span>${g.mastered.length} words</span></div>
+          <div class="progressline" style="margin:0"><i style="width:${Math.min(100, g.mastered.length / Math.max(1, Object.keys(S.cards).length) * 100)}%"></i></div>
+        </div>
+        <div class="chips" style="justify-content:center;margin-top:20px">
+          <button class="btn" onclick="startCards('${FC.mode === "review" ? "review" : ""}')">${dual("Another 10","Još 10")}</button>
+          <button class="btn ghost" onclick="go('kartice')">${dual("Done for now","Gotovo")}</button></div></div>`);
   }
-  const k = FC.q[FC.i], p = k.split("|");
-  const front = FC.dir==="hr" ? p[0] : p[1];
-  const back  = FC.dir==="hr" ? p[1] : p[0];
-  shell(`card ${FC.i+1} of ${FC.q.length} · box ${S.cards[k].box||1}`, "Flashcards", "",
-    `<div class="progressline"><i style="width:${FC.i/FC.q.length*100}%"></i></div>
+  const k = FC.q[FC.i], p = k.split("|"), c = S.cards[k];
+  const front = FC.dir === "hr" ? p[0] : p[1];
+  const back  = FC.dir === "hr" ? p[1] : p[0];
+  const box = Math.min(5, c.box || 1);
+  shell(`card ${FC.i + 1} of ${FC.q.length}`, "Flashcards", "",
+    `<div class="progressline"><i style="width:${FC.i / FC.q.length * 100}%"></i></div>
     <div class="flash">
+      <div style="font-size:11px;color:var(--stone-dim);letter-spacing:.06em">${box >= 5 ? "MASTERED · REVIEW" : esc(cardTopic(k))}</div>
       <div class="front">${esc(front)}</div>
-      ${FC.dir==="hr"?spk(p[0]):""}
-      <div class="back" id="bk">${FC.flipped?esc(back):'<span style="opacity:.4">· · ·</span>'}</div>
+      ${FC.dir === "hr" ? spk(p[0]) : ""}
+      <div class="back" id="bk">${FC.flipped ? esc(back) + (FC.dir === "en" ? " " + spk(p[0]) : "") : '<span style="opacity:.4">· · ·</span>'}</div>
+      ${box < 5 ? `<span class="boxdots" style="margin-top:6px">${[1,2,3,4].map(i => `<i class="${i < box ? "on" : ""}"></i>`).join("")}</span>` : ""}
     </div>
     <div style="margin-top:16px;display:flex;gap:9px;justify-content:center;flex-wrap:wrap">
       ${FC.flipped
-        ? `<button class="btn ghost" onclick="gradeCard(false)">${dual("Didn\u2019t know","Ne znam")}</button><button class="btn" onclick="gradeCard(true)">${dual("I knew it","Znam")}</button>`
+        ? `<button class="btn ghost" onclick="gradeCard(false)">${dual("Didn’t know","Ne znam")}</button><button class="btn" onclick="gradeCard(true)">${dual("I knew it","Znam")}</button>`
         : `<button class="btn brass" onclick="FC.flipped=true;paintCard()">${dual("Flip","Okreni")}</button>`}
     </div>`);
 }
 function gradeCard(ok){
   const k = FC.q[FC.i], c = S.cards[k];
-  c.seen = (c.seen||0)+1;
-  c.box = ok ? Math.min(5,(c.box||1)+1) : 1;
+  const was = c.box || 1;
+  c.seen = (c.seen || 0) + 1;
+  c.last = Date.now();
+  c.box = ok ? Math.min(5, was + 1) : 1;
+  if(ok && was < 5 && c.box >= 5) FC.graduated.push(k);
   if(ok){ FC.right++; addXP(2); } else save();
   FC.i++; FC.flipped = false; paintCard();
 }
@@ -4518,9 +4615,11 @@ function vGrammarBody(path){
 
 /* ---- Adding/removing flashcards. A removal leaves a dated marker so the
    merge knows you unstarred it, instead of copying it back from another device. ---- */
+let CARD_SEQ = 0;
 function putCard(k, extra){
   S.cards = S.cards || {};
-  S.cards[k] = Object.assign({ box:1, seen:0, t:Date.now() }, extra || {});
+  // t = when it was starred (keeps the order when a whole pack is added at once)
+  S.cards[k] = Object.assign({ box:1, seen:0, t: Date.now() + (CARD_SEQ++ % 1000) / 1000, src: CARD_SRC }, extra || {});
   if(S.removed) delete S.removed[k];
 }
 function dropCard(k){
