@@ -454,7 +454,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "9.6";
+const VERSION = "9.7";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -3120,8 +3120,15 @@ function bestStreak(){
 
 /* ---- does the sentence actually use the word? ---- */
 function tokens(s){ return norm(s).split(/[^a-z]+/).filter(Boolean); }
+const SHORT_FORMS = {
+  taj:["taj","ta","to","tu","tog","toga","tom","toj","te","ti","tim"], to:["taj","ta","to","tu","tog","toga","tom","toj","te","ti","tim"],
+  ovaj:["ovaj","ova","ovo","ovu","ovog","ovom","ovoj","ove","ovi","ovim"], ovo:["ovaj","ova","ovo","ovu","ovog","ovom","ovoj","ove","ovi","ovim"],
+  onaj:["onaj","ona","ono","onu","onog","onom","onoj","one","oni","onim"]
+};
 function usesWord(sentence, word){
   const w = norm(word), stem = w.slice(0, Math.max(3, w.length - 2));
+  const extra = SHORT_FORMS[w];
+  if(extra && tokens(sentence).some(t => extra.includes(t))) return true;
   return tokens(sentence).some(t => t.startsWith(stem) || (t.length >= 3 && editDistance(t, w) <= 2));
 }
 function verbForms(v){
@@ -3206,14 +3213,37 @@ function cardToggleHTML(kind){
 // A plain-English note on what the word really means and when it's used,
 // because one English translation often covers several different senses.
 const NOTE_BUSY = new Set(), NOTE_FAIL = new Set();
+// Words that change with gender: a fixed, checked note instead of an AI one.
+const FORM_NOTES = {
+  taj:   {f:"taj · ta · to", m:"“That” — it matches the noun: taj (masculine), ta (feminine), to (neuter). On its own, with no noun after it, always use to: Što je to? = What’s that?", ex:"Taj auto je nov, ali to nije moj auto.", exEn:"That car is new, but that’s not my car."},
+  to:    {f:"taj · ta · to", m:"The everyday “that” when it stands on its own: To je dobro. Before a noun it matches the noun: taj (m), ta (f), to (n).", ex:"Što je to? To je moja knjiga.", exEn:"What’s that? That’s my book."},
+  ovaj:  {f:"ovaj · ova · ovo", m:"“This” (near me). It matches the noun: ovaj (m), ova (f), ovo (n). On its own, use ovo: Ovo je super.", ex:"Ova kava je odlična.", exEn:"This coffee is great."},
+  ovo:   {f:"ovaj · ova · ovo", m:"The everyday “this” on its own: Ovo je moj brat. Before a noun it matches the noun: ovaj (m), ova (f), ovo (n).", ex:"Ovo je moj brat.", exEn:"This is my brother."},
+  onaj:  {f:"onaj · ona · ono", m:"“That one over there” — further away than taj. It matches the noun: onaj (m), ona (f), ono (n).", ex:"Vidiš onu kuću?", exEn:"Do you see that house over there?"},
+  moj:   {f:"moj · moja · moje", m:"“My” — it matches the thing you own, not you: moj brat, moja mama, moje auto.", ex:"Moja sestra živi u Splitu.", exEn:"My sister lives in Split."},
+  tvoj:  {f:"tvoj · tvoja · tvoje", m:"“Your” for one person you’re casual with. It matches the thing owned: tvoj, tvoja, tvoje.", ex:"Je li ovo tvoja jakna?", exEn:"Is this your jacket?"},
+  njegov:{f:"njegov · njegova · njegovo", m:"“His”. It matches the thing owned: njegov auto, njegova kuća.", ex:"Njegova mama je jako draga.", exEn:"His mom is really nice."},
+  njezin:{f:"njezin · njezina · njezino", m:"“Her”. It matches the thing owned: njezin brat, njezina kuća. You’ll also hear the shorter njen.", ex:"Njezin brat igra nogomet.", exEn:"Her brother plays football."},
+  "naš": {f:"naš · naša · naše", m:"“Our”. It matches the thing owned: naš stan, naša ulica.", ex:"Naša kuća je blizu mora.", exEn:"Our house is near the sea."},
+  "vaš": {f:"vaš · vaša · vaše", m:"“Your” for more than one person, or polite to one. It matches the thing owned: vaš stol, vaša narudžba.", ex:"Evo vaše kave.", exEn:"Here’s your coffee."},
+  njihov:{f:"njihov · njihova · njihovo", m:"“Their”. It matches the thing owned: njihov pas, njihova djeca.", ex:"Njihov pas je ogroman.", exEn:"Their dog is huge."},
+  svoj:  {f:"svoj · svoja · svoje", m:"“My / your / his own” — used when the owner is the person doing the action: Uzmi svoju torbu = Take your (own) bag.", ex:"Ana voli svoj posao.", exEn:"Ana loves her job."},
+  koji:  {f:"koji · koja · koje", m:"“Which” or “that/who” joining two ideas. It matches the noun: koji film, koja knjiga, koje vino.", ex:"Koja ti je omiljena hrana?", exEn:"What’s your favorite food?"},
+  "čiji": {f:"čiji · čija · čije", m:"“Whose”. It matches the thing owned: čiji je ovo mobitel? čija je ova torba?", ex:"Čija je ova torba?", exEn:"Whose bag is this?"},
+  kakav: {f:"kakav · kakva · kakvo", m:"“What kind of / what’s it like”. It matches the noun: kakav film, kakva kuća, kakvo vrijeme.", ex:"Kakvo je vrijeme danas?", exEn:"What’s the weather like today?"},
+  jedan: {f:"jedan · jedna · jedno", m:"“One” — it matches the noun: jedan sok, jedna kava, jedno pivo.", ex:"Jedna kava i jedan sok, molim.", exEn:"One coffee and one juice, please."}
+};
+function formNote(){ return FORM_NOTES[todayWord()[0].toLowerCase()] || null; }
+
 async function fetchNote(kind){
   const r = todayRec();
   if(r[kind + "Note"] || NOTE_BUSY.has(kind) || NOTE_FAIL.has(kind)) return;
+  if(kind === "word" && formNote()) return;
   NOTE_BUSY.add(kind);
   const w = todayWord(), v = todayVerb();
   const prompt = kind === "word"
     ? `Croatian word: "${w[0]}" (rough English: "${w[1]}").
-In ONE or TWO very simple English sentences, explain what it actually means and when Croatians use it — so a learner knows which sense of the English word it covers, and not to confuse it with other senses. No grammar jargon.
+In ONE or TWO very simple English sentences, explain what it actually means and when Croatians use it — so a learner knows which sense of the English word it covers, and not to confuse it with other senses. If it's an adjective or other word whose ending changes for masculine / feminine / neuter, give the three forms in a few words (e.g. "nov, nova, novo"). No other grammar jargon.
 Then give one short, natural, everyday Croatian sentence using it, with its English translation.
 Return ONLY JSON, no markdown: {"meaning":"...","ex":"...","exEn":"..."}`
     : `Croatian verb: "${v.i}" (rough English: "${v.en}").
@@ -3230,6 +3260,9 @@ Return ONLY JSON, no markdown: {"meaning":"..."}`;
   if(CUR === "home") vHome();
 }
 function noteHTML(kind){
+  const fn = kind === "word" ? formNote() : null;
+  if(fn) return `<div class="dmean"><b>Forms:</b> <span style="font-family:var(--display);font-size:16px">${esc(fn.f)}</span><div style="margin-top:6px"><b>Meaning:</b> ${esc(fn.m)}</div>
+    <div style="margin-top:6px"><span style="font-family:var(--display);font-size:16px">${esc(fn.ex)}</span> ${spk(fn.ex)}<br><span style="color:var(--stone-dim);font-style:italic;font-size:13px">${esc(fn.exEn)}</span></div></div>`;
   const n = ((S.daily || {})[todayKey()] || {})[kind + "Note"];
   if(NOTE_FAIL.has(kind) && !n) return "";
   if(!n) return `<div class="dmean"><span class="spin"></span> <span style="color:var(--stone-dim)">Looking up how it's used…</span></div>`;
