@@ -8,11 +8,20 @@
    ============================================================ */
 
 const MODEL_CHAIN  = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
+
+// When a model runs out of free-tier quota it stays exhausted for hours.
+// Remember which one is working so every later request doesn't waste a
+// round-trip re-checking the dead one, but retry the preferred model
+// periodically in case quota has reset.
+const NO_THINKING = new Set();   // models that 400 on thinkingConfig
+let WORKING_MODEL = null;
+let WORKING_SINCE = 0;
+const RECHECK_MS = 15 * 60 * 1000;
 const ALLOWED      = new Set([...MODEL_CHAIN, "gemini-3.1-flash-lite", "gemini-2.5-flash-lite"]);
 
 const MAX_MESSAGES    = 40;
 const MAX_TOTAL_CHARS = 24000;
-const MAX_OUTPUT      = 4096;
+const MAX_OUTPUT      = 8192;
 const WINDOW_MS       = 60000;
 const MAX_PER_WINDOW  = 20;
 const MAX_PER_DAY     = 400;
@@ -144,41 +153,131 @@ async function handlePost(request, env){
   }
   if(total > MAX_TOTAL_CHARS) return json(413, { error:"Prompt too large" });
 
-  const payload = {
-    contents: messages.map(m => ({
-      role: (m.role === "assistant" || m.role === "model") ? "model" : "user",
-      parts: [{ text: m.content }]
-    })),
-    generationConfig: {
-      maxOutputTokens: maxOut,
-      temperature: typeof body.temperature === "number" ? Math.min(1.5, Math.max(0, body.temperature)) : 0.85,
-      thinkingConfig: { thinkingBudget: 0 }
+  // Gemini rejects the whole request if any part is empty, if roles don't
+  // alternate, or if the history opens on a model turn. Normalise all three.
+  const contents = [];
+  for(const m of messages){
+    if(!m || typeof m.content !== "string") continue;
+    const text = m.content.trim();
+    if(!text) continue;                                  // empty part = instant 400
+    const role = (m.role === "assistant" || m.role === "model") ? "model" : "user";
+    const last = contents[contents.length - 1];
+    if(last && last.role === role){                      // merge same-role runs
+      last.parts[0].text += "\n\n" + text;
+      continue;
     }
-  };
-  if(system) payload.system_instruction = { parts: [{ text: system }] };
+    contents.push({ role, parts: [{ text }] });
+  }
+  while(contents.length && contents[0].role !== "user") contents.shift();
+  if(contents.length && contents[contents.length - 1].role !== "user"){
+    contents.pop();                                      // must end on the user's turn
+  }
+  if(!contents.length) return json(400, { error: "No usable messages after cleanup." });
 
-  const send = (m, p) => fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
+  const baseConfig = {
+    maxOutputTokens: maxOut,
+    temperature: typeof body.temperature === "number"
+      ? Math.min(1.5, Math.max(0, body.temperature)) : 0.85
+  };
+  const payloadFor = model => {
+    const p = { contents, generationConfig: { ...baseConfig } };
+    // Only send thinkingConfig to models known to accept it. Once a model
+    // rejects it we remember, so we never pay the retry round-trip twice.
+    if(!NO_THINKING.has(model)) p.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+    if(system && system.trim()) p.system_instruction = { parts: [{ text: system.trim() }] };
+    return p;
+  };
+
+  const wantStream = body.stream === true;
+
+  const send = (m, p, streaming) => fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${m}:` +
+      (streaming ? "streamGenerateContent?alt=sse" : "generateContent"), {
       method:"POST",
       headers:{ "Content-Type":"application/json", "x-goog-api-key": env.GEMINI_API_KEY },
       body: JSON.stringify(p)
     });
 
+  // Gemini streams Server-Sent Events. Unwrap them into plain text chunks so
+  // the browser can just read().  Status is checked before any piping, so the
+  // model-fallback chain still works on a failed stream.
+  function toPlainStream(upstream){
+    const dec = new TextDecoder();
+    let buf = "";
+    return new ReadableStream({
+      async start(controller){
+        const reader = upstream.body.getReader();
+        const enc = new TextEncoder();
+        try{
+          for(;;){
+            const { done, value } = await reader.read();
+            if(done) break;
+            buf += dec.decode(value, { stream: true });
+            const lines = buf.split("\n");
+            buf = lines.pop();
+            for(const line of lines){
+              if(!line.startsWith("data:")) continue;
+              const payload = line.slice(5).trim();
+              if(!payload || payload === "[DONE]") continue;
+              try{
+                const j = JSON.parse(payload);
+                const parts = (((j.candidates || [])[0] || {}).content || {}).parts || [];
+                const text = parts.map(p => p.text || "").join("");
+                if(text) controller.enqueue(enc.encode(text));
+              }catch(e){ /* partial JSON line, skip */ }
+            }
+          }
+        }catch(e){
+          console.error("stream broke:", e && e.message);
+        }finally{
+          controller.close();
+        }
+      }
+    });
+  }
+
   try{
+    if(WORKING_MODEL && Date.now() - WORKING_SINCE > RECHECK_MS) WORKING_MODEL = null;
+
     const tried = [];
-    const candidates = [asked, ...MODEL_CHAIN].filter(m => m && !tried.includes(m) && (tried.push(m), true));
+    const preferred = (body.model && ALLOWED.has(body.model)) ? body.model : (WORKING_MODEL || asked);
+    const candidates = [preferred, ...MODEL_CHAIN]
+      .filter(m => m && !tried.includes(m) && (tried.push(m), true));
+
     let res = null, used = null;
 
     for(const m of candidates){
-      res = await send(m, payload);
-      if(res.status === 400){                       // some models reject thinkingConfig
-        const retry = JSON.parse(JSON.stringify(payload));
-        delete retry.generationConfig.thinkingConfig;
-        res = await send(m, retry);
+      let payload = payloadFor(m);
+
+      // Exact body sent to Gemini — this is what to read when a 400 appears.
+      console.log("GEMINI PAYLOAD " + m + " " + JSON.stringify(payload));
+
+      res = await send(m, payload, wantStream);
+
+      if(res.status === 400 && payload.generationConfig.thinkingConfig){
+        let why = "";
+        try { const j = await res.clone().json(); why = (j.error && j.error.message) || ""; } catch(e){}
+        console.warn(`400 from ${m} with thinkingConfig — retrying without. ${why}`);
+        NO_THINKING.add(m);                        // never send it to this model again
+        payload = payloadFor(m);
+        console.log("GEMINI PAYLOAD (retry) " + m + " " + JSON.stringify(payload));
+        res = await send(m, payload, wantStream);
+      } else if(res.status === 400){
+        let why = "";
+        try { const j = await res.clone().json(); why = (j.error && j.error.message) || ""; } catch(e){}
+        console.error(`400 from ${m}: ${why}`);
       }
       // retired, out of quota, or overloaded — all worth trying the next model
-      if([404, 429, 500, 502, 503].includes(res.status) && m !== candidates[candidates.length - 1]) continue;
+      if([404, 429, 500, 502, 503].includes(res.status) && m !== candidates[candidates.length - 1]){
+        console.warn(`Model ${m} unavailable (${res.status}) — falling back.`);
+        if(WORKING_MODEL === m) WORKING_MODEL = null;
+        continue;
+      }
       used = m; break;
+    }
+
+    if(res && res.ok && used && used !== WORKING_MODEL){
+      WORKING_MODEL = used; WORKING_SINCE = Date.now();
     }
 
     if(!res.ok){
@@ -188,15 +287,43 @@ async function handlePost(request, env){
       return json(res.status === 429 ? 429 : 502, { error: classify(res.status, detail) });
     }
 
-    const data = await res.json();
-    const cand = (data.candidates || [])[0];
-    const text = (((cand || {}).content || {}).parts || []).map(p => p.text || "").join("").trim();
+    // Status is good, so it's safe to hand the stream straight to the browser.
+    if(wantStream){
+      return new Response(toPlainStream(res), {
+        status: 200,
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "no-store",
+          "X-Model-Used": used || "",
+          "X-Accel-Buffering": "no"
+        }
+      });
+    }
 
-    if(!text){
+    let data = await res.json();
+    let cand = (data.candidates || [])[0];
+    let text = (((cand || {}).content || {}).parts || []).map(p => p.text || "").join("").trim();
+
+    // Newer models spend part of the token budget thinking before they write.
+    // If the reply ran out of room — empty, or stopped halfway — retry once
+    // with the full budget rather than handing back a broken answer.
+    if(cand && cand.finishReason === "MAX_TOKENS" && maxOut < MAX_OUTPUT){
+      console.warn(`Reply from ${used} hit MAX_TOKENS at ${maxOut} — retrying with ${MAX_OUTPUT}.`);
+      const bigger = payloadFor(used);
+      bigger.generationConfig.maxOutputTokens = MAX_OUTPUT;
+      const r2 = await send(used, bigger, false);
+      if(r2.ok){
+        data = await r2.json();
+        cand = (data.candidates || [])[0];
+        text = (((cand || {}).content || {}).parts || []).map(p => p.text || "").join("").trim();
+      }
+    }
+
+    if(!text || (cand && cand.finishReason === "MAX_TOKENS")){
       const r = cand && cand.finishReason;
-      return json(502, { error: r === "MAX_TOKENS" ? "The reply got cut off. Try again."
-                              : r === "SAFETY"     ? "The reply was blocked by a safety filter."
-                              : "Empty reply from Gemini." });
+      return json(502, { error: r === "MAX_TOKENS" ? "CUTOFF: the reply was too long and got cut off."
+                              : r === "SAFETY"     ? "SAFETY: the reply was blocked by a safety filter."
+                              : "EMPTY: Gemini sent back an empty reply." });
     }
     return json(200, { text, model: used });
 
