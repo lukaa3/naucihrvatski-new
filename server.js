@@ -7,7 +7,9 @@
    and never reaches the browser.
    ============================================================ */
 
-const MODEL_CHAIN  = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
+// Current models only (Google's model list, Oct 2026). The Flash-Lite ones are
+// cheaper and have their own separate free-tier limits, so they make good backups.
+const MODEL_CHAIN  = ["gemini-3.6-flash", "gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
 
 // When a model runs out of free-tier quota it stays exhausted for hours.
 // Remember which one is working so every later request doesn't waste a
@@ -17,7 +19,7 @@ const NO_THINKING = new Set();   // models that 400 on thinkingConfig
 let WORKING_MODEL = null;
 let WORKING_SINCE = 0;
 const RECHECK_MS = 15 * 60 * 1000;
-const ALLOWED      = new Set([...MODEL_CHAIN, "gemini-3.1-flash-lite", "gemini-2.5-flash-lite"]);
+const ALLOWED      = new Set(MODEL_CHAIN);
 
 const MAX_MESSAGES    = 40;
 const MAX_TOTAL_CHARS = 24000;
@@ -245,6 +247,10 @@ async function handlePost(request, env){
       .filter(m => m && !tried.includes(m) && (tried.push(m), true));
 
     let res = null, used = null;
+    // If every model fails, report the most useful reason: "out of quota" or
+    // "overloaded" says more than "model not found" from a backup.
+    let best = null;
+    const rank = s => s === 429 ? 4 : (s === 503 || s === 500 || s === 502) ? 3 : s === 404 ? 1 : 2;
 
     for(const m of candidates){
       let payload = payloadFor(m);
@@ -268,6 +274,12 @@ async function handlePost(request, env){
         console.error(`400 from ${m}: ${why}`);
       }
       // retired, out of quota, or overloaded — all worth trying the next model
+      if(!res.ok){
+        let detail = "";
+        try { const j = await res.clone().json(); detail = (j.error && j.error.message) || ""; } catch(e){}
+        console.warn(`${m} failed: ${res.status} ${detail}`);
+        if(!best || rank(res.status) > rank(best.status)) best = { status: res.status, detail, model: m };
+      }
       if([404, 429, 500, 502, 503].includes(res.status) && m !== candidates[candidates.length - 1]){
         console.warn(`Model ${m} unavailable (${res.status}) — falling back.`);
         if(WORKING_MODEL === m) WORKING_MODEL = null;
@@ -281,10 +293,9 @@ async function handlePost(request, env){
     }
 
     if(!res.ok){
-      let detail = "";
-      try { const j = await res.json(); detail = (j.error && j.error.message) || ""; } catch(e){}
-      console.error("Gemini error", res.status, detail);
-      return json(res.status === 429 ? 429 : 502, { error: classify(res.status, detail) });
+      const b = best || { status: res.status, detail: "" };
+      console.error("All models failed. Most useful error:", b.model, b.status, b.detail);
+      return json(b.status === 429 ? 429 : 502, { error: classify(b.status, b.detail) });
     }
 
     // Status is good, so it's safe to hand the stream straight to the browser.
