@@ -443,7 +443,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "9.3";
+const VERSION = "9.4";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -2461,7 +2461,7 @@ const Store = (()=>{
    so it never ends up inside an exported save code. */
 const KEY_K = "nh:gemini_key", MODEL_K = "nh:gemini_model";
 let GKEY = "", GMODEL = "gemini-3.6-flash";
-const MODELS = ["gemini-3.6-flash","gemini-3.5-flash","gemini-3.1-flash-lite","gemini-2.5-flash"];
+const MODELS = ["gemini-3.6-flash","gemini-3.8-flash","gemini-3.5-flash-lite","gemini-3.1-flash-lite"];
 async function loadKey(){
   GKEY   = (await Store.get(KEY_K))   || "";
   GMODEL = (await Store.get(MODEL_K)) || "gemini-3.6-flash";
