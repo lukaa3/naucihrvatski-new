@@ -416,6 +416,14 @@ select.field{font-family:var(--body);font-size:15px}
   .word .hr{min-width:110px;font-size:17px}
   .msg{max-width:95%}
 }
+/* build-a-sentence */
+.bline{min-height:52px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:9px;border:2px dashed var(--line);border-radius:12px;margin-top:4px}
+.bph{color:var(--stone-dim);font-size:13.5px;padding-left:4px}
+.bbank{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.bw{font:inherit;font-family:var(--display);font-size:17px;padding:7px 13px;border-radius:10px;cursor:pointer;
+  background:rgba(234,240,250,.07);border:1px solid var(--line);color:var(--stone)}
+.bline .bw{background:rgba(107,166,255,.16);border-color:rgba(107,166,255,.5)}
+.bw.gone{visibility:hidden}
 /* grammar steps */
 .steplist{display:flex;flex-direction:column;gap:9px}
 .steprow{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:13px 15px;border-radius:var(--r);
@@ -475,7 +483,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "9.8";
+const VERSION = "9.9";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -566,7 +574,7 @@ const UNITS = [
     {h:"Asking yes-no questions",
      b:"Two ways, both using the little word <b>li</b>, which always sits second:<br><b>Jesi li</b> ti student? — Are you a student?<br><b>Je li</b> ovo kava? — Is this coffee? (often heard as <em>jel'</em>)<br><br>Or just raise your intonation: <em>Ti si student?</em> Common in speech."},
     {h:"Adjectives change with the speaker",
-     b:"Croatian words change ending by gender. <em>Unit 4 teaches the whole system</em> — for now you only need one piece of it: <b>a word describing you takes your own gender.</b> Men keep the plain form, women add <b>-a</b>.<br><br>Umoran sam (m) / Umorna sam (f) — I'm tired<br>Gladan sam / Gladna sam — I'm hungry<br>Sretan sam / Sretna sam — I'm happy<br><br>Learn your own form now; you'll say these constantly."}
+     b:"Croatian words change ending by gender. <em>Unit {u4} teaches the whole system</em> — for now you only need one piece of it: <b>a word describing you takes your own gender.</b> Men keep the plain form, women add <b>-a</b>.<br><br>Umoran sam (m) / Umorna sam (f) — I'm tired<br>Gladan sam / Gladna sam — I'm hungry<br>Sretan sam / Sretna sam — I'm happy<br><br>Learn your own form now; you'll say these constantly."}
   ],
   vocab:[["student / studentica","student m/f"],["učenik / učenica","pupil m/f"],
     ["prijatelj / prijateljica","friend m/f"],["umoran / umorna","tired"],["gladan / gladna","hungry"],
@@ -612,7 +620,7 @@ const UNITS = [
     {t:"type",q:"Plural of 'knjiga':",a:["knjige"],e:"knjige"},
     {t:"type",q:"Plural of 'grad':",a:["gradovi"],e:"gradovi — one-syllable masculine inserts -ov-."},
     {t:"mc",q:"Plural of 'čovjek':",o:["čovjeci","čovjekovi","ljudi","čovjeke"],a:2,e:"Fully irregular: ljudi."},
-    {t:"mc",q:"Which is correct?",o:["veliko more","velika more","veliki more","velik more"],a:0,e:"more is neuter → veliko."},
+    {t:"mc",q:"What gender is 'stol'?",o:["masculine","feminine","neuter"],a:0,e:"Ends in a consonant → masculine."},
     {t:"type",q:"Plural of 'selo':",a:["sela"],e:"sela — neuter takes -a."}
   ]
 },
@@ -681,13 +689,44 @@ const UNITS = [
   ]
 },
 {
+  id:27, sec:1, title:"Putting a sentence together", sub:"Kako složiti rečenicu",
+  goal:"Know which word goes where — who, what, when, where, ne and the little words — so you can build any simple sentence without guessing.",
+  grammar:[
+    {h:"The basic order: who → does → what",
+     b:"Start every sentence the way English does: <b>who → does → what</b>.<br><br><b>Ana pije čaj.</b> — Ana drinks tea.<br><b>Marko gleda film.</b> — Marko is watching a film.<br><b>Mi učimo hrvatski.</b> — We're learning Croatian.<br><br>When <em>who</em> is just I, you or we, leave it out — the verb ending already says it (Unit {u3}):<br><b>Pijem čaj.</b> — I drink tea. · <b>Gledamo film.</b> — We're watching a film.<br><br>This order is never wrong. Croatians move words around for emphasis, but you can always fall back on it."},
+    {h:"Describing words go before the thing",
+     b:"Just like English, the describing word comes first:<br><b>dobar čaj</b> — good tea · <b>hladno pivo</b> — cold beer · <b>nov auto</b> — a new car<br><br>It copies the gender of the thing, the same way koji / koja / koje did in Unit {u6}:<br><b>dobar</b> čaj (m) · <b>dobra</b> pizza (f) · <b>dobro</b> pivo (n)<br><br>After <b>je, sam, si…</b> it comes after, also like English:<br><b>Čaj je dobar.</b> — The tea is good. · <b>Pivo je hladno.</b><br><br><b>jako</b> (very) and <b>malo</b> (a bit) go right in front of the describing word: <b>jako dobar</b> čaj · <b>malo hladno</b>."},
+    {h:"Where 'when' and 'where' go",
+     b:"<b>When</b> words — <b>danas</b> (today), <b>sutra</b> (tomorrow), <b>sada</b> (now), <b>navečer</b> (in the evening), <b>uvijek</b> (always) — usually go <b>first</b>, or straight after the verb:<br><b>Danas radim.</b> · <b>Radim danas.</b> — I'm working today.<br><br><b>Where</b> words usually go <b>at the end</b>:<br><b>Pijem čaj ovdje.</b> · <b>Radim kod kuće.</b> — I work at home. (<em>kod kuće</em> = at home — learn it as one chunk.)<br><br>A safe recipe: <b>when → verb → what → where</b><br><b>Sutra gledam film kod kuće.</b> — Tomorrow I'm watching a film at home.<br><b>Navečer radim kod kuće.</b> — In the evening I work at home."},
+    {h:"ne sits right in front of the verb",
+     b:"<b>ne</b> always goes <b>directly before the verb</b>, touching it:<br><b>Ne pijem pivo.</b> — I don't drink beer.<br><b>Danas ne radim.</b> — I'm not working today.<br><b>Marko ne gleda film.</b><br><br>✗ <em>Ne danas radim.</em> · ✗ <em>Pijem ne pivo.</em><br><br>With <b>biti</b> you use the one-word forms from Unit {u3} instead: <b>nisam, nisi, nije…</b><br><b>Nisam umoran.</b> · <b>Ana nije ovdje.</b>"},
+    {h:"The little words go second",
+     b:"A few short words can never start a sentence: <b>sam, si, je, smo, ste, su</b>, <b>li</b> and <b>se</b>. They sit in <b>second place</b> — right after the first word or chunk:<br><b>Umoran sam.</b> — I'm tired.<br><b>Danas sam umoran.</b> — Today I'm tired.<br><b>Ana je ovdje.</b> · <b>Kako se zoveš?</b> · <b>Ideš li?</b><br><br>A chunk can be a few words that belong together:<br><b>Ana i Marko su ovdje.</b><br><br>✗ <em>Sam umoran.</em> · ✗ <em>Danas umoran sam.</em><br><br>So: say one chunk, then the little word. Unit {u22} goes deeper once you know more of these words."},
+    {h:"Questions: question word first",
+     b:"With a question word, it goes <b>first</b>, then the verb:<br><b>Gdje radiš?</b> — Where do you work?<br><b>Što piješ?</b> — What are you drinking?<br><b>Kada dolaziš?</b> — When are you coming?<br><b>Zašto ne piješ pivo?</b> — Why aren't you drinking beer?<br><br>Yes/no questions: verb first, then <b>li</b> (Unit {u6}): <b>Piješ li čaj?</b><br>Or keep the normal order and raise your voice: <b>Piješ čaj?</b><br><br>A little word still goes second: <b>Gdje si?</b> · <b>Kako se zoveš?</b>"}
+  ],
+  vocab:[["danas","today"],["sutra","tomorrow"],["sada","now"],["navečer","in the evening"],["ujutro","in the morning"],
+    ["uvijek","always"],["ovdje","here"],["tamo","there"],["kod kuće","at home"],["čaj","tea"],["sok","juice"],
+    ["film","film / movie"],["jako","very"],["malo","a bit"]],
+  phrases:[["Danas ne radim.","I'm not working today."],["Sutra sam kod kuće.","Tomorrow I'm at home."],
+    ["Gdje radiš?","Where do you work?"],["Što piješ?","What are you drinking?"],["Navečer gledam film.","In the evening I watch a film."]],
+  drills:[
+    {t:"build",q:"Make: I'm tired today. (male)",w:["danas","sam","umoran"],a:["Danas sam umoran.","Umoran sam danas."],e:"sam goes second."},
+    {t:"mc",q:"Which is correct?",o:["Ne danas radim.","Danas ne radim.","Danas radim ne."],a:1,e:"ne touches the verb."},
+    {t:"mc",q:"Which is correct?",o:["Sam umoran.","Umoran sam."],a:1,e:"sam can't come first."},
+    {t:"type",q:"Say: I don't drink beer.",a:["ne pijem pivo","ja ne pijem pivo"],e:"Ne pijem pivo."},
+    {t:"build",q:"Make: Where are you working tomorrow?",w:["gdje","radiš","sutra"],a:["Gdje radiš sutra?","Gdje sutra radiš?"],e:"Question word first."},
+    {t:"build",q:"Make: Tomorrow I'm watching a film at home.",w:["sutra","gledam","film","kod","kuće"],a:["Sutra gledam film kod kuće.","Sutra kod kuće gledam film.","Gledam film sutra kod kuće.","Gledam film kod kuće sutra."],e:"when → verb → what → where."}
+  ]
+},
+{
   id:7, sec:1, title:"Numbers, time and dates", sub:"Brojevi, sati i datumi",
   goal:"Count, tell the time, and handle the Croatian month names, which are nothing like English.",
   grammar:[
     {h:"Counting",
      b:"nula, jedan, dva, tri, četiri, pet, šest, sedam, osam, devet, deset,<br>jedanaest, dvanaest, trinaest, četrnaest, petnaest, šesnaest, sedamnaest, osamnaest, devetnaest, dvadeset.<br><br>From 11 up it's just <em>digit + naest</em>. Tens: dvadeset, trideset, četrdeset, pedeset, šezdeset, sedamdeset, osamdeset, devedeset, <b>sto</b>, <b>tisuća</b>.<br><br>21 = dvadeset jedan. 135 = sto trideset pet."},
     {h:"Counting things — three phrases for now",
-     b:"Numbers slightly change the word that follows them. The reason is the case system, which starts in Unit 8, so we'll leave the rule until <b>Unit 9</b> where it can be explained properly.<br><br>For now, just learn these three by heart. They cover almost everything you'll order:<br><br><b>jedna kava</b> — one coffee<br><b>dvije kave</b> — two coffees<br><b>pet kava</b> — five coffees<br><br>Say them out loud a few times. That's genuinely all you need at this stage — and when the rule arrives in Unit 9, you'll already have the pattern in your ear."},
+     b:"Numbers slightly change the word that follows them. The reason is the case system, which starts in Unit {u8}, so we'll leave the rule until <b>Unit {u9}</b> where it can be explained properly.<br><br>For now, just learn these three by heart. They cover almost everything you'll order:<br><br><b>jedna kava</b> — one coffee<br><b>dvije kave</b> — two coffees<br><b>pet kava</b> — five coffees<br><br>Say them out loud a few times. That's genuinely all you need at this stage — and when the rule arrives in Unit {u9}, you'll already have the pattern in your ear."},
     {h:"Telling the time",
      b:"<b>Koliko je sati?</b> — What time is it?<br><br><b>On the hour</b>, say the number then the word for hour:<br>Jedan sat · Dva sata · Pet sati · Deset sati<br><br><b>Half past — the one that catches everyone.</b> Croatian counts <em>towards</em> the next hour:<table><tr><th>time</th><th>Croatian</th><th>literally</th></tr><tr><td class='cs'>2:30</td><td class='hr'>pola tri</td><td>half to three</td></tr><tr><td class='cs'>3:30</td><td class='hr'>pola četiri</td><td>half to four</td></tr><tr><td class='cs'>7:30</td><td class='hr'>pola osam</td><td>half to eight</td></tr></table>So <b>pola tri is 2:30, not 3:30.</b> Take the hour you're heading towards and put <em>pola</em> in front.<br><br><b>Careful — <em>tri i pol</em> is not a time.</b> It means <em>three and a half</em> as an amount: <em>tri i pol sata</em> = three and a half <b>hours</b>.<br><br><b>Other ways to say the same time</b> — all used:<table><tr><th>time</th><th>everyday</th><th>digital / official</th></tr><tr><td class='cs'>2:30</td><td class='hr'>pola tri</td><td class='hr'>dva i trideset</td></tr><tr><td class='cs'>2:15</td><td class='hr'>dva i petnaest</td><td class='hr'>dva i petnaest</td></tr><tr><td class='cs'>2:45</td><td class='hr'>petnaest do tri</td><td class='hr'>dva i četrdeset pet</td></tr></table>Digital forms are what you hear at stations and on the radio; <em>pola</em> and <em>do</em> are what people say to each other. Recognise both, use whichever is easier.<br><br><b>Arranging a time:</b><br><b>U koliko sati?</b> / <b>Kad?</b> — At what time? / When?<br><b>U osam.</b> — At eight. · <b>Oko osam.</b> — Around eight.<br><em>U osam ujutro</em> — 8am · <em>U osam navečer</em> — 8pm"},
     {h:"Days and months",
@@ -753,8 +792,8 @@ const UNITS = [
      b:"<table><tr><th></th><th>N</th><th>G sing</th><th>G plural</th></tr><tr><td class='cs'>m</td><td class='hr'>grad</td><td class='hr'>grada</td><td class='hr'>gradova</td></tr><tr><td class='cs'>f</td><td class='hr'>kuća</td><td class='hr'>kuće</td><td class='hr'>kuća</td></tr><tr><td class='cs'>n</td><td class='hr'>more</td><td class='hr'>mora</td><td class='hr'>mora</td></tr></table>m/n take <b>-a</b>, f takes <b>-e</b>."},
     {h:"Four jobs",
      b:"<b>1 · Possession</b> — English <em>of</em> or <em>'s</em>:<br>knjiga <b>profesora</b> · centar <b>grada</b> · kraj <b>filma</b><br><br><b>2 · After these prepositions:</b> <b>iz</b> from/out of, <b>od</b> from, <b>do</b> to/until, <b>bez</b> without, <b>kod</b> at someone's, <b>blizu</b> near, <b>poslije/nakon</b> after, <b>prije</b> before, <b>oko</b> around, <b>preko</b> across, <b>zbog</b> because of, <b>umjesto</b> instead of<br><br><b>3 · After quantities</b> — 5+, and <em>puno, malo, čaša, boca, kilogram</em>:<br>puno <b>ljudi</b> · čaša <b>vode</b> · kilogram <b>jabuka</b><br><br><b>4 · After nema</b>:<br><b>Nema</b> kruha. — There's no bread. · <b>Nema</b> problema."},
-    {h:"Numbers use the genitive — the rule from Unit 7",
-     b:"Back in Unit 7 you learned <em>jedna kava · dvije kave · pet kava</em> as three phrases. Here's why they differ — it's the genitive doing the work.<table><tr><th>after…</th><th>what the noun takes</th><th>example</th></tr><tr><td class='cs'>1</td><td>nothing special, it just agrees</td><td class='hr'>jedan stol · jedna kava</td></tr><tr><td class='cs'>2, 3, 4</td><td>genitive <b>singular</b></td><td class='hr'>dva stola · tri kave</td></tr><tr><td class='cs'>5 and up</td><td>genitive <b>plural</b></td><td class='hr'>pet stolova · šest kava</td></tr></table>That's it — the same genitive endings you just learned, triggered by a number instead of a preposition.<br><br>Two extra details:<br>• <b>dva</b> for masculine and neuter, <b>dvije</b> for feminine — <em>dva piva</em>, <em>dvije kave</em><br>• Anything <em>ending</em> in 2, 3 or 4 follows the middle row: <em>dvadeset dva stola</em> (22 tables). Anything ending 5–0 follows the bottom row: <em>dvadeset pet stolova</em>.<br><br>Now say the Unit 7 phrases again and you'll hear the pattern: <b>jedna kava · dvije kave · pet kava</b>."},
+    {h:"Numbers use the genitive — the rule from Unit {u7}",
+     b:"Back in Unit {u7} you learned <em>jedna kava · dvije kave · pet kava</em> as three phrases. Here's why they differ — it's the genitive doing the work.<table><tr><th>after…</th><th>what the noun takes</th><th>example</th></tr><tr><td class='cs'>1</td><td>nothing special, it just agrees</td><td class='hr'>jedan stol · jedna kava</td></tr><tr><td class='cs'>2, 3, 4</td><td>genitive <b>singular</b></td><td class='hr'>dva stola · tri kave</td></tr><tr><td class='cs'>5 and up</td><td>genitive <b>plural</b></td><td class='hr'>pet stolova · šest kava</td></tr></table>That's it — the same genitive endings you just learned, triggered by a number instead of a preposition.<br><br>Two extra details:<br>• <b>dva</b> for masculine and neuter, <b>dvije</b> for feminine — <em>dva piva</em>, <em>dvije kave</em><br>• Anything <em>ending</em> in 2, 3 or 4 follows the middle row: <em>dvadeset dva stola</em> (22 tables). Anything ending 5–0 follows the bottom row: <em>dvadeset pet stolova</em>.<br><br>Now say the Unit {u7} phrases again and you'll hear the pattern: <b>jedna kava · dvije kave · pet kava</b>."},
     {h:"ima and nema",
      b:"<b>Ima</b> + noun = there is / there are.<br><b>Nema</b> + <b>genitive</b> = there isn't.<br>Ima li kruha? — Is there bread?<br>Nema mlijeka. — There's no milk.<br>Ima li ovdje zahod? — Is there a toilet here?"}
   ],
@@ -875,7 +914,7 @@ const UNITS = [
     {h:"All seven, in the order Croatians learn them",
      b:"<b>1 Nominativ</b> — tko? što? — the subject<br><b>2 Genitiv</b> — koga? čega? — of, from, without<br><b>3 Dativ</b> — komu? čemu? — to, for<br><b>4 Akuzativ</b> — koga? što? — the object<br><b>5 Vokativ</b> — calling someone<br><b>6 Lokativ</b> — o komu? o čemu? — position, about<br><b>7 Instrumental</b> — s kim? čime? — with, by<br><br>Every textbook and dictionary uses this order. Learn the sequence and reference tables stop being confusing."},
     {h:"Question words across all seven",
-     b:"Now that you know the cases, the shapes of <em>tko</em> and <em>što</em> make sense — they follow the same seven jobs as any noun:<table><tr><th>case</th><th>tko (who)</th><th>što (what)</th><th>used for</th></tr><tr><td class='cs'>N</td><td class='hr'>tko</td><td class='hr'>što</td><td>the subject</td></tr><tr><td class='cs'>G</td><td class='hr'>koga</td><td class='hr'>čega</td><td>od koga? — from whom?</td></tr><tr><td class='cs'>D</td><td class='hr'>komu / kome</td><td class='hr'>čemu</td><td>kome? — to whom?</td></tr><tr><td class='cs'>A</td><td class='hr'>koga</td><td class='hr'>što</td><td>the object</td></tr><tr><td class='cs'>L</td><td class='hr'>o kome</td><td class='hr'>o čemu</td><td>o čemu? — about what?</td></tr><tr><td class='cs'>I</td><td class='hr'>s kim</td><td class='hr'>čime</td><td>s kim? — with whom?</td></tr></table>Those fixed phrases you memorised back in Unit 6 — <b>s kim</b>, <b>o čemu</b>, <b>od koga</b> — were these all along. The preposition decides the case: <em>s</em> takes instrumental, <em>o</em> takes locative, <em>od</em> takes genitive."},
+     b:"Now that you know the cases, the shapes of <em>tko</em> and <em>što</em> make sense — they follow the same seven jobs as any noun:<table><tr><th>case</th><th>tko (who)</th><th>što (what)</th><th>used for</th></tr><tr><td class='cs'>N</td><td class='hr'>tko</td><td class='hr'>što</td><td>the subject</td></tr><tr><td class='cs'>G</td><td class='hr'>koga</td><td class='hr'>čega</td><td>od koga? — from whom?</td></tr><tr><td class='cs'>D</td><td class='hr'>komu / kome</td><td class='hr'>čemu</td><td>kome? — to whom?</td></tr><tr><td class='cs'>A</td><td class='hr'>koga</td><td class='hr'>što</td><td>the object</td></tr><tr><td class='cs'>L</td><td class='hr'>o kome</td><td class='hr'>o čemu</td><td>o čemu? — about what?</td></tr><tr><td class='cs'>I</td><td class='hr'>s kim</td><td class='hr'>čime</td><td>s kim? — with whom?</td></tr></table>Those fixed phrases you memorised back in Unit {u6} — <b>s kim</b>, <b>o čemu</b>, <b>od koga</b> — were these all along. The preposition decides the case: <em>s</em> takes instrumental, <em>o</em> takes locative, <em>od</em> takes genitive."},
     {h:"The shortcut nobody tells you",
      b:"Seven cases only cost you <b>five</b> sets of endings:<br>• <b>Dative and locative are always identical.</b><br>• In the plural, <b>dative, locative and instrumental are all identical</b> (-ama / -ima).<br>• Neuter accusative always equals nominative.<br>• Masculine inanimate accusative equals nominative.<br><br>So the workload is much smaller than the table suggests."},
     {h:"Plural endings",
@@ -898,6 +937,60 @@ const UNITS = [
   ]
 },
 /* ============ SECTION 3 — TENSES ============ */
+{
+  id:29, sec:2, title:"Which case after which word", sub:"Prijedlozi i padeži",
+  goal:"See every common preposition with the case it takes, all on one page — and handle time phrases like 'two days ago' and 'in a week'.",
+  grammar:[
+    {h:"Every preposition picks a case",
+     b:"You've met most of these one at a time. Here they are together. Learn each one <b>with its case</b>, as a pair.<table><tr><th>case</th><th>prepositions</th></tr><tr><td class='cs'>genitive</td><td class='hr'>iz · od · do · bez · kod · blizu · oko · prije · poslije / nakon · zbog · umjesto · preko · između</td></tr><tr><td class='cs'>dative</td><td class='hr'>prema (towards) · k / ka (to someone)</td></tr><tr><td class='cs'>accusative</td><td class='hr'>kroz (through) · za (for) · niz / uz (down / up along)</td></tr><tr><td class='cs'>locative</td><td class='hr'>o (about) · po (around, by) · pri (near, during)</td></tr><tr><td class='cs'>instrumental</td><td class='hr'>s / sa (with)</td></tr></table>The genitive row is by far the longest — when in doubt, it's usually genitive.<br><br><b>Blizu mora.</b> — Near the sea. · <b>Zbog kiše.</b> — Because of the rain. · <b>Kroz grad.</b> — Through the city."},
+    {h:"The two-way ones: moving or staying",
+     b:"A few prepositions take <b>two</b> cases, depending on whether something is moving there or already there (like Unit {u10}):<br><br><b>u, na</b> — moving → accusative · staying → locative<br><b>pod</b> (under), <b>pred</b> (in front of), <b>nad</b> (above), <b>za</b> (behind), <b>među</b> (among) — moving → accusative · staying → instrumental<br><br><b>Stavi torbu pod stol.</b> — Put the bag under the table. (moving)<br><b>Torba je pod stolom.</b> — The bag is under the table. (staying)<br><b>Idem u grad.</b> → <b>Ja sam u gradu.</b>"},
+    {h:"Time phrases",
+     b:"<b>prije</b> + genitive = ago / before: <b>prije dva dana</b> — two days ago · <b>prije posla</b> — before work<br><b>za</b> + accusative = in (from now): <b>za tjedan dana</b> — in a week · <b>za sat vremena</b> — in an hour<br><b>od … do</b> + genitive = from … to: <b>od ponedjeljka do petka</b><br><b>nakon / poslije</b> + genitive = after: <b>nakon posla</b><br><b>u</b> + accusative for days: <b>u ponedjeljak</b> — on Monday · <b>u subotu</b> — on Saturday<br><b>u</b> + locative for months: <b>u svibnju</b> — in May"},
+    {h:"za — the busy one",
+     b:"<b>za + accusative</b>:<br>for — <b>Ovo je za Anu.</b> — This is for Ana.<br>in (time) — <b>za pet minuta</b> — in five minutes<br><br><b>za + instrumental</b>:<br>behind / at — <b>za stolom</b> — at the table · <b>za kućom</b> — behind the house<br><br>Also handy: <b>Hvala na pomoći.</b> — Thanks for the help. (Croatian uses <b>na</b> + locative here.)"}
+  ],
+  vocab:[["blizu","near (+G)"],["zbog","because of (+G)"],["umjesto","instead of (+G)"],["između","between (+G)"],
+    ["kroz","through (+A)"],["prema","towards (+D)"],["preko","across (+G)"],["prije","before / ago (+G)"],
+    ["nakon","after (+G)"],["tjedan dana","a week"],["sat vremena","an hour"]],
+  phrases:[["Prije dva dana.","Two days ago."],["Za tjedan dana.","In a week."],["Od ponedjeljka do petka.","From Monday to Friday."],
+    ["Ovo je za mamu.","This is for Mom."],["Hvala na pomoći.","Thanks for the help."]],
+  drills:[
+    {t:"mc",q:"bez takes which case?",o:["genitive","dative","locative"],a:0,e:"bez + genitive."},
+    {t:"type",q:"Say: from Monday to Friday",a:["od ponedjeljka do petka"],e:"od … do + genitive."},
+    {t:"mc",q:"'two days ago' =",o:["prije dva dana","za dva dana"],a:0,e:"prije = ago."},
+    {t:"mc",q:"'in a week' (from now) =",o:["prije tjedan dana","za tjedan dana"],a:1,e:"za = in."},
+    {t:"mc",q:"The cat is under the table:",o:["Mačka je pod stol.","Mačka je pod stolom."],a:1,e:"Staying → instrumental."},
+    {t:"type",q:"Say: This is for Ana.",a:["ovo je za anu","to je za anu"],e:"za + accusative."}
+  ]
+},
+{
+  id:30, sec:2, title:"Somebody, nothing, everywhere", sub:"Netko, ništa, svugdje",
+  goal:"Say someone, something, nobody, nothing, everyone, everywhere — and use them in every case.",
+  grammar:[
+    {h:"some- words: ne + question word",
+     b:"Put <b>ne-</b> in front of a question word and you get a 'some-' word:<table><tr><th>question</th><th>some-</th></tr><tr><td class='cs'>tko — who</td><td class='hr'>netko — someone</td></tr><tr><td class='cs'>što — what</td><td class='hr'>nešto — something</td></tr><tr><td class='cs'>gdje — where</td><td class='hr'>negdje — somewhere</td></tr><tr><td class='cs'>kada — when</td><td class='hr'>nekad — sometimes / once</td></tr><tr><td class='cs'>kako — how</td><td class='hr'>nekako — somehow</td></tr><tr><td class='cs'>koji — which</td><td class='hr'>neki — some</td></tr></table><b>Netko je na vratima.</b> — Someone's at the door.<br><b>Imaš li nešto?</b> — Do you have anything?<br><b>Negdje u gradu.</b> — Somewhere in town."},
+    {h:"no- words: ni + question word, plus ne",
+     b:"Put <b>ni-</b> in front for the 'no-' words: <b>nitko</b> (nobody), <b>ništa</b> (nothing), <b>nigdje</b> (nowhere), <b>nikad</b> (never), <b>nikako</b> (no way), <b>nijedan</b> (not one).<br><br>Remember the double negative from Unit {u5} — the verb still gets <b>ne</b>:<br><b>Nitko ne zna.</b> — Nobody knows.<br><b>Ništa ne vidim.</b> — I don't see anything.<br><b>Nikad ne pijem kavu.</b> — I never drink coffee.<br><b>Ne idem nigdje.</b> — I'm not going anywhere."},
+    {h:"every- words",
+     b:"<b>svatko</b> — everyone (each person) · <b>svi</b> — everyone, all (plural verb)<br><b>sve</b> — everything · <b>svugdje</b> — everywhere · <b>uvijek</b> — always · <b>svaki</b> — every<br><br><b>Svi su ovdje.</b> — Everyone is here.<br><b>Sve je u redu.</b> — Everything's fine.<br><b>Svaki dan</b> — every day."},
+    {h:"They change like tko and što",
+     b:"These words take the same endings as tko and što (Unit {u13}):<br>netko → <b>nekoga</b>, nekome, s nekim · nitko → <b>nikoga</b>, nikome<br>nešto → <b>nečega</b>, o nečemu · ništa → <b>ničega</b><br><br><b>Vidim nekoga.</b> — I see someone.<br><b>Ne vidim nikoga.</b> — I don't see anyone.<br><br>With a preposition, the <b>ni</b> splits off and goes first:<br><b>ni s kim</b> — with nobody · <b>ni o čemu</b> — about nothing<br><b>Ne razgovaram ni s kim.</b> — I'm not talking to anyone."}
+  ],
+  vocab:[["netko","someone"],["nešto","something"],["negdje","somewhere"],["nekad","sometimes / once"],
+    ["nitko","nobody"],["ništa","nothing"],["nigdje","nowhere"],["nikad","never"],["svatko","everyone"],
+    ["svi","everyone / all"],["sve","everything"],["svugdje","everywhere"],["uvijek","always"]],
+  phrases:[["Sve je u redu.","Everything's fine."],["Nitko ne zna.","Nobody knows."],["Ne idem nigdje.","I'm not going anywhere."],
+    ["Treba li ti nešto?","Do you need anything?"],["Netko je na vratima.","Someone's at the door."]],
+  drills:[
+    {t:"type",q:"Say: Nobody knows.",a:["nitko ne zna"],e:"Nitko ne zna."},
+    {t:"mc",q:"'somewhere' =",o:["negdje","nigdje","svugdje"],a:0,e:"ne- = some-."},
+    {t:"type",q:"Say: I don't see anything.",a:["ne vidim ništa","ništa ne vidim"],e:"Double negative."},
+    {t:"mc",q:"'Sve je u redu' means…",o:["Everything's fine","Nobody is fine"],a:0,e:"sve = everything."},
+    {t:"mc",q:"'I don't see anyone' =",o:["Ne vidim nikoga.","Vidim nitko."],a:0,e:"nikoga + ne."},
+    {t:"mc",q:"'with nobody' =",o:["s nikim","ni s kim"],a:1,e:"ni splits off before the preposition."}
+  ]
+},
 {
   id:14, sec:3, title:"Past tense", sub:"Perfekt",
   goal:"Talk about yesterday, last year, your whole life — one simple pattern covers all of it.",
@@ -1026,6 +1119,60 @@ const UNITS = [
 },
 /* ============ SECTION 4 — WORDS THAT CHANGE ============ */
 {
+  id:28, sec:3, title:"Must, can, may, should", sub:"Moram, mogu, smijem, trebam",
+  goal:"Say what you have to, can, may and should do — and the sentences with no 'who' at all, like 'I'm cold'.",
+  grammar:[
+    {h:"Verb + infinitive",
+     b:"These verbs take a second verb in its <b>-ti / -ći</b> form:<br><b>moći</b> — can · <b>morati</b> — must · <b>htjeti</b> — want · <b>smjeti</b> — be allowed · <b>znati</b> — know how<br><br><b>Mogu doći.</b> — I can come.<br><b>Moram ići.</b> — I have to go.<br><b>Smijem li ući?</b> — May I come in?<br><b>Znam plivati.</b> — I can (know how to) swim.<br><br>morati: moram, moraš, mora, moramo, morate, moraju<br>smjeti: smijem, smiješ, smije, smijemo, smijete, smiju"},
+    {h:"trebati — need, should",
+     b:"<b>Trebam pomoć.</b> or <b>Treba mi pomoć.</b> — I need help. (the second is the dative pattern from Unit {u11})<br><b>Trebam ići.</b> — I need to go.<br><b>Ne trebaš doći.</b> — You don't need to come.<br><b>Trebao bih ići.</b> / <b>Trebala bih ići.</b> — I should go. (Unit {u16})"},
+    {h:"don't have to ≠ mustn't",
+     b:"This one trips English speakers:<br><b>Ne moram</b> = I <b>don't have to</b> (it's optional)<br><b>Ne smijem</b> = I <b>mustn't</b> / I'm not allowed<br><br><b>Ne moraš doći.</b> — You don't have to come.<br><b>Ne smiješ pušiti ovdje.</b> — You mustn't smoke here."},
+    {h:"In the past and future",
+     b:"They work like any verb (Units {u14}–{u15}):<br><b>Morao sam ići.</b> / <b>Morala sam ići.</b> — I had to go.<br><b>Nisam mogao doći.</b> — I couldn't come.<br><b>Htjela sam reći…</b> — I wanted to say…<br><b>Morat ću raditi.</b> — I'll have to work.<br><b>Moći ću doći.</b> — I'll be able to come."},
+    {h:"Sentences with no 'who'",
+     b:"Some sentences have no subject at all. The person who feels it goes in the <b>dative</b>:<br><b>Hladno je.</b> — It's cold. → <b>Hladno mi je.</b> — I'm cold.<br><b>Vruće mi je.</b> — I'm hot.<br><b>Dosadno mi je.</b> — I'm bored. (careful: <em>Dosadan sam</em> = I'm boring!)<br><b>Žao mi je.</b> — I'm sorry.<br><b>Kasno je.</b> — It's late."}
+  ],
+  vocab:[["morati","must / have to"],["moći","can"],["smjeti","be allowed"],["trebati","need / should"],["znati","know (how)"],
+    ["hladno","cold (it's…)"],["vruće","hot (it's…)"],["dosadno","boring (it's…)"],["kasno","late"],["rano","early"]],
+  phrases:[["Moram ići.","I have to go."],["Smijem li ući?","May I come in?"],["Ne moraš.","You don't have to."],
+    ["Hladno mi je.","I'm cold."],["Žao mi je.","I'm sorry."]],
+  drills:[
+    {t:"type",q:"Say: I have to go.",a:["moram ići"],e:"Moram ići."},
+    {t:"mc",q:"'Ne moram' means…",o:["I don't have to","I mustn't"],a:0,e:"Mustn't is ne smijem."},
+    {t:"mc",q:"'You mustn't smoke here' =",o:["Ne moraš pušiti ovdje.","Ne smiješ pušiti ovdje."],a:1,e:"smjeti = be allowed."},
+    {t:"type",q:"Say: I'm cold.",a:["hladno mi je"],e:"Hladno mi je."},
+    {t:"mc",q:"'Smijem li ući?' means…",o:["May I come in?","Can I swim?"],a:0,e:"ući = come in."},
+    {t:"type",q:"Say (male): I had to work.",a:["morao sam raditi"],e:"Morao sam raditi."}
+  ]
+},
+{
+  id:33, sec:3, title:"When I've done it — future II", sub:"Futur drugi",
+  goal:"Talk about future 'when' and 'if' the Croatian way: Kad budem imao vremena… / Kad dođem…",
+  grammar:[
+    {h:"Why there's a second future",
+     b:"After <b>kad</b> (when) and <b>ako</b> (if) talking about the future, Croatian does <b>not</b> use ću. It uses <b>budem + past participle</b>:<br><br><b>Kad budem imao vremena, nazvat ću Anu.</b> — When I have time, I'll call Ana.<br><br>English does the same trick — it says <em>when I have</em>, not <em>when I will have</em>. Croatian just has its own form for it."},
+    {h:"The forms",
+     b:"budem, budeš, bude, budemo, budete, budu + the past participle (-o / -la / -li, Unit {u14}):<br><br><b>kad budem došao / došla</b> — when I come<br><b>ako bude padala kiša</b> — if it rains<br><b>kad budemo imali novca</b> — when we have money"},
+    {h:"The easy way: a perfective in the present",
+     b:"With a perfective verb (Unit {u17}) you can skip budem and just use the present — and most people do:<br><br><b>Kad dođem kući, nazvat ću Anu.</b> — When I get home, I'll call Ana.<br><b>Ako stigneš rano, javi se.</b> — If you get there early, let me know.<br><b>Čim stignem, nazvat ću mamu.</b> — As soon as I arrive, I'll call Mom.<br><br>This is the 'perfective present only appears in subordinate clauses' rule from Unit {u17} — here's where it lives."},
+    {h:"kad or ako?",
+     b:"<b>kad</b> = when — you're sure it'll happen<br><b>ako</b> = if — maybe it will, maybe not<br><br><b>Kad dođeš u Zagreb, javi se.</b> — When you come to Zagreb (it's planned)…<br><b>Ako dođeš u Zagreb, javi se.</b> — If you ever come to Zagreb…"}
+  ],
+  vocab:[["kad","when"],["ako","if"],["čim","as soon as"],["nazvati","to call (pf)"],["stići","to arrive (pf)"],
+    ["javiti se","to get in touch (pf)"],["kiša","rain"],["vrijeme","time / weather"]],
+  phrases:[["Kad budem imao vremena…","When I have time… (m)"],["Kad dođem kući, javit ću se.","When I get home, I'll let you know."],
+    ["Ako bude padala kiša, ostajemo kod kuće.","If it rains, we're staying home."],["Čim stignem, nazvat ću mamu.","As soon as I arrive, I'll call Mom."]],
+  drills:[
+    {t:"mc",q:"After kad talking about the future, Croatian uses…",o:["budem + participle, or a perfective present","ću + infinitive"],a:0,e:"Never kad ću."},
+    {t:"type",q:"A man says: when I have time",a:["kad budem imao vremena","kada budem imao vremena"],e:"Kad budem imao vremena."},
+    {t:"mc",q:"'Kad dođem' means…",o:["When I come / get there","When I came"],a:0,e:"Perfective present = future here."},
+    {t:"mc",q:"Which is correct?",o:["Kad ću doći, nazvat ću Anu.","Kad dođem, nazvat ću Anu."],a:1,e:"No ću after kad."},
+    {t:"mc",q:"'ako' means…",o:["if","when"],a:0,e:"kad = when."},
+    {t:"type",q:"budem → the oni form:",a:["budu"],e:"budu."}
+  ]
+},
+{
   id:18, sec:4, title:"My, your, his, her", sub:"Posvojne zamjenice",
   goal:"Say what belongs to whom — and learn svoj, which English has no equivalent for.",
   grammar:[
@@ -1078,7 +1225,7 @@ const UNITS = [
   drills:[
     {t:"mc",q:"'that book' (near you) =",o:["ovaj knjiga","ta knjiga","ono knjiga","onaj knjiga"],a:1,e:"knjiga is feminine, near listener → ta."},
     {t:"mc",q:"Which is correct?",o:["veliko more","velika more","veliki more","velik more"],a:0,e:"more is neuter."},
-    {t:"type",q:"Say: I have a big house.",a:["imam veliku kuću","imam veliku kucu"],e:"Imam veliku kuću."},
+    {t:"type",q:"Say: with a big dog",a:["s velikim psom"],e:"Instrumental: s velikim psom."},
     {t:"mc",q:"How many levels of 'this/that' does Croatian have?",o:["One","Two","Three","Four"],a:2,e:"ovaj, taj, onaj."},
     {t:"mc",q:"'in the big house' =",o:["u velika kuća","u veliku kuću","u velikoj kući","u velikom kući"],a:2,e:"Locative feminine: -oj / -i."},
     {t:"type",q:"Say: This is too expensive.",a:["ovo je preskupo","ovo je previše skupo"],e:"Ovo je preskupo."}
@@ -1113,6 +1260,33 @@ const UNITS = [
     {t:"mc",q:"Adverb from 'brz':",o:["brzi","brza","brzo","brzom"],a:2,e:"Adverbs use the neuter form."},
     {t:"type",q:"Ask: Can you speak slowly?",a:["možeš li govoriti polako","mozes li govoriti polako","možete li govoriti polako"],e:"Možeš li govoriti polako?"},
     {t:"mc",q:"'najljepši' means:",o:["beautiful","more beautiful","the most beautiful","less beautiful"],a:2,e:"naj- makes the superlative."}
+  ]
+},
+{
+  id:31, sec:4, title:"First, second — dates and ages", sub:"Redni brojevi i datumi",
+  goal:"Say first, second, third; give the date and your birthday; say how old you are; and use dvoje, oboje for groups.",
+  grammar:[
+    {h:"First, second, third",
+     b:"prvi, drugi, treći, četvrti, peti, šesti, sedmi, osmi, deveti, deseti … dvadeseti … stoti<br><br>They're adjectives, so they copy the noun (Unit {u19}):<br><b>prvi</b> dan · <b>prva</b> kava · <b>prvo</b> pivo<br><b>Treći put sam ovdje.</b> — It's my third time here.<br><b>zadnji</b> — last · <b>sljedeći</b> — next"},
+    {h:"Dates",
+     b:"<b>Koji je danas datum?</b> — What's the date today?<br><b>Danas je dvadeset drugi listopada.</b> — Today is the 22nd of October.<br><br>Day = ordinal, month = <b>genitive</b>. The month names shorten:<br>siječanj → siječnja · veljača → veljače · ožujak → ožujka · travanj → travnja · svibanj → svibnja · lipanj → lipnja · srpanj → srpnja · kolovoz → kolovoza · rujan → rujna · listopad → listopada · studeni → studenoga · prosinac → prosinca<br><br><b>On</b> a date, the day goes in the genitive too: <b>petog svibnja</b> — on the 5th of May.<br>Written: <b>5. 5.</b> — with dots."},
+    {h:"How old are you?",
+     b:"<b>Koliko imaš godina?</b> — How old are you? (literally: how many years do you have?)<br><br>The number rule from Unit {u9} decides the ending:<br>ending in 1 → <b>godinu</b>: Imam dvadeset jednu godinu.<br>ending in 2–4 → <b>godine</b>: Imam dvadeset dvije godine.<br>5 and up → <b>godina</b>: Imam dvadeset pet godina.<br><br>Born: <b>Rođen sam / Rođena sam 2008. godine.</b>"},
+    {h:"dvoje, troje, oboje — groups",
+     b:"For mixed groups and for children, Croatian uses special numbers:<br><b>dvoje</b> (two), <b>troje</b> (three), <b>četvero</b> (four), <b>oboje</b> (both)<br><b>Imam dvoje djece.</b> — I have two kids.<br><b>nas troje</b> — the three of us<br><br><b>oba</b> (m/n) / <b>obje</b> (f) — both: <b>oba brata</b> · <b>obje sestre</b>"}
+  ],
+  vocab:[["prvi","first"],["drugi","second / other"],["treći","third"],["zadnji","last"],["sljedeći","next"],
+    ["datum","date"],["godina","year"],["rođendan","birthday"],["dvoje","two (group)"],["oboje","both (people)"]],
+  phrases:[["Koji je danas datum?","What's the date today?"],["Prvi put sam ovdje.","I'm here for the first time."],
+    ["Rođendan mi je petog svibnja.","My birthday is on the 5th of May."],["Imam dvoje djece.","I have two kids."],
+    ["Koliko imaš godina?","How old are you?"]],
+  drills:[
+    {t:"mc",q:"'treći' means…",o:["third","three"],a:0,e:"tri = three."},
+    {t:"type",q:"Say: the first day",a:["prvi dan"],e:"prvi dan."},
+    {t:"mc",q:"'on the 5th of May' =",o:["peti svibanj","petog svibnja"],a:1,e:"Both in the genitive."},
+    {t:"mc",q:"I'm 22: Imam dvadeset dvije ___",o:["godina","godine"],a:1,e:"Ends in 2 → godine."},
+    {t:"mc",q:"'Imam dvoje djece' means…",o:["I have two kids","I have two daughters"],a:0,e:"dvoje for children."},
+    {t:"type",q:"Ask: What's the date today?",a:["koji je danas datum","koji je datum danas"],e:"Koji je danas datum?"}
   ]
 },
 {
@@ -1209,6 +1383,33 @@ const UNITS = [
   ]
 },
 {
+  id:32, sec:5, title:"What someone said", sub:"Neupravni govor",
+  goal:"Pass on what someone said, ask about things you don't know ('I don't know where…'), and tell people what someone wants.",
+  grammar:[
+    {h:"He said that… — rekao je da…",
+     b:"Use <b>da</b> (Unit {u23}) and — unlike English — <b>keep the original tense</b>:<br><br>Ana: <em>Umorna sam.</em> → <b>Ana je rekla da je umorna.</b> — Ana said she <em>was</em> tired.<br>Marko: <em>Doći ću.</em> → <b>Marko je rekao da će doći.</b> — Marko said he <em>would</em> come.<br><br>English shifts the tense back; Croatian doesn't bother."},
+    {h:"I don't know where… — indirect questions",
+     b:"Keep the question word and use normal order — no li needed:<br><b>Ne znam gdje je.</b> — I don't know where it is.<br><b>Pitaj ga kada dolazi.</b> — Ask him when he's coming.<br><b>Znaš li što to znači?</b> — Do you know what that means?"},
+    {h:"…whether — verb + li",
+     b:"For a yes/no question passed on, put <b>li</b> after the verb:<br><b>Ne znam hoće li doći.</b> — I don't know if he's coming.<br><b>Pitao je jesam li umoran.</b> — He asked if I was tired.<br><b>Pitaj je ima li vremena.</b> — Ask her if she has time.<br><br>Don't use <b>ako</b> for this — ako is only the 'if' of conditions."},
+    {h:"He told me to… — da + present",
+     b:"To pass on a request, use <b>da</b> + the present:<br><b>Rekao mi je da dođem.</b> — He told me to come.<br><b>Rekla mi je da čekam.</b> — She told me to wait.<br><b>Mama želi da učim.</b> — Mom wants me to study."}
+  ],
+  vocab:[["reći","to say / tell (pf)"],["pitati","to ask"],["kazati","to say"],["odgovoriti","to answer (pf)"],
+    ["objasniti","to explain (pf)"],["hoće li","whether he'll…"],["je li","whether it is…"]],
+  phrases:[["Rekao je da će doći.","He said he'd come."],["Ne znam gdje je.","I don't know where it is."],
+    ["Pitaj ga hoće li doći.","Ask him if he's coming."],["Znaš li što to znači?","Do you know what that means?"],
+    ["Rekla mi je da čekam.","She told me to wait."]],
+  drills:[
+    {t:"mc",q:"Ana: 'Umorna sam.' → Ana je rekla da…",o:["je umorna","bila umorna"],a:0,e:"Keep the original tense."},
+    {t:"type",q:"Say: I don't know where it is.",a:["ne znam gdje je"],e:"Ne znam gdje je."},
+    {t:"mc",q:"'Ask him if he's coming' =",o:["Pitaj ga hoće li doći.","Pitaj ga ako će doći."],a:0,e:"whether = verb + li."},
+    {t:"mc",q:"'Rekao mi je da dođem' means…",o:["He told me to come","He said he came"],a:0,e:"da + present = a request."},
+    {t:"build",q:"Make: Do you know what that means?",w:["znaš","li","što","to","znači"],a:["Znaš li što to znači?","Znaš li što znači to?"],e:"Znaš li što to znači?"},
+    {t:"mc",q:"'whether' in Croatian is usually…",o:["verb + li","ako"],a:0,e:"ako is only for conditions."}
+  ]
+},
+{
   id:24, sec:5, title:"Sound changes", sub:"Glasovne promjene",
   goal:"Understand why endings sometimes reshape the word — so irregular forms stop looking random.",
   grammar:[
@@ -1265,6 +1466,56 @@ const UNITS = [
     {t:"mc",q:"Adding a prefix usually makes a verb:",o:["imperfective","perfective","reflexive","plural"],a:1,e:"Prefix → perfective, generally."},
     {t:"mc",q:"'prevesti' literally breaks down as:",o:["before + lead","across + lead","through + speak","around + write"],a:1,e:"pre- (across) + voditi (lead) = translate."},
     {t:"type",q:"Say: Come here! (informal)",a:["dođi ovamo","dodi ovamo"],e:"Dođi ovamo!"}
+  ]
+},
+{
+  id:34, sec:5, title:"Passive and -ing forms", sub:"Trpni pridjev i prilozi",
+  goal:"Understand 'closed', 'sold', 'written', the passive, and the -ći / -vši forms you'll see on signs and in writing.",
+  grammar:[
+    {h:"Done-to words: otvoren, zatvoren",
+     b:"From a verb you get a describing word for something that's had it done to it:<br>otvoriti → <b>otvoren</b> (open) · zatvoriti → <b>zatvoren</b> (closed)<br>napisati → <b>napisan</b> · prodati → <b>prodan</b> · platiti → <b>plaćen</b> · uzeti → <b>uzet</b> · roditi → <b>rođen</b><br><br>They change like adjectives (Unit {u19}):<br><b>Dućan je zatvoren.</b> · <b>Vrata su otvorena.</b> · <b>Zatvoreno.</b> (on a sign)<br><b>Je li ovo mjesto slobodno? — Ne, zauzeto je.</b> — Is this seat free? — No, it's taken."},
+    {h:"The passive",
+     b:"<b>biti + that word</b> makes a passive:<br><b>Knjiga je napisana 1950.</b> — The book was written in 1950.<br><b>Račun je plaćen.</b> — The bill is paid.<br><br>In speech Croatians often use <b>se</b> instead (Unit {u21}):<br><b>Ovdje se prodaju karte.</b> — Tickets are sold here."},
+    {h:"-ći: while doing",
+     b:"Take the <b>oni</b> form and add <b>-ći</b>:<br>gledaju → <b>gledajući</b> (watching) · idu → <b>idući</b> · rade → <b>radeći</b><br><br><b>Doručkujem gledajući vijesti.</b> — I have breakfast watching the news.<br><b>Učim slušajući glazbu.</b> — I study while listening to music.<br><br>It never changes — no gender, no case."},
+    {h:"-vši: having done (mostly written)",
+     b:"<b>došavši</b> (having come), <b>rekavši</b> (having said), <b>vidjevši</b> (having seen)<br><b>Vidjevši to, otišao je.</b> — Having seen that, he left.<br><br>You'll meet these in books and news. In speech people say <b>Kad je to vidio, otišao je.</b> — so just recognise them."}
+  ],
+  vocab:[["otvoren","open"],["zatvoren","closed"],["prodan","sold"],["plaćen","paid"],["napisan","written"],
+    ["rođen","born"],["zauzet","taken / busy"],["slobodan","free"]],
+  phrases:[["Zatvoreno je.","It's closed."],["Je li ovo mjesto slobodno?","Is this seat free?"],["Zauzeto je.","It's taken."],
+    ["Rođen sam u…","I was born in… (m)"],["Ovdje se prodaju karte.","Tickets are sold here."]],
+  drills:[
+    {t:"mc",q:"'Dućan je zatvoren' means…",o:["The shop is closed","The shop closed it"],a:0,e:"zatvoren = closed."},
+    {t:"mc",q:"'gledajući' means…",o:["(while) watching","watched"],a:0,e:"-ći = while doing."},
+    {t:"type",q:"Say: It's closed.",a:["zatvoreno je","zatvoren je","zatvorena je"],e:"Zatvoreno je."},
+    {t:"mc",q:"'Vrata su otvorena' — why -a?",o:["vrata is a neuter plural","it's feminine singular"],a:0,e:"vrata is always plural."},
+    {t:"mc",q:"Which form is mostly written, not said?",o:["došavši","otvoren"],a:0,e:"-vši is bookish."},
+    {t:"type",q:"A man says: I was born in Zagreb.",a:["rođen sam u zagrebu"],e:"Rođen sam u Zagrebu."}
+  ]
+},
+{
+  id:35, sec:5, title:"Old past tenses you'll read", sub:"Aorist, imperfekt, pluskvamperfekt",
+  goal:"Recognise the aorist, imperfect and pluperfect when you meet them in books, songs and jokes.",
+  grammar:[
+    {h:"Why you'll still see them",
+     b:"Everyday speech uses the normal past (Unit {u14}) for almost everything. But books, songs, headlines and some older people use extra past forms. You only need to <b>recognise</b> them — nobody expects you to produce them."},
+    {h:"Aorist — a quick, finished action",
+     b:"Made from perfective verbs: <b>rekoh</b> (I said), <b>reče</b> (he/she said), <b>rekosmo</b>, <b>rekoste</b>, <b>rekoše</b> (they said) · <b>dođoše</b> (they came)<br><br>In speech it survives in a few fun phrases:<br><b>Odoh ja!</b> — I'm off!<br><b>Rekoh ti!</b> — Told you!<br><br>Fun fact: the <b>bih / bi</b> of the conditional (Unit {u16}) is an old aorist of biti."},
+    {h:"Imperfect — mostly in old texts",
+     b:"Endings like <b>-ah, -aše, -ahu</b>:<br><b>Bijaše jednom…</b> — Once upon a time there was…<br><b>imaše</b> — he had · <b>govorahu</b> — they were saying<br><br>Rare even in writing today."},
+    {h:"Pluperfect — 'had done'",
+     b:"<b>bio / bila + past participle</b>:<br><b>Bio sam već otišao kad je stigao.</b> — I had already left when he arrived.<br><br>In speech people mostly use the normal past with <b>već</b> (already): <b>Već sam otišao.</b>"}
+  ],
+  vocab:[["već","already"],["jednom","once"],["tada","then"],["odoh","I'm off (aorist)"],["rekoh","I said (aorist)"],["bijaše","there was (imperfect)"]],
+  phrases:[["Odoh ja!","I'm off!"],["Rekoh ti!","Told you!"],["Bio jednom jedan kralj…","Once upon a time there was a king…"],["Već sam jeo.","I've already eaten. (m)"]],
+  drills:[
+    {t:"mc",q:"'Odoh ja!' means…",o:["I'm off!","I want it!"],a:0,e:"An aorist that's still used."},
+    {t:"mc",q:"Do you need to produce the aorist?",o:["No — just recognise it","Yes, it's the main past"],a:0,e:"Recognise only."},
+    {t:"mc",q:"'Rekoh ti!' means…",o:["Told you!","Tell me!"],a:0,e:"rekoh = I said."},
+    {t:"mc",q:"'Bio sam otišao' means…",o:["I had left","I will leave"],a:0,e:"Pluperfect."},
+    {t:"type",q:"Say (male): I've already eaten.",a:["već sam jeo"],e:"Već sam jeo."},
+    {t:"mc",q:"Where will you mostly see the imperfect?",o:["old books and stories","text messages"],a:0,e:"It's rare today."}
   ]
 },
 {
@@ -1596,6 +1847,417 @@ const STEP_Q = {
    SQt("Say: I agree.",["slažem se"],"Slažem se.")]
 ]
 };
+
+/* ---- build-a-sentence helper: (question, words, accepted answers, explanation, extra wrong words) ---- */
+const SQb = (q, w, a, e, x) => ({t:"build", q, w, a, e: e || "", x: x || []});
+
+/* ---- Step checks for the newer units ---- */
+Object.assign(STEP_Q, {
+27:[
+  [SQm("Safe order for a basic sentence:",["who → does → what","what → who → does","does → what → who"],0,"Same as English."),
+   SQb("Make: Marko is watching a film.",["marko","gleda","film"],["Marko gleda film."],"who → does → what."),
+   SQm("'Pijem čaj' — where's the 'I'?",["In the ending -m","It's missing, so it's wrong"],0,"The ending says who."),
+   SQt("Say: We're watching a film.",["gledamo film","mi gledamo film"],"Gledamo film.")],
+  [SQm("'cold beer' =",["pivo hladno","hladno pivo"],1,"Describing word first."),
+   SQm("'The tea is good' =",["Čaj je dobar.","Je čaj dobar."],0,"After je, like English."),
+   SQb("Make: I have a new car.",["imam","nov","auto"],["Imam nov auto."],"Describing word before the thing."),
+   SQm("Where does jako go in 'very good tea'?",["jako dobar čaj","dobar jako čaj"],0,"Right before the describing word.")],
+  [SQm("Where do place words like 'ovdje' usually go?",["at the end","at the very start"],0,"when → verb → what → where."),
+   SQb("Make: I'm working today.",["danas","radim"],["Danas radim.","Radim danas."],"Either is fine."),
+   SQb("Make: Tomorrow I'm working at home.",["sutra","radim","kod","kuće"],["Sutra radim kod kuće.","Radim sutra kod kuće.","Sutra kod kuće radim."],"when → verb → where."),
+   SQm("'kod kuće' means…",["at home","to the house"],0,"One chunk: at home.")],
+  [SQm("Which is correct?",["Ne pijem pivo.","Pijem ne pivo."],0,"ne touches the verb."),
+   SQm("Which is correct?",["Marko danas ne radi.","Marko ne danas radi."],0,"Nothing between ne and the verb."),
+   SQt("Say: I'm not working tomorrow.",["sutra ne radim","ne radim sutra"],"Sutra ne radim."),
+   SQm("'Ana isn't here' =",["Ana ne je ovdje.","Ana nije ovdje."],1,"biti uses nije.")],
+  [SQm("Which is correct?",["Je Ana ovdje.","Ana je ovdje."],1,"je can't come first."),
+   SQb("Make: Ana and Marko are here.",["ana","i","marko","su","ovdje"],["Ana i Marko su ovdje."],"'Ana i Marko' is one chunk."),
+   SQm("Which is correct?",["Danas umoran sam.","Danas sam umoran."],1,"sam goes second."),
+   SQb("Make: Are you tired today? (to a man)",["jesi","li","danas","umoran"],["Jesi li danas umoran?","Jesi li umoran danas?"],"jesi li first, then the rest.")],
+  [SQm("Where does the question word go?",["first","last"],0,"Gdje radiš?"),
+   SQb("Make: Why aren't you drinking beer?",["zašto","ne","piješ","pivo"],["Zašto ne piješ pivo?"],"Question word, then ne + verb."),
+   SQt("Ask: Where do you work?",["gdje radiš","gdje ti radiš"],"Gdje radiš?"),
+   SQm("'Gdje si?' — why is si second?",["Little words go second","It's random"],0,"Same rule as before.")]
+],
+29:[
+  [SQm("'zbog' means…",["because of","instead of","without"],0,"zbog + genitive."),
+   SQm("'kod' takes…",["genitive","locative"],0,"kod Ane."),
+   SQt("Say: near the sea (more)",["blizu mora"],"blizu + genitive."),
+   SQm("'umjesto kave' means…",["instead of coffee","without coffee"],0,"umjesto = instead of.")],
+  [SQm("Going into the city:",["u grad","u gradu"],0,"Moving → accusative."),
+   SQm("Being in the city:",["u grad","u gradu"],1,"Staying → locative."),
+   SQm("Put it under the table (moving):",["Stavi to pod stol.","Stavi to pod stolom."],0,"Moving → accusative."),
+   SQm("The dog is in front of the house:",["pred kuću","pred kućom"],1,"Staying → instrumental.")],
+  [SQm("'prije tri dana' =",["three days ago","in three days"],0,"prije = ago."),
+   SQt("Say: in an hour",["za sat","za jedan sat","za sat vremena"],"za + accusative."),
+   SQm("'on Monday' =",["u ponedjeljak","u ponedjeljku"],0,"Days: u + accusative."),
+   SQm("'after work' =",["nakon posla","nakon posao"],0,"nakon + genitive.")],
+  [SQm("'Ovo je za Anu' means…",["This is for Ana","This is behind Ana"],0,"za + accusative = for."),
+   SQm("'za stolom' means…",["at the table","for the table"],0,"za + instrumental = at / behind."),
+   SQt("Say: in five minutes",["za pet minuta"],"za = in (time)."),
+   SQm("'Thanks for the help' =",["Hvala na pomoći.","Hvala za pomoći."],0,"hvala na + locative.")]
+],
+30:[
+  [SQm("'nešto' means…",["something","nothing"],0,"ne- = some-."),
+   SQm("'someone' =",["netko","nitko"],0,"nitko = nobody."),
+   SQt("Say: somewhere in town",["negdje u gradu"],"Negdje u gradu."),
+   SQm("'nekad' means…",["sometimes / once","never"],0,"nikad = never.")],
+  [SQm("'never' =",["nekad","nikad"],1,"ni- = no-."),
+   SQm("Which is correct?",["Nitko zna.","Nitko ne zna."],1,"Keep the ne."),
+   SQt("Say: I never drink coffee.",["nikad ne pijem kavu","ne pijem nikad kavu","kavu nikad ne pijem"],"Nikad ne pijem kavu."),
+   SQb("Make: I'm not going anywhere.",["ne","idem","nigdje"],["Ne idem nigdje.","Nigdje ne idem."],"Double negative.")],
+  [SQm("'everywhere' =",["svugdje","negdje"],0,"sv- = every-."),
+   SQm("'Svi su ovdje' means…",["Everyone is here","Someone is here"],0,"svi + plural verb."),
+   SQm("'always' =",["uvijek","nikad"],0,"uvijek."),
+   SQt("Say: Everything's fine.",["sve je u redu","sve je dobro"],"Sve je u redu.")],
+  [SQm("'I see someone' =",["Vidim netko.","Vidim nekoga."],1,"Object → nekoga."),
+   SQm("'I'm not talking to anyone' =",["Ne razgovaram ni s kim.","Ne razgovaram s nikim."],0,"ni splits off."),
+   SQm("'about nothing' =",["ni o čemu","o ništa"],0,"ni + o + čemu."),
+   SQt("Say: I don't see anyone.",["ne vidim nikoga","nikoga ne vidim"],"Ne vidim nikoga.")]
+],
+28:[
+  [SQm("'Znam plivati' means…",["I can swim","I know a swimmer"],0,"znati + infinitive = know how."),
+   SQt("Conjugate: oni + morati",["moraju"],"moraju."),
+   SQb("Make: Can you come?",["možeš","li","doći"],["Možeš li doći?"],"Verb + li + infinitive."),
+   SQt("Say: I can come.",["mogu doći"],"Mogu doći.")],
+  [SQm("'Treba mi pomoć' means…",["I need help","I'm helping"],0,"Dative pattern."),
+   SQt("Say: I need to study. (učiti)",["trebam učiti"],"Trebam učiti."),
+   SQm("'Trebao bih ići' means…",["I should go","I went"],0,"Conditional = should."),
+   SQm("'Ne trebaš doći' means…",["You don't need to come","You mustn't come"],0,"Optional, not forbidden.")],
+  [SQm("'I don't have to work' =",["Ne moram raditi.","Ne smijem raditi."],0,"ne moram = don't have to."),
+   SQm("'Ne smiješ' means…",["You mustn't","You don't have to"],0,"Not allowed."),
+   SQt("Say: You don't have to. (ti)",["ne moraš"],"Ne moraš."),
+   SQm("Telling a kid they're not allowed to smoke:",["Ne smiješ pušiti.","Ne moraš pušiti."],0,"ne moraš would mean it's optional!")],
+  [SQm("'Morala sam ići' — who's talking?",["a woman: I had to go","a man"],0,"-la = female."),
+   SQt("Say: I'll have to work.",["morat ću raditi"],"Drop the -i: morat ću."),
+   SQm("'Nisam mogao doći' means…",["I couldn't come","I didn't want to come"],0,"moći → mogao."),
+   SQm("Correct spelling:",["moći ću","moć ću"],0,"-ći verbs don't change.")],
+  [SQm("'I'm bored' =",["Dosadan sam.","Dosadno mi je."],1,"Dosadan sam = I'm boring!"),
+   SQm("'Kasno je' means…",["It's late","I'm late"],0,"No subject."),
+   SQt("Say: I'm hot.",["vruće mi je"],"Vruće mi je."),
+   SQm("'Žao mi je' means…",["I'm sorry","I'm cold"],0,"Žao mi je.")]
+],
+33:[
+  [SQm("'Kad budem imao vremena, nazvat ću Anu' means…",["When I have time, I'll call Ana","When I had time, I called Ana"],0,"Future II."),
+   SQm("Future II is used after…",["kad / ako about the future","every future verb"],0,"Only in those clauses."),
+   SQm("Which is natural?",["Kad ću imati vremena…","Kad budem imao vremena…"],1,"No ću after kad.")],
+  [SQt("budem → the mi form:",["budemo"],"budemo."),
+   SQm("A woman: 'when I finish' (završiti)",["kad budem završila","kad budem završio"],0,"-la for her."),
+   SQm("'ako bude padala kiša' means…",["if it rains","it rained"],0,"Future II."),
+   SQm("'budeš' is for…",["ti","on"],0,"budeš = you.")],
+  [SQm("'Kad dođem kući…' uses…",["a perfective present","the past"],0,"Easy way."),
+   SQb("Make: When I arrive, I'll call Ana.",["kad","stignem","nazvat","ću","anu"],["Kad stignem, nazvat ću Anu."],"Perfective present, then the future."),
+   SQm("'Čim stignem' means…",["as soon as I arrive","before I arrive"],0,"čim = as soon as."),
+   SQt("Say: when I come (perfective, doći)",["kad dođem","kada dođem"],"Kad dođem.")],
+  [SQm("You're sure it will happen:",["kad","ako"],0,"kad = when."),
+   SQm("'Ako dođeš u Zagreb, javi se.' means…",["If you come to Zagreb, get in touch.","When you came to Zagreb…"],0,"ako = if."),
+   SQt("Say: if you have time",["ako imaš vremena"],"Ako imaš vremena.")]
+],
+31:[
+  [SQm("'second' =",["drugi","dva"],0,"dva = two."),
+   SQm("'the first coffee' =",["prvi kava","prva kava"],1,"kava is feminine."),
+   SQt("Say: the third time (put)",["treći put"],"Treći put."),
+   SQm("'zadnji' means…",["last","late"],0,"zadnji = last.")],
+  [SQm("In dates, 'svibanj' becomes…",["svibanja","svibnja"],1,"The a drops."),
+   SQm("'Danas je dvadeseti listopada' means…",["Today is October 20th","Today is October 2nd"],0,"dvadeseti = 20th."),
+   SQm("Dates put the month in the…",["genitive","nominative"],0,"of May, of October."),
+   SQt("Say: on the 5th of May",["petog svibnja","petoga svibnja"],"Petog svibnja.")],
+  [SQm("I'm 21: Imam dvadeset jednu ___",["godinu","godina"],0,"Ends in 1 → godinu."),
+   SQt("Say: I'm 25.",["imam dvadeset pet godina"],"5+ → godina."),
+   SQm("'Koliko imaš godina?' means…",["How old are you?","What year is it?"],0,"Literally: how many years do you have?"),
+   SQm("I'm 23: Imam dvadeset tri ___",["godine","godina"],0,"Ends in 3 → godine.")],
+  [SQm("'oboje' means…",["both (people)","two of everything"],0,"oboje = both."),
+   SQm("'both brothers' =",["oba brata","obje brata"],0,"oba for masculine."),
+   SQm("'nas troje' means…",["the three of us","us, three times"],0,"troje for groups."),
+   SQt("Say: I have two kids.",["imam dvoje djece"],"Imam dvoje djece.")]
+],
+32:[
+  [SQm("Marko: 'Doći ću.' → Marko je rekao da…",["će doći","bi došao"],0,"Keep the original tense."),
+   SQm("Croatian reported speech…",["keeps the original tense","shifts to the past like English"],0,"No shifting."),
+   SQt("Say: She said she's tired.",["rekla je da je umorna"],"Rekla je da je umorna."),
+   SQm("'Kaže da nema vremena' means…",["He says he has no time","He has no time to talk"],0,"kaže = says.")],
+  [SQm("'Ne znam gdje je' — after gdje comes…",["the normal order","li"],0,"No li with a question word."),
+   SQt("Say: I don't know what that is.",["ne znam što je to","ne znam što to je"],"Ne znam što je to."),
+   SQb("Make: Ask him when he's coming.",["pitaj","ga","kada","dolazi"],["Pitaj ga kada dolazi."],"Question word stays."),
+   SQm("'Znaš li gdje živi?' means…",["Do you know where he lives?","Does he know where you live?"],0,"")],
+  [SQm("'I don't know if he's coming' =",["Ne znam hoće li doći.","Ne znam ako dolazi."],0,"whether = verb + li."),
+   SQm("'Pitao je jesam li umoran' means…",["He asked if I was tired","He said I was tired"],0,"jesam li = whether I am."),
+   SQt("Say: I don't know if she has time.",["ne znam ima li vremena","ne znam ima li ona vremena"],"Ne znam ima li vremena."),
+   SQm("In a passed-on yes/no question, li goes…",["right after the verb","at the end"],0,"hoće li, ima li.")],
+  [SQm("'Mama želi da učim' means…",["Mom wants me to study","Mom wants to study"],0,"da + present."),
+   SQt("Say: She told me to wait.",["rekla mi je da čekam"],"Rekla mi je da čekam."),
+   SQm("'He told me to come' =",["Rekao mi je da dođem.","Rekao mi je doći."],0,"da + present.")]
+],
+34:[
+  [SQm("otvoriti → ?",["otvoren","otvorio"],0,"otvorio is the past."),
+   SQm("'Račun je plaćen' means…",["The bill is paid","Pay the bill"],0,"plaćen = paid."),
+   SQm("'Zauzeto' on a seat means…",["taken","free"],0,"slobodno = free."),
+   SQm("These words change like…",["adjectives","verbs"],0,"otvoren, otvorena, otvoreno.")],
+  [SQm("'Knjiga je napisana 1950.' means…",["The book was written in 1950","The book wrote in 1950"],0,"biti + participle."),
+   SQm("'Ovdje se prodaju karte' means…",["Tickets are sold here","I sell tickets here"],0,"se passive."),
+   SQt("Say: The bill is paid.",["račun je plaćen"],"Račun je plaćen.")],
+  [SQm("gledaju → ?",["gledajući","gledavši"],0,"-ći = while."),
+   SQm("rade → ?",["radeći","radući"],0,"From rade + ći."),
+   SQm("'Hodao je pjevajući' means…",["He walked along singing","He walked, then sang"],0,"At the same time."),
+   SQm("Do -ći words change for gender?",["No, never","Yes"],0,"They never change.")],
+  [SQm("'Vidjevši to, otišao je.' means…",["Having seen that, he left.","Seeing that, he stays."],0,"-vši = having done."),
+   SQm("Do you need to say -vši forms yourself?",["No — recognise them","Yes, every day"],0,"Mostly written."),
+   SQm("Everyday way to say 'Došavši kući…':",["Kad je došao kući…","Došao kući…"],0,"Speech uses kad.")]
+],
+35:[
+  [SQm("For the past, everyday speech uses…",["the normal past (bio sam…)","the aorist"],0,"The normal past covers almost everything."),
+   SQm("Where do you meet the extra past forms?",["books, songs, news","only in questions"],0,"Mostly writing."),
+   SQm("Do you need to use these forms yourself?",["No — just recognise them","Yes, every day"],0,"Recognise only.")],
+  [SQm("'reče' means…",["he / she said","say!"],0,"Aorist."),
+   SQm("'dođoše' means…",["they came","we come"],0,"-še = they."),
+   SQm("The bih / bi of 'would' comes from…",["an old aorist of biti","the future"],0,"Fun fact.")],
+  [SQm("'Bijaše jednom…' means…",["Once upon a time there was…","He will be once…"],0,"Imperfect."),
+   SQm("Imperfect endings look like…",["-ah, -aše, -ahu","-ću, -ćeš"],0,"Rare today."),
+   SQm("'govorahu' means…",["they were saying","they will say"],0,"-ahu = they (imperfect).")],
+  [SQm("'Bila sam već otišla' means…",["I (f) had already left","I (f) will leave"],0,"Pluperfect."),
+   SQt("Say (female): I've already eaten.",["već sam jela"],"Već sam jela."),
+   SQm("In speech 'I had left' is usually…",["već + the normal past","the aorist"],0,"Već sam otišao.")]
+]
+});
+
+/* ---- A couple of extra, slightly harder checks for every step of units 1–26 ---- */
+const STEP_Q2 = {
+1:[[SQm("'ž' sounds like…",["the s in measure","the z in zoo","sh"],0,"ž = s in measure."),SQm("How many letters is 'lj'?",["one","two"],0,"Lj is one letter.")],
+   [SQm("Which word uses r as its vowel?",["krv","kava","ruka"],0,"krv = blood: KURV."),SQm("'prst' means…",["finger","garden"],0,"vrt = garden.")],
+   [SQm("Stress in 'dobar':",["DO-bar","do-BAR"],0,"Never last."),SQm("Stress in 'Zagreb':",["ZA-greb","za-GREB"],0,"ZA-greb.")]],
+2:[[SQm("You meet your friend's grandmother:",["Kako si?","Kako ste?"],1,"Older person → vi."),SQt("Ask a stranger: What's your name?",["kako se zovete"],"Kako se zovete?")],
+   [SQm("'Žao mi je' means…",["I'm sorry","I'm fine"],0,"Žao mi je."),SQt("Say: Thanks a lot.",["hvala puno","puno hvala","hvala lijepa"],"Hvala puno.")],
+   [SQm("Leaving a shop, politely:",["Doviđenja","Laku noć","Dobro jutro"],0,"Doviđenja."),SQt("Say: Good evening.",["dobra večer"],"Dobra večer.")],
+   [SQb("Make: My name is Ana.",["zovem","se","ana"],["Zovem se Ana."],"se can't start the sentence."),SQm("'Drago mi je' means…",["Nice to meet you","I'm well"],0,"Drago mi je.")]],
+3:[[SQm("'vi' can mean…",["you (a group) or polite you","they"],0,"vi = you plural / formal."),SQt("Say: We are here.",["mi smo ovdje","ovdje smo","tu smo","mi smo tu"],"Ovdje smo.")],
+   [SQm("'They aren't here' =",["Nisu ovdje.","Ne su ovdje."],0,"nisu."),SQt("Say: She isn't here.",["nije ovdje","ona nije ovdje","nije tu"],"Nije ovdje.")],
+   [SQb("Make: Are you a student?",["jesi","li","ti","student"],["Jesi li ti student?"],"jesi li first."),SQt("Ask: Is Ana here?",["je li ana ovdje","jel ana ovdje","je li ana tu"],"Je li Ana ovdje?")],
+   [SQm("A woman says 'I'm tired':",["Umoran sam","Umorna sam"],1,"Women add -a."),SQb("Make (woman): I'm not hungry.",["nisam","gladna"],["Nisam gladna."],"One-word negative.",["gladan","ne"])]],
+4:[[SQm("Gender of 'selo':",["masculine","feminine","neuter"],2,"-o → neuter."),SQm("Gender of 'noć':",["masculine","feminine"],1,"An exception.")],
+   [SQt("Plural of 'prijatelj':",["prijatelji"],"Masculine → -i."),SQt("Plural of 'kava':",["kave"],"-a → -e.")],
+   [SQt("Plural of 'dijete':",["djeca"],"dijete → djeca."),SQm("'uši' means…",["ears","eyes"],0,"uho → uši.")],
+   [SQm("'Imam auto' could mean…",["I have a car / the car","only 'I have the car'"],0,"No articles."),SQt("Say: I have a car.",["imam auto"],"Imam auto.")]],
+5:[[SQt("Conjugate: oni + raditi",["rade"],"-im verbs: oni rade."),SQt("Conjugate: vi + pisati",["pišete"],"pišem → pišete.")],
+   [SQt("Conjugate: ti + moći",["možeš"],"možeš."),SQt("Conjugate: mi + piti",["pijemo"],"pijem → pijemo.")],
+   [SQt("Say: I'm eating now.",["jedem sada","sada jedem","sad jedem","jedem sad"],"Just jedem."),SQm("'Spavaš?' can mean…",["Are you sleeping? / Do you sleep?","Did you sleep?"],0,"One present tense.")],
+   [SQb("Make: I never go there.",["nikad","ne","idem","tamo"],["Nikad ne idem tamo.","Ne idem nikad tamo.","Tamo nikad ne idem."],"Keep the ne!"),SQt("Say: I don't want to. (one word)",["neću"],"Neću.")]],
+6:[[SQt("Ask: Where are you from?",["odakle si","odakle si ti","odakle ste"],"Odakle si?"),SQm("'kada' means…",["when","how"],0,"kada = when.")],
+   [SQt("Ask: Who are you going with?",["s kim ideš"],"S kim ideš?"),SQm("'Od koga je to?' means…",["Who is that from?","Who is that for?"],0,"od = from.")],
+   [SQm("___ je ovo torba? (Whose?)",["Čiji","Čija","Čije"],1,"torba is feminine."),SQt("Ask: What kind of film?",["kakav film"],"film is masculine.")],
+   [SQb("Make: Do you speak English?",["govoriš","li","engleski"],["Govoriš li engleski?"],"Verb + li."),SQt("Ask (formal): Are you ready? (spremni)",["jeste li spremni"],"Jeste li spremni?")],
+   [SQm("'Kako se kaže … na hrvatskom?' means…",["How do you say … in Croatian?","What is … in English?"],0,"A lifesaver."),SQt("Ask (formal): Could you repeat that?",["možete li ponoviti"],"Možete li ponoviti?")]],
+7:[[SQt("Write 40 in words.",["četrdeset"],"četrdeset."),SQm("'sto' =",["100","1000"],0,"tisuća = 1000.")],
+   [SQm("'three coffees' =",["tri kave","tri kava"],0,"Like dvije kave."),SQm("'ten coffees' =",["deset kava","deset kave"],0,"Like pet kava.")],
+   [SQt("Write 4:30 the everyday way.",["pola pet"],"Head towards five."),SQm("'u osam navečer' =",["8pm","8am"],0,"navečer = evening.")],
+   [SQt("The word for 'week':",["tjedan"],"tjedan."),SQm("Which is Wednesday?",["srijeda","utorak","četvrtak"],0,"srijeda = middle.")]],
+8:[[SQm("'Marka voli Ana' — who is loved?",["Marko","Ana"],0,"The -a ending marks him."),SQm("Which case is the subject?",["nominativ","akuzativ"],0,"Nominativ.")],
+   [SQt("Vidim ___ (kuća)",["kuću"],"-a → -u."),SQt("Imam ___ (sestra)",["sestru"],"-a → -u.")],
+   [SQt("Vidim ___ (prijatelj)",["prijatelja"],"Alive → -a."),SQb("Make: I see Marko.",["vidim","marka"],["Vidim Marka.","Marka vidim."],"Marko → Marka.",["marko"])],
+   [SQt("Say: Coffee, please.",["kavu molim","kavu molim vas","molim kavu","molim vas kavu"],"Kavu, molim."),SQm("Which should you avoid with strangers?",["Dajte mi kavu.","Molim vas jednu kavu."],0,"Too blunt.")],
+   [SQt("Say (male): I'd like a coffee.",["htio bih kavu","htio bih jednu kavu"],"Htio bih kavu."),SQt("Say (female): I'd like a beer.",["htjela bih pivo","htjela bih jedno pivo"],"Htjela bih pivo.")]],
+9:[[SQt("Genitive of 'more':",["mora"],"-a."),SQt("Genitive of 'kava':",["kave"],"-e.")],
+   [SQt("Say: from Zagreb",["iz zagreba"],"iz + genitive."),SQb("Make: a glass of water",["čaša","vode"],["čaša vode"],"čaša + genitive.",["voda"])],
+   [SQt("Say: three beers",["tri piva"],"2–4 → genitive singular."),SQt("Say: five tables",["pet stolova"],"5+ → genitive plural.")],
+   [SQb("Make: Is there bread?",["ima","li","kruha"],["Ima li kruha?"],"ima li + genitive.",["kruh"]),SQt("Say: No problem.",["nema problema"],"Nema problema.")]],
+10:[[SQt("Say: I'm going to school.",["idem u školu"],"Going → accusative."),SQt("Say: I'm at school.",["u školi sam","ja sam u školi"],"Being → locative.")],
+   [SQt("Say: in the city",["u gradu"],"-u."),SQt("Say: about Zagreb",["o zagrebu"],"o + locative.")],
+   [SQm("'on the island' =",["u otoku","na otoku"],1,"Islands take na."),SQt("Say: I'm at the beach.",["na plaži sam","ja sam na plaži"],"Na plaži sam.")],
+   [SQt("Ask: Where are you going?",["kamo ideš","kuda ideš"],"Kamo ideš?"),SQb("Make: I'm going to the cinema.",["idem","u","kino"],["Idem u kino."],"Going → accusative.",["kinu"])]],
+11:[[SQt("Dajem knjigu ___ (sestra)",["sestri"],"Dative -i."),SQb("Make: I'm writing to Ana.",["pišem","ani"],["Pišem Ani."],"To whom → dative.",["anu","ana"])],
+   [SQt("Say: Give me that.",["daj mi to"],"Daj mi to."),SQm("'Reci mu' means…",["Tell him","Tell her"],0,"mu = to him.")],
+   [SQb("Make: I like Croatia.",["sviđa","mi","se","hrvatska"],["Sviđa mi se Hrvatska.","Hrvatska mi se sviđa."],"It pleases me."),SQt("Ask: How do you like Zagreb? (ti)",["kako ti se sviđa zagreb"],"Kako ti se sviđa Zagreb?")],
+   [SQt("Say: I miss you.",["nedostaješ mi"],"Nedostaješ mi."),SQm("'Čini mi se' means…",["It seems to me","It makes me"],0,"Čini mi se…")]],
+12:[[SQt("Instrumental of 'grad':",["gradom"],"-om."),SQt("Instrumental of 'nož':",["nožem"],"Soft consonant → -em.")],
+   [SQt("Say: I travel by train.",["putujem vlakom"],"A means → no s."),SQb("Make: I'm going with Ana.",["idem","s","anom"],["Idem s Anom."],"A person → s.",["sa","ana"])],
+   [SQm("'with Šime' =",["s Šimom","sa Šimom"],1,"sa before š."),SQt("Say: with me",["sa mnom"],"sa mnom.")],
+   [SQm("'pred kućom' means…",["in front of the house","behind the house"],0,"pred = in front of."),SQm("'ponedjeljkom' means…",["on Mondays","next Monday"],0,"Repeated time.")]],
+13:[[SQt("Call Marko:",["marko"],"Names in -o don't change."),SQm("'Hvala, prijatelju!' — prijatelju is…",["vocative (calling him)","nominative"],0,"Calling someone.")],
+   [SQm("Case number 2 is…",["genitiv","dativ"],0,"N G D A V L I."),SQm("Case number 6 is…",["lokativ","instrumental"],0,"N G D A V L I.")],
+   [SQm("'čime' is the instrumental of…",["što","tko"],0,"čime = with what."),SQm("'Komu pišeš?' asks…",["to whom","about whom"],0,"Dative.")],
+   [SQm("In the plural, D, L and I…",["share one ending","are all different"],0,"-ama / -ima."),SQm("'Vidim stol' — acc equals nom because stol is…",["a masculine thing","feminine"],0,"Inanimate.")],
+   [SQt("Say: with friends",["s prijateljima"],"-ima."),SQt("Say: in the cities",["u gradovima"],"-ima.")]],
+14:[[SQt("učiti → past (female):",["učila"],"-la."),SQt("pisati → past (male):",["pisao"],"-o.")],
+   [SQb("Make (woman): I was in Split.",["bila","sam","u","splitu"],["Bila sam u Splitu.","U Splitu sam bila."],"Her own ending.",["bio"]),SQm("All-female group: 'we were'",["bili smo","bile smo"],1,"-le.")],
+   [SQt("Say (male): I didn't work.",["nisam radio"],"Nisam radio."),SQt("Ask a female friend: Have you been to Zagreb?",["jesi li bila u zagrebu"],"Jesi li bila u Zagrebu?")],
+   [SQb("Make (male): Yesterday I worked.",["jučer","sam","radio"],["Jučer sam radio.","Radio sam jučer."],"sam second."),SQm("Which is correct?",["U Zagrebu sam radio.","U Zagrebu radio sam."],0,"'U Zagrebu' is one chunk.")],
+   [SQt("Past of 'ići' (female):",["išla"],"išla."),SQt("Say (male): I ate.",["jeo sam"],"Jeo sam.")]],
+15:[[SQt("Say: I'll come.",["doći ću"],"Doći ću."),SQb("Make: What will you do?",["što","ćeš","raditi"],["Što ćeš raditi?"],"ćeš second.")],
+   [SQt("Say: I'll write. (pisati)",["pisat ću"],"Drop the -i."),SQm("Which is Croatian spelling?",["gledat ću","gledaću"],0,"Separate words.")],
+   [SQt("Say: We won't go.",["nećemo ići"],"Nećemo ići."),SQb("Make: Will you come?",["hoćeš","li","doći"],["Hoćeš li doći?"],"Hoćeš li…",["ćeš"])],
+   [SQt("Say: Tomorrow I'm working. (present)",["sutra radim"],"Sutra radim."),SQm("'Film počinje u osam' talks about…",["a scheduled time","the past"],0,"Present for schedules.")]],
+16:[[SQt("Say (female): I'd love to go to Split.",["voljela bih ići u split"],"Voljela bih ići u Split."),SQm("'Mogli biste mi pomoći?' is…",["a polite request","an order"],0,"Very polite.")],
+   [SQm("Most polite in a shop:",["Htjela bih kruh.","Hoću kruh."],0,"Conditional."),SQt("Say (male): I'd like water.",["htio bih vodu"],"Htio bih vodu.")],
+   [SQb("Make: If you have time, come.",["ako","imaš","vremena","dođi"],["Ako imaš vremena, dođi."],"ako + present."),SQm("'Da sam znao, došao bih' means…",["Had I known, I'd have come","I know I'll come"],0,"Past 'if'.")],
+   [SQt("Say: Come! (to a friend)",["dođi"],"Dođi!"),SQt("Say: Don't go! (to a friend)",["nemoj ići"],"Nemoj ići!")]],
+17:[[SQt("Perfective partner of 'jesti':",["pojesti"],"po- + jesti."),SQm("'kupiti' is…",["perfective","imperfective"],0,"kupovati is the imperfective.")],
+   [SQm("'Napisao sam pismo' means…",["I wrote (finished) the letter","I was writing a letter"],0,"Perfective."),SQt("Say (male): I read the book. (finished)",["pročitao sam knjigu"],"Pročitao sam knjigu.")],
+   [SQm("'Sada pišem' — which aspect?",["imperfective","perfective"],0,"Right now."),SQm("Which can't mean 'right now'?",["napišem","pišem"],0,"Perfective present.")],
+   [SQm("'Every morning I drink coffee' =",["Svako jutro pijem kavu.","Svako jutro popijem kavu."],0,"Habit → imperfective."),SQm("'I bought a car' (done) =",["Kupio sam auto.","Kupovao sam auto."],0,"One-off → perfective.")]],
+18:[[SQt("Say: my sister",["moja sestra"],"moja."),SQt("Say: their house",["njihova kuća"],"njihova.")],
+   [SQt("Say: with my friend",["s mojim prijateljem"],"Instrumental."),SQm("'Vidim tvoju sestru' — tvoju is…",["accusative","nominative"],0,"Object.")],
+   [SQm("'Ana loves her (own) job' =",["Ana voli svoj posao.","Ana voli njezin posao."],0,"svoj."),SQb("Make: He loves his own sister.",["on","voli","svoju","sestru"],["On voli svoju sestru."],"svoj.",["njegovu"])],
+   [SQt("Ask: Whose is this? (neuter)",["čije je ovo","čije je to"],"Čije je ovo?"),SQm("___ je ovo pivo?",["Čiji","Čija","Čije"],2,"pivo is neuter.")]],
+19:[[SQt("Say: this book",["ova knjiga"],"ova."),SQm("'Ono tamo je muzej' — ono means…",["that over there","this"],0,"Far from both.")],
+   [SQt("Say: a big house",["velika kuća"],"velika."),SQt("Say: big cities",["veliki gradovi"],"Plural.")],
+   [SQm("Which is a fixed name?",["Novi Zagreb","nov Zagreb"],0,"Long form."),SQm("'taj ___ grad' (big)",["velik","veliki"],1,"After taj → long.")],
+   [SQt("Opposite of 'star' (an old thing):",["nov","novi"],"nov."),SQm("'skup' means…",["expensive","cheap"],0,"jeftin = cheap.")]],
+20:[[SQt("Comparative of 'brz':",["brži"],"brži."),SQb("Make: Zagreb is bigger than Split.",["zagreb","je","veći","od","splita"],["Zagreb je veći od Splita."],"od + genitive.",["split"])],
+   [SQt("Say: worse",["gori"],"loš → gori."),SQt("Say: the best",["najbolji"],"naj- + bolji.")],
+   [SQt("Adverb from 'dobar':",["dobro"],"dobro."),SQb("Make: He speaks Croatian well.",["govori","dobro","hrvatski"],["Govori dobro hrvatski.","Dobro govori hrvatski.","Govori hrvatski dobro."],"Adverbs move freely.")],
+   [SQt("Say: too big",["prevelik","prevelika","preveliko"],"pre- = too."),SQm("'skoro' means…",["almost","never"],0,"skoro = almost.")]],
+21:[[SQt("Say: I see them.",["vidim ih"],"ih."),SQb("Make: Give it to me.",["daj","mi","ga"],["Daj mi ga."],"Dative before accusative.",["me"])],
+   [SQt("Say: I hope.",["nadam se"],"Nadam se."),SQm("'Bojim se' means…",["I'm afraid","I'm laughing"],0,"bojati se.")],
+   [SQm("'Kako se to kaže?' means…",["How do you say that?","How did he say that?"],0,"Impersonal se."),SQm("'Govori se hrvatski' means…",["Croatian is spoken","He speaks Croatian himself"],0,"Impersonal.")],
+   [SQt("Say (male): I bought myself a book.",["kupio sam sebi knjigu"],"sebi."),SQm("'Ona misli samo na sebe' means…",["She only thinks about herself","She thinks about him"],0,"sebe.")]],
+22:[[SQb("Make: I'll come tomorrow.",["sutra","ću","doći"],["Sutra ću doći.","Doći ću sutra."],"ću second."),SQm("Which is correct?",["Ja ću doći.","Ću doći."],0,"ću can't start.")],
+   [SQb("Make (male): I saw him yesterday.",["jučer","sam","ga","vidio"],["Jučer sam ga vidio.","Vidio sam ga jučer."],"sam before ga."),SQb("Make: How do you like it?",["kako","ti","se","sviđa"],["Kako ti se sviđa?"],"ti before se.")],
+   [SQm("The last spot usually carries…",["the new information","the subject"],0,"End = news."),SQm("'Kavu pijem, ne čaj' stresses…",["coffee (not tea)","drinking"],0,"Moved for emphasis.")],
+   [SQb("Make: She came back.",["vratila","se"],["Vratila se."],"je drops after se.",["je"]),SQm("Which is correct?",["Vidio ga je.","Vidio je ga."],0,"je goes last.")]],
+23:[[SQb("Make: I like coffee, but I don't drink it at night.",["volim","kavu","ali","je","ne","pijem","navečer"],["Volim kavu, ali je ne pijem navečer."],"ali = but."),SQm("'pa' can mean…",["so / and then","but rather"],0,"pa.")],
+   [SQt("Say: I hope you'll come.",["nadam se da ćeš doći"],"Nadam se da ćeš doći."),SQm("'Želim da dođeš' means…",["I want you to come","I want to come"],0,"da + present.")],
+   [SQb("Make: Although it's cold, I'm going out.",["iako","je","hladno","idem","van"],["Iako je hladno, idem van."],"iako = although."),SQt("Say (male): because I'm tired",["jer sam umoran","zato što sam umoran"],"jer sam umoran.")],
+   [SQt("Say: the book that I'm reading",["knjiga koju čitam"],"koju (object)."),SQm("'žena koja govori' means…",["the woman who is speaking","the woman's speech"],0,"koja (subject).")]],
+24:[[SQm("'ručica' comes from…",["ruka","ruž"],0,"k → č."),SQm("Vocative of 'vojnik':",["vojniče","vojniku"],0,"k → č.")],
+   [SQt("u ___ (knjiga, locative)",["knjizi"],"g → z."),SQm("Dative of 'noga':",["nozi","nogi"],0,"g → z.")],
+   [SQm("s + j gives…",["š","ž"],0,"s + j → š."),SQm("Comparative of 'visok':",["viši","visokiji"],0,"Jotacija.")],
+   [SQt("Genitive of 'pas':",["psa"],"The a vanishes."),SQm("Genitive of 'Amerikanac':",["Amerikanca","Amerikanaca"],0,"Vanishing a.")],
+   [SQm("Male past of 'biti':",["bio","bil"],0,"l → o."),SQm("Female past of 'raditi':",["radila","radioa"],0,"The l stays.")]],
+25:[[SQm("'ući' means…",["to enter","to find"],0,"u- = into."),SQm("'opisati' means…",["to describe","to sign"],0,"o- = around.")],
+   [SQm("'raz-' tends to mean…",["apart","together"],0,"razumjeti."),SQm("'pre-' tends to mean…",["across / over / re-","into"],0,"prevesti.")],
+   [SQm("Imperfective partner of 'otići':",["odlaziti","otići"],0,"odlaziti."),SQt("Perfective partner of 'čitati':",["pročitati"],"pro- + čitati.")],
+   [SQm("'prevesti' means…",["to translate","to forget"],0,"Lead across."),SQm("'izaći' is built from…",["iz- (out) + ići","i- + zaći"],0,"Out + go.")]],
+26:[[SQm("'Ajde!' means…",["Come on! / Let's go!","Goodbye forever"],0,"Ajde."),SQt("Say: no worries",["nema frke"],"Nema frke.")],
+   [SQm("Everyday word for 'computer':",["kompjuter","računalo"],0,"kompjuter."),SQm("Everyday word for 'on foot':",["pješke","pješice"],0,"pješke.")],
+   [SQt("Say: just a moment",["samo malo","samo trenutak"],"Samo malo."),SQt("Say: I don't know how to say it.",["ne znam kako se kaže"],"Ne znam kako se kaže.")],
+   [SQt("Say: You're right.",["imaš pravo","u pravu si"],"Imaš pravo."),SQt("Say: I don't agree.",["ne slažem se"],"Ne slažem se.")]]
+};
+Object.keys(STEP_Q2).forEach(id => STEP_Q2[id].forEach((qs, k) => {
+  if(STEP_Q[id] && STEP_Q[id][k]) STEP_Q[id][k] = STEP_Q[id][k].concat(qs);
+}));
+
+/* ---- Big-quiz-only questions: never shown in the steps ---- */
+const FINAL_Q = {
+1:[SQm("How is 'čaj' pronounced?",["chai","kai","tsai"],0,"č = ch."),SQm("'Hrvatska' is pronounced…",["HUR-vat-ska","hr-VAT-ska"],0,"r is the vowel."),
+   SQm("Which is one letter?",["dž","dz"],0,"Dž, Lj, Nj."),SQm("'š' in 'šuma' sounds like…",["sh","s","z"],0,"š = sh."),
+   SQt("Say (formal): Speak slowly, please.",["govorite polako molim vas","molim vas govorite polako","govorite polako molim"],"Govorite polako, molim vas."),
+   SQm("Stress in 'jabuka':",["JA-bu-ka or ja-BU-ka — not the last","ja-bu-KA"],0,"Never last.")],
+2:[SQb("Make: Nice to meet you.",["drago","mi","je"],["Drago mi je."],"Drago mi je."),SQm("Your boss says 'Možemo na ti.' Now you ask…",["Kako si?","Kako ste?"],0,"You've switched to ti."),
+   SQt("Say: Good morning.",["dobro jutro"],"Dobro jutro."),SQm("'Vidimo se' means…",["See you","We see"],0,"Vidimo se."),
+   SQt("Answer: I'm fine, thanks.",["dobro sam hvala"],"Dobro sam, hvala."),SQm("'Excuse me' to a stranger:",["Oprosti","Oprostite"],1,"vi form.")],
+3:[SQb("Make: Ana is here.",["ana","je","ovdje"],["Ana je ovdje.","Ovdje je Ana."],"je second."),SQt("Say: They are here.",["oni su ovdje","ovdje su","tu su","oni su tu"],"Ovdje su."),
+   SQm("'Je li Marko ovdje?' — 'Yes, he is.'",["Je.","Jest.","Jesam."],1,"Long form for answers."),SQt("Say (female): I'm tired.",["umorna sam"],"Umorna sam."),
+   SQm("Which can start a sentence?",["Jesam","Sam"],0,"Long forms can."),SQt("Say: You aren't here. (ti)",["nisi ovdje","ti nisi ovdje","nisi tu"],"Nisi ovdje.")],
+4:[SQt("Plural of 'muž':",["muževi"],"Soft → -ev-."),SQm("Gender of 'riječ':",["masculine","feminine"],1,"Exception."),
+   SQt("Plural of 'brat':",["braća"],"Irregular."),SQm("'Djeca su ovdje' — djeca means…",["children","people"],0,"dijete → djeca."),
+   SQt("Plural of 'more':",["mora"],"Neuter → -a."),SQm("'ljudi' is the plural of…",["čovjek","ljubav"],0,"čovjek → ljudi.")],
+5:[SQb("Make: We can't go today.",["danas","ne","možemo","ići"],["Danas ne možemo ići.","Ne možemo ići danas.","Ne možemo danas ići."],"ne + verb."),
+   SQt("Conjugate: ja + pisati",["pišem"],"pišem."),SQt("Conjugate: oni + imati",["imaju"],"imaju."),
+   SQm("'Nitko ništa ne zna' means…",["Nobody knows anything","Somebody knows nothing"],0,"Double negative."),
+   SQt("Conjugate: on + htjeti",["hoće"],"hoće."),SQt("Say: I'm sleeping.",["spavam"],"Spavam.")],
+6:[SQb("Make: Where are you going?",["kamo","ideš"],["Kamo ideš?"],"kamo = where to.",["gdje"]),SQt("Ask: Why?",["zašto"],"Zašto?"),
+   SQm("___ kava? (What kind of coffee?)",["Kakav","Kakva","Kakvo"],1,"kava is feminine."),SQb("Make: Is this yours?",["je","li","ovo","tvoje"],["Je li ovo tvoje?"],"je li…"),
+   SQt("Ask (formal): Do you speak English?",["govorite li engleski"],"Govorite li engleski?"),
+   SQm("You hear 'Da li ideš?' What do you say yourself?",["Ideš li?","Da ideš li?"],0,"Verb + li.")],
+27:[SQb("Make: Ana is not here today.",["ana","danas","nije","ovdje"],["Ana danas nije ovdje.","Danas Ana nije ovdje.","Ana nije ovdje danas."],"nije right before ovdje."),
+   SQm("'Pijem hladno pivo' — the describing word goes…",["before the thing","after the thing"],0,"Before."),
+   SQb("Make: What are you drinking today?",["što","piješ","danas"],["Što piješ danas?","Što danas piješ?"],"Question word first."),
+   SQt("Say: We're learning Croatian.",["učimo hrvatski","mi učimo hrvatski"],"Učimo hrvatski."),
+   SQm("Which is correct?",["Kako zoveš se?","Kako se zoveš?","Se kako zoveš?"],1,"se second."),
+   SQb("Make: I'm not tired. (male)",["nisam","umoran"],["Nisam umoran."],"nisam, not ne sam.",["ne","sam"]),
+   SQb("Make: Do you drink tea?",["piješ","li","čaj"],["Piješ li čaj?"],"Verb + li.")],
+7:[SQm("'pola deset' =",["9:30","10:30"],0,"Half to ten."),SQt("Write 18 in words.",["osamnaest"],"osam + naest."),
+   SQm("'petnaest do osam' =",["7:45","8:15"],0,"Fifteen to eight."),SQm("'kolovoz' is…",["August","July"],0,"srpanj = July."),
+   SQt("Say: two coffees",["dvije kave"],"dvije kave."),SQm("'oko osam' means…",["around eight","exactly eight"],0,"oko = around.")],
+8:[SQb("Make: I see a dog.",["vidim","psa"],["Vidim psa."],"Alive → psa.",["pas"]),SQt("Say: I'm drinking coffee.",["pijem kavu"],"kava → kavu."),
+   SQm("Volim ___ (Ana)",["Ana","Anu"],1,"Object → -u."),SQt("Say: I have a sister.",["imam sestru"],"sestru."),
+   SQm("Imam ___ (brat)",["brat","brata"],1,"Alive → -a."),SQt("Say (female): I'd like a coffee.",["htjela bih kavu","htjela bih jednu kavu"],"Htjela bih kavu.")],
+9:[SQt("Say: the centre of the city",["centar grada"],"Possession."),SQt("Say: a lot of people",["puno ljudi","mnogo ljudi"],"puno + genitive."),
+   SQm("'kod Ane' means…",["at Ana's","from Ana"],0,"kod = at someone's."),SQt("Say: four tables",["četiri stola"],"2–4 → genitive singular."),
+   SQm("22 tables =",["dvadeset dva stola","dvadeset dva stolova"],0,"Ends in 2."),SQt("Say: after work",["poslije posla","nakon posla"],"+ genitive.")],
+10:[SQb("Make: I live in Zagreb.",["živim","u","zagrebu"],["Živim u Zagrebu.","U Zagrebu živim."],"Locative.",["zagreb"]),SQt("Say: I'm going to the beach.",["idem na plažu"],"Going → accusative."),
+   SQm("'Gdje radiš?' — answer:",["Radim u banci.","Radim u banku."],0,"Position → locative."),SQt("Say: in the room (soba)",["u sobi"],"-i."),
+   SQm("'where from?' =",["odakle","kamo"],0,"odakle."),SQt("Say: at the market (tržnica)",["na tržnici"],"na tržnici.")],
+11:[SQb("Make: I'm helping my sister.",["pomažem","sestri"],["Pomažem sestri."],"pomagati + dative.",["sestru"]),SQt("Say: Thank you. (vi)",["hvala vam"],"Hvala vam."),
+   SQm("'Kako vam se sviđa?' is…",["polite: How do you like it?","How do they like it?"],0,"vam = to you (vi)."),SQt("Say: Help me. (ti)",["pomozi mi"],"Pomozi mi."),
+   SQm("'Sviđaš mi se' means…",["I like you","I love you deeply"],0,"Ordinary liking."),SQt("Say: I need a coffee.",["treba mi kava","trebam kavu"],"Treba mi kava.")],
+12:[SQb("Make: I'm going with my brother.",["idem","s","bratom"],["Idem s bratom."],"s + instrumental.",["brat","sa"]),SQt("Say: by car",["autom"],"A means."),
+   SQm("'Pišem olovkom' — why no s?",["A pen is a tool","Pens are feminine"],0,"Tools take no s."),SQt("Say: with Ana",["s anom"],"s Anom."),
+   SQm("'među ljudima' means…",["among people","next to two people"],0,"među = among."),SQt("Say: coffee with sugar",["kava sa šećerom"],"sa before š.")],
+13:[SQt("Call Ana:",["ano"],"Ano!"),SQm("How many sets of endings do the 7 cases really cost?",["five","seven"],0,"Shortcuts."),
+   SQt("Say: with the women",["sa ženama","s ženama"],"-ama."),SQm("In 'o čemu', čemu is…",["locative","genitive"],0,"o + locative."),
+   SQm("Genitive of 'tko':",["koga","kome"],0,"koga."),SQt("Say: Thanks, friend!",["hvala prijatelju"],"Vocative.")],
+29:[SQm("'kroz' takes…",["accusative","genitive"],0,"kroz grad."),SQt("Say: because of the rain (kiša)",["zbog kiše"],"zbog + genitive."),
+   SQm("'iz Zagreba' means…",["from Zagreb","in Zagreb"],0,"iz = out of."),SQm("'Govorimo o filmu' — o takes…",["locative","accusative"],0,"o + locative."),
+   SQt("Say: before work",["prije posla"],"prije + genitive."),SQm("'I'm at Ana's' =",["Ja sam kod Ane.","Ja sam kod Ana."],0,"kod + genitive.")],
+30:[SQb("Make: Nobody is here.",["nitko","nije","ovdje"],["Nitko nije ovdje."],"nitko + nije."),SQm("'Do you need anything?' =",["Treba li ti nešto?","Treba li ti ništa?"],0,"A question → nešto."),
+   SQm("'svaki dan' means…",["every day","some day"],0,"svaki = every."),SQt("Say: I don't know anyone here.",["ne znam nikoga ovdje","ovdje ne znam nikoga","ne poznajem nikoga ovdje","ovdje ne poznajem nikoga"],"Ne znam nikoga ovdje."),
+   SQm("'Netko je na vratima' means…",["Someone's at the door","Nobody's at the door"],0,"netko."),SQm("'nigdje' means…",["nowhere","somewhere"],0,"ni- = no-.")],
+14:[SQb("Make: We were in Zagreb. (group)",["bili","smo","u","zagrebu"],["Bili smo u Zagrebu.","U Zagrebu smo bili."],"-li for a group.",["bio"]),
+   SQt("Say (female): I didn't work yesterday.",["nisam radila jučer","jučer nisam radila"],"Jučer nisam radila."),SQt("Past of 'moći' (male):",["mogao"],"mogao."),
+   SQm("Which is correct?",["Jučer sam bila kod kuće.","Jučer bila sam kod kuće."],0,"sam second."),SQt("Say (male): I came.",["došao sam"],"Došao sam."),
+   SQt("Ask a male friend: Did you eat?",["jesi li jeo"],"Jesi li jeo?")],
+15:[SQb("Make: She will come.",["ona","će","doći"],["Ona će doći."],"će second."),SQt("Say: We'll watch a film.",["gledat ćemo film","film ćemo gledati"],"Gledat ćemo film."),
+   SQm("Correct Croatian:",["pisat ćeš","pisaćeš"],0,"Two words."),SQt("Say: I'll be there.",["bit ću tamo","tamo ću biti"],"Bit ću tamo."),
+   SQm("'Što ćeš raditi sutra?' means…",["What will you do tomorrow?","What did you do?"],0,"Future."),SQt("Ask (formal): Will you come?",["hoćete li doći"],"Hoćete li doći?")],
+16:[SQb("Make (male): I'd like a beer.",["htio","bih","pivo"],["Htio bih pivo."],"Conditional.",["htjela"]),SQt("Say: Wait! (to a friend)",["čekaj"],"Čekaj!"),
+   SQm("'Nemojte' is for…",["vi","ti"],0,"-te = vi."),SQt("Say (female): I should go.",["trebala bih ići"],"Trebala bih ići."),
+   SQm("'Kad bih imao vremena…' means…",["If I had time…","When I have time…"],0,"Imagined."),SQt("Say: Let's go!",["idemo"],"Idemo!")],
+17:[SQb("Make (male): I ate it all up.",["pojeo","sam","sve"],["Pojeo sam sve.","Sve sam pojeo."],"Perfective."),SQt("Imperfective partner of 'kupiti':",["kupovati"],"kupovati."),
+   SQm("'Dolazio je svaki dan' means…",["He came every day","He arrived once"],0,"Repeated → imperfective."),SQm("'Pročitat ću knjigu' means…",["I'll read (finish) the book","I'm reading the book"],0,"Perfective future."),
+   SQm("Perfective of 'kuhati':",["skuhati","kuhavati"],0,"s- + kuhati."),SQt("Say (female): I wrote the letter. (finished, pismo)",["napisala sam pismo"],"Napisala sam pismo.")],
+28:[SQb("Make: I can't come tomorrow.",["sutra","ne","mogu","doći"],["Sutra ne mogu doći.","Ne mogu doći sutra.","Ne mogu sutra doći."],"ne + mogu + infinitive."),
+   SQm("'Moraš li raditi?' means…",["Do you have to work?","Can you work?"],0,"morati."),SQm("'I'm bored' is…",["Dosadno mi je","Dosadan sam"],0,"Dosadan sam = I'm boring."),
+   SQt("Ask: May I? (ja)",["smijem li","mogu li"],"Smijem li?"),SQm("'Hladno je' means…",["It's cold","He's cold"],0,"No subject."),
+   SQt("A woman says: I couldn't sleep.",["nisam mogla spavati"],"Nisam mogla spavati.")],
+33:[SQm("'Kad budemo imali novca…' means…",["When we have money…","When we had money…"],0,"Future II."),
+   SQb("Make: If it rains, I'm not going.",["ako","bude","padala","kiša","ne","idem"],["Ako bude padala kiša, ne idem.","Ne idem ako bude padala kiša."],"Future II after ako."),
+   SQm("Which is NOT natural Croatian?",["Kad dođem, javit ću se.","Kad ću doći, javit ću se.","Kad budem došao, javit ću se."],1,"Never ću after kad."),
+   SQt("A woman says: when I have time",["kad budem imala vremena","kada budem imala vremena"],"Kad budem imala vremena."),
+   SQm("'Čim dođeš, reci mi.' means…",["As soon as you come, tell me.","Before you come, tell me."],0,"čim."),SQm("'budu' is for…",["oni","ja"],0,"budu = they.")],
+18:[SQb("Make: This is our house.",["ovo","je","naša","kuća"],["Ovo je naša kuća."],"naša for kuća.",["naš"]),SQt("Say: your (vi) table",["vaš stol"],"vaš."),
+   SQm("'Idem s njegovim bratom' means…",["I'm going with his brother","His brother is going"],0,"Instrumental."),SQm("A man says 'my wife' (žena):",["moj žena","moja žena"],1,"Follows the noun."),
+   SQt("Say: her brother",["njezin brat","njen brat"],"njezin brat."),SQm("'Oni vole svoju djecu' means…",["They love their (own) children","They love someone else's children"],0,"svoj.")],
+19:[SQb("Make: That book is good.",["ta","knjiga","je","dobra"],["Ta knjiga je dobra."],"ta + feminine.",["taj","dobar"]),SQt("Say: this beer",["ovo pivo"],"ovo."),
+   SQm("'u velikom gradu' — case?",["locative","accusative"],0,"u + locative."),SQt("Say: a cheap car",["jeftin auto","jeftini auto"],"jeftin auto."),
+   SQm("Opposite of 'pun':",["prazan","prljav"],0,"full / empty."),SQm("'Ovi gradovi su lijepi' means…",["These cities are beautiful","This city is beautiful"],0,"Plural.")],
+20:[SQb("Make: Split is smaller than Zagreb.",["split","je","manji","od","zagreba"],["Split je manji od Zagreba."],"od + genitive.",["zagreb"]),SQt("Say: more beautiful",["ljepši"],"ljepši."),
+   SQm("'Govori sporo' means…",["He speaks slowly","He's a slow speaker"],0,"Adverb."),SQt("Say: the smallest",["najmanji"],"naj- + manji."),
+   SQm("'dovoljno' means…",["enough","too much"],0,"dovoljno."),SQt("Say: very good",["jako dobro","vrlo dobro","jako dobar","vrlo dobar"],"Jako dobro.")],
+31:[SQm("'peti' means…",["fifth","five"],0,"pet = five."),SQt("Say: I'm here for the first time.",["prvi put sam ovdje","ovdje sam prvi put"],"Prvi put sam ovdje."),
+   SQm("'both sisters' =",["oba sestre","obje sestre"],1,"obje for feminine."),SQm("'Rođendan mi je drugog lipnja' — when?",["June 2nd","July 2nd"],0,"lipanj = June."),
+   SQm("I'm 24: Imam dvadeset četiri…",["godine","godina"],0,"Ends in 4."),SQb("Make: Today is the first of May.",["danas","je","prvi","svibnja"],["Danas je prvi svibnja."],"Ordinal + genitive.")],
+21:[SQb("Make: I see her.",["vidim","je"],["Vidim je."],"Object → je.",["joj"]),SQt("Say: for me",["za mene"],"Long form."),
+   SQt("Say: I'm laughing.",["smijem se"],"smijati se."),SQm("'Ne sjećam se' means…",["I don't remember","I don't hope"],0,"sjećati se."),
+   SQm("'Ovdje se ne puši' is…",["impersonal: no smoking here","He doesn't smoke here"],0,"Impersonal se."),SQt("Ask (formal): How do you feel?",["kako se osjećate"],"Kako se osjećate?")],
+22:[SQb("Make (male): I wouldn't tell you that.",["ne","bih","ti","to","rekao"],["Ne bih ti to rekao."],"bih before ti."),SQb("Make: Are you coming tomorrow?",["dolaziš","li","sutra"],["Dolaziš li sutra?"],"Verb + li."),
+   SQm("Which is correct?",["Kako ti se sviđa?","Kako se ti sviđa?"],0,"ti before se."),SQm("In a cluster, li goes…",["first","last"],0,"li → ću/bih → …"),
+   SQb("Make (male): I gave it to her.",["dao","sam","joj","ga"],["Dao sam joj ga."],"sam → joj → ga."),SQm("'Rekao mi je' — why is je last?",["je goes last in the cluster","random"],0,"je last.")],
+23:[SQb("Make: I think it's good.",["mislim","da","je","dobro"],["Mislim da je dobro."],"Never drop da."),SQt("Say (female): I'm not going because I'm tired.",["ne idem jer sam umorna","ne idem zato što sam umorna"],"jer."),
+   SQm("'nego' means…",["but rather / than","or"],0,"nego."),SQt("Say: if you want",["ako želiš","ako hoćeš"],"Ako želiš."),
+   SQm("'grad u kojem živim' — kojem is…",["locative","dative"],0,"u + locative."),SQm("'Dok ja kuham, ti pospremi' — dok means…",["while","because"],0,"dok = while.")],
+32:[SQb("Make: I don't know where she lives.",["ne","znam","gdje","živi"],["Ne znam gdje živi."],"Normal order."),SQm("Ana: 'Bila sam u Splitu.' → Ana je rekla da…",["je bila u Splitu","je u Splitu"],0,"Same tense."),
+   SQt("Say: Ask her if she's coming.",["pitaj je hoće li doći","pitaj ju hoće li doći"],"Pitaj je hoće li doći."),SQm("'Pitao sam ga zašto ne dolazi' means…",["I asked him why he isn't coming","I told him not to come"],0,"Indirect question."),
+   SQm("'Kaže da čekamo' means…",["He says we should wait","He says we waited"],0,"da + present."),SQt("Say: I know where it is.",["znam gdje je"],"Znam gdje je.")],
+24:[SQm("Why 'Bože', not 'Boge'?",["palatalizacija: g → ž","a typo"],0,"g → ž."),SQt("na ___ (noga, locative)",["nozi"],"g → z."),
+   SQm("'mlađi' is mlad + …",["-ji","-iji"],0,"d + j → đ."),SQt("Instrumental of 'pas':",["psom"],"Vanishing a."),
+   SQm("Why 'radio' but 'radila'?",["final l → o, the feminine keeps l","random"],0,"L → O."),SQm("'Momče!' is the vocative of…",["momak","momče"],0,"k → č.")],
+25:[SQt("Say: Come in! (ti)",["uđi"],"ući → uđi."),SQm("'zapisati' means…",["to note down","to forget"],0,"za- + pisati."),
+   SQm("'od-' tends to mean…",["away from","onto"],0,"otići."),SQm("'dolaziti' is…",["imperfective","perfective"],0,"doći is perfective."),
+   SQm("Guess: 'prepisati' =",["to copy","to describe"],0,"pre- = re-."),SQm("'obići' means…",["to go around / visit","to come in"],0,"ob- = around.")],
+34:[SQm("'Prodano' on a sign means…",["sold","for sale"],0,"prodan = sold."),SQm("'Is this seat free?' =",["Je li ovo mjesto slobodno?","Je li ovo mjesto zauzeto?"],0,"slobodno = free."),
+   SQm("ići → the -ći form:",["idući","ićući"],0,"idu + ći."),SQt("Say: It's taken.",["zauzeto je","zauzet je","zauzeta je"],"Zauzeto je."),
+   SQm("'Učim slušajući glazbu' means…",["I study listening to music","I studied, then listened"],0,"At the same time."),SQm("'Vrata su zatvorena' means…",["The door is closed","Close the door"],0,"Passive.")],
+35:[SQm("'rekoše' means…",["they said","we say"],0,"-še = they."),SQm("Which is the pluperfect?",["bio sam radio","radio sam","radim"],0,"bio + participle."),
+   SQm("'već' means…",["already","still"],0,"već."),SQm("A friend says 'Odoh!' — what's happening?",["They're leaving","They're angry"],0,"I'm off!"),
+   SQt("Say (male): I had already left.",["bio sam već otišao","već sam bio otišao"],"Bio sam već otišao."),SQm("'bijaše' is…",["an old form of 'was'","a future"],0,"Imperfect.")],
+26:[SQm("Friend: 'Idemo na kavu?' You agree:",["Ajde!","Nema veze."],0,"Ajde!"),SQt("Say: Really?",["fakat","stvarno"],"Fakat?"),
+   SQm("'Ovisi' means…",["It depends","It's fine"],0,"Ovisi."),SQm("Everyday word for 'elevator':",["lift","dizalo"],0,"lift."),
+   SQt("Say: Not bad.",["nije loše"],"Nije loše."),SQm("'Pa…' at the start of a reply means…",["Well…","No!"],0,"Pa…")]
+};
+
+/* Unit numbers inside the lesson text are written {uID} and filled in by position. */
+UNITS.forEach(u => u.grammar.forEach(g => { g.h = fillUnitRefs(g.h); g.b = fillUnitRefs(g.b); }));
+
 
 
 /* ============================================================
@@ -3780,11 +4442,11 @@ function vHome(){
   const doneCount = UNITS.filter(u => unitState(u) === "done").length;
   const wordCount = UNITS.reduce((n,x)=>n+x.vocab.length+x.phrases.length,0) + PACKS.reduce((n,p)=>n+p.w.length,0);
   shell(S.name ? `bok, ${esc(S.name)} — nastavljamo` : "dobro došao — welcome", `Naučimo <i>hrvatski</i>.`,
-    "Seven cases, one alphabet where every letter says exactly what it looks like, and a country that will talk back to you. Twenty-six grammar units, twelve speaking lessons, a word and a verb every day, a tutor who only speaks standard Croatian, and as much practice as you want.",
+    "Seven cases, one alphabet where every letter says exactly what it looks like, and a country that will talk back to you. ${UNITS.length} grammar units, twelve speaking lessons, a word and a verb every day, a tutor who only speaks standard Croatian, and as much practice as you want.",
     `<div class="grid g2">
       <div class="card">
         <div class="kicker">pick up here · nastavi ovdje</div>
-        <h2 style="font-size:26px;margin-bottom:4px">${u.id}. ${esc(u.title)}</h2>
+        <h2 style="font-size:26px;margin-bottom:4px">${unitNo(u)}. ${esc(u.title)}</h2>
         <p style="color:var(--stone-dim);font-size:14.5px">${(() => { const k = nextStepK(u);
           return k < 0 ? "All steps done — just the big quiz left." : k === u.grammar.length ? `Step ${k + 1} of ${stepCount(u)}: Words and phrases` : `Step ${k + 1} of ${stepCount(u)}: ${esc(u.grammar[k].h)}`; })()}</p>
         <div class="chips">
@@ -3934,7 +4596,7 @@ function skillTalk(id){
 function unitState(u){
   const d = S.done[u.id] || {};
   if(d.read && d.drill != null && d.drill >= 60) return "done";
-  const prev = UNITS.find(x => x.id === u.id - 1);
+  const prev = unitBefore(u.id);
   if(!prev) return "open";
   if(d.drill != null || Object.keys(d.st || {}).length) return "open";   // already started
   const pd = S.done[prev.id] || {};
@@ -3959,6 +4621,10 @@ function lockedMsg(){
    idea, then 2–3 quick questions on it straight away. After the
    steps, a words page and a big quiz (60% unlocks the next unit).
    ============================================================ */
+function unitNo(x){ const id = typeof x === "object" ? x.id : Number(x); return UNITS.findIndex(u => u.id === id) + 1; }
+function unitAfter(id){ return UNITS[UNITS.findIndex(u => u.id === id) + 1] || null; }
+function unitBefore(id){ return UNITS[UNITS.findIndex(u => u.id === id) - 1] || null; }
+function fillUnitRefs(html){ return String(html).replace(/\{u(\d+)\}/g, (m, id) => unitNo(Number(id))); }
 function unitRec(id){ S.done[id] = S.done[id] || {}; return S.done[id]; }
 function stepCount(u){ return u.grammar.length + 1; }               // grammar steps + words page
 function stepDone(u, k){
@@ -3970,6 +4636,7 @@ function stepOpen(u, k){ for(let j = 0; j < k; j++) if(!stepDone(u, j)) return f
 function nextStepK(u){ for(let k = 0; k < stepCount(u); k++) if(!stepDone(u, k)) return k; return -1; }
 function allStepsDone(u){ return stepsDoneN(u) === stepCount(u); }
 function shuffleOpts(q){
+  if(q.t === "build") return Object.assign({}, q, { bank: shuffle(q.w.concat(q.x || [])) });
   if(q.t !== "mc") return Object.assign({}, q);
   const idx = shuffle(q.o.map((_, i) => i));
   return Object.assign({}, q, { o: idx.map(i => q.o[i]), a: idx.indexOf(q.a) });
@@ -3993,9 +4660,9 @@ function vUnit(id){
     + row(u.grammar.length, "Words and phrases", "Star the ones you want in your cards", `go('step','${u.id}:${u.grammar.length}')`);
   const ready = allStepsDone(u);
   const best = rec.drill != null ? `Best score: ${rec.drill}%` : "";
-  const next = UNITS.find(x => x.id === id + 1);
+  const next = unitAfter(id);
   const done = unitState(u) === "done";
-  shell(`unit ${u.id} of ${UNITS.length}`, esc(u.title), esc(u.goal),
+  shell(`unit ${unitNo(u)} of ${UNITS.length}`, esc(u.title), esc(u.goal),
     `<div class="chips" style="margin-bottom:16px">
       <button class="btn ghost sm" onclick="go('gramatika')">← ${dual("All grammar units","Sve cjeline")}</button>
     </div>
@@ -4019,8 +4686,8 @@ function vUnitFull(id){
   CARD_SRC = "Grammar: " + u.title;
   const gram = u.grammar.map((g, i) => `<div class="card">
       <div class="gsec"><span class="n">${i + 1}</span><h3>${g.h}</h3></div>
-      <div style="font-size:15px">${g.b}</div></div>`).join("");
-  shell(`unit ${u.id} · whole unit`, esc(u.title), esc(u.goal),
+      <div style="font-size:15px">${fillUnitRefs(g.b)}</div></div>`).join("");
+  shell(`unit ${unitNo(u)} · whole unit`, esc(u.title), esc(u.goal),
     `<div class="chips" style="margin-bottom:18px">
       <button class="btn ghost sm" onclick="go('unit',${u.id})">← ${dual("Back to the steps","Natrag na korake")}</button>
       <button class="btn ghost sm" onclick="genPractice(${u.id})">${dual("More example sentences from AI","Još primjera")}</button>
@@ -4030,6 +4697,37 @@ function vUnitFull(id){
     <div class="kicker">vocabulary · rječnik</div><div class="wordlist">${u.vocab.map(v => wordRow(v[0], v[1])).join("")}</div>
     <div class="kicker" style="margin-top:22px">phrases · fraze</div><div class="wordlist">${u.phrases.map(v => wordRow(v[0], v[1])).join("")}</div>
     <div id="extra"></div>`);
+}
+
+/* Tap-the-words questions: {t:"build", q, w:[words], x:[extra wrong words], a:[accepted answers], e} */
+let BUILD = null;
+function buildHTML(q, where){
+  BUILD = { q, where, bank: (q.bank || shuffle(q.w.concat(q.x || []))).slice(), used: [] };
+  return `<div class="bline" id="bline"><span class="bph">Tap the words in order</span></div>
+    <div class="bbank" id="bbank"></div>
+    <div style="margin-top:12px"><button class="btn" id="bcheck" onclick="${where === "sq" ? "pickSQ(-2)" : "pick(-2)"}">${dual("Check","Provjeri")}</button></div>`;
+}
+function paintBuild(){
+  if(!BUILD) return;
+  const line = $("#bline"), bank = $("#bbank"); if(!line || !bank) return;
+  line.innerHTML = BUILD.used.length
+    ? BUILD.used.map((bi, j) => `<button class="bw" onclick="unBuild(${j})">${esc(BUILD.bank[bi])}</button>`).join("")
+    : `<span class="bph">Tap the words in order</span>`;
+  bank.innerHTML = BUILD.bank.map((w, i) => `<button class="bw ${BUILD.used.includes(i) ? "gone" : ""}" ${BUILD.used.includes(i) ? "disabled" : ""} onclick="addBuild(${i})">${esc(w)}</button>`).join("");
+}
+function addBuild(i){ if(BUILD && !BUILD.done && !BUILD.used.includes(i)){ BUILD.used.push(i); paintBuild(); } }
+function unBuild(j){ if(BUILD && !BUILD.done){ BUILD.used.splice(j, 1); paintBuild(); } }
+function buildAnswer(){ return BUILD.used.map(i => BUILD.bank[i]).join(" "); }
+function checkBuild(q){
+  const said = norm(buildAnswer());
+  if(!said) return null;
+  BUILD.done = true;
+  $$("#bline .bw, #bbank .bw").forEach(b => b.disabled = true);
+  const ok = q.a.some(a => norm(a) === said);
+  $("#bline").style.borderColor = ok ? "var(--olive)" : "var(--madder)";
+  $("#bline").style.borderStyle = "solid";
+  const btn = $("#bcheck"); if(btn) btn.style.display = "none";
+  return ok;
 }
 
 let SQ = null;   // the step being done right now
@@ -4047,7 +4745,7 @@ function vStep(arg){
     <div class="stepdots">${dots}</div>`;
 
   if(k === u.grammar.length){                          // the words page
-    shell(`unit ${uid} · step ${k + 1} of ${n}`, "Words and phrases", esc(u.title),
+    shell(`unit ${unitNo(uid)} · step ${k + 1} of ${n}`, "Words and phrases", esc(u.title),
       `${top}<p style="font-size:14.5px;color:var(--stone-dim);margin:0 0 10px">Have a quick look. Tap 🔊 to hear one, ☆ to put it in your cards.</p>
       <div class="kicker">words · riječi</div><div class="wordlist">${u.vocab.map(v => wordRow(v[0], v[1])).join("")}</div>
       <div class="kicker" style="margin-top:22px">phrases · fraze</div><div class="wordlist">${u.phrases.map(v => wordRow(v[0], v[1])).join("")}</div>
@@ -4057,8 +4755,8 @@ function vStep(arg){
 
   const g = u.grammar[k];
   SQ = { u:uid, k, q: shuffle((STEP_Q[uid] || [])[k] || []).map(shuffleOpts), i:0, again:new Set() };
-  shell(`unit ${uid} · step ${k + 1} of ${n}`, g.h, esc(u.title),
-    `${top}<div class="card"><div style="font-size:15px">${g.b}</div></div>
+  shell(`unit ${unitNo(uid)} · step ${k + 1} of ${n}`, g.h, esc(u.title),
+    `${top}<div class="card"><div style="font-size:15px">${fillUnitRefs(g.b)}</div></div>
     <div class="card stepcheck" style="margin-top:14px">
       <div class="kicker">quick check · provjera</div>
       <div id="sq"></div>
@@ -4074,9 +4772,11 @@ function paintSQ(){
     <div class="q">${esc(q.q)}</div>
     ${q.t === "mc"
       ? `<div class="opts">${q.o.map((o, i) => `<button class="opt" onclick="pickSQ(${i})">${esc(o)}</button>`).join("")}</div>`
+      : q.t === "build" ? buildHTML(q, "sq")
       : `<input class="answer" id="sqa" placeholder="Type it in Croatian…" autocomplete="off" autocapitalize="off" spellcheck="false">
          <div style="margin-top:12px"><button class="btn" onclick="pickSQ(-1)">${dual("Check","Provjeri")}</button></div>`}
     <div id="sqv"></div>`;
+  if(q.t === "build") paintBuild();
   const a = $("#sqa");
   if(a) a.addEventListener("keydown", e => { if(e.key === "Enter") pickSQ(-1); });
 }
@@ -4086,6 +4786,9 @@ function pickSQ(i){
   if(q.t === "mc"){
     ok = i === q.a;
     $$("#sq .opt").forEach((b, j) => { b.disabled = true; if(j === q.a) b.classList.add("right"); else if(j === i) b.classList.add("wrong"); });
+  } else if(q.t === "build"){
+    ok = checkBuild(q);
+    if(ok === null) return;
   } else {
     const inp = $("#sqa"), typed = inp.value;
     if(!norm(typed)) return;
@@ -4098,7 +4801,7 @@ function pickSQ(i){
   const retry = !ok && !SQ.again.has(key);
   if(retry){ SQ.again.add(key); SQ.q.push(shuffleOpts(q)); }   // a missed one comes back once at the end
   if(ok) addXP(2);
-  const ans = q.t === "type" && (!ok || typo)
+  const ans = (q.t === "type" || q.t === "build") && (!ok || typo)
     ? `<div style="margin-top:5px"><span style="color:var(--stone-dim)">${ok ? "Exact spelling:" : "Answer:"}</span>
        <span style="font-family:var(--display);font-size:17px;color:var(--brass)">${esc(typo || q.a[0])}</span></div>` : "";
   $("#sqv").innerHTML = `<div class="verdict ${ok ? "ok" : "no"}">
@@ -4122,7 +4825,7 @@ function finishStep(uid, k){
   const last = nextK >= n;
   const nextTitle = last ? "Big quiz" : nextK === u.grammar.length ? "Words and phrases" : u.grammar[nextK].h;
   window.scrollTo({top:0, behavior:"instant"});
-  shell(`unit ${uid} · step ${k + 1} of ${n}`, "Step done ✓", esc(u.title),
+  shell(`unit ${unitNo(uid)} · step ${k + 1} of ${n}`, "Step done ✓", esc(u.title),
     `<div class="card" style="text-align:center;padding:34px 20px">
       <div class="stepdots" style="justify-content:center">${Array.from({length:n}, (_, j) => `<i class="${stepDone(u, j) ? "d" : ""}"></i>`).join("")}</div>
       <p style="font-family:var(--display);font-size:22px;margin:14px 0 4px">${stepsDoneN(u)} of ${n} steps done</p>
@@ -4137,9 +4840,8 @@ function finishStep(uid, k){
 /* Big quiz: the unit's own drills plus one question from each step. */
 function startFinal(id){
   const u = UNITS.find(x => x.id === id);
-  const fromSteps = (STEP_Q[id] || []).map(qs => qs[Math.floor(Math.random() * qs.length)]).filter(Boolean);
   D = { unit:id, final:true, title: u.title + " — big quiz",
-        q: shuffle(u.drills.concat(fromSteps).map(shuffleOpts)), i:0, score:0 };
+        q: shuffle(u.drills.concat(FINAL_Q[id] || []).map(shuffleOpts)), i:0, score:0 };
   paintDrill();
 }
 
@@ -4179,10 +4881,12 @@ function paintDrill(){
       <span>${D.i+1} / ${D.q.length}</span><span>${D.score} correct</span></div>`;
   const body = q.t === "mc"
     ? `<div class="opts">${q.o.map((o,i)=>`<button class="opt" onclick="pick(${i})">${esc(o)}</button>`).join("")}</div>`
+    : q.t === "build" ? buildHTML(q, "drill")
     : `<input class="answer" id="ans" placeholder="Type it in Croatian…" autocomplete="off" autocapitalize="off" spellcheck="false">
        <div style="margin-top:12px"><button class="btn" onclick="pick(-1)">${dual("Check","Provjeri")}</button></div>`;
   shell(`question ${D.i+1} of ${D.q.length}`, esc(D.title), "",
     `${bar}<div class="card"><div class="q">${esc(q.q)}</div>${body}<div id="verdict"></div></div>`);
+  if(q.t === "build") paintBuild();
   const a = $("#ans");
   if(a){ a.focus(); a.addEventListener("keydown", e=>{ if(e.key==="Enter") pick(-1); }); }
 }
@@ -4192,6 +4896,9 @@ function pick(i){
   if(q.t === "mc"){
     ok = i === q.a;
     $$(".opt").forEach((b,j)=>{ b.disabled = true; if(j===q.a) b.classList.add("right"); else if(j===i) b.classList.add("wrong"); });
+  } else if(q.t === "build"){
+    ok = checkBuild(q);
+    if(ok === null) return;
   } else {
     const typed = $("#ans").value;
     if(!norm(typed)) return;
@@ -4208,7 +4915,10 @@ function pick(i){
          <span style="color:var(--stone-dim)">You wrote:</span>
          <span class="hr" style="font-family:var(--display);font-size:17px;color:${ok?"var(--olive)":"var(--madder)"}">${esc(TYPED)}</span>
        </div>` : "";
-  const answer = (q.t === "type" && (!ok || TYPO))
+  const answer = (q.t === "build" && !ok)
+    ? `<div style="margin-top:5px;font-size:14px"><span style="color:var(--stone-dim)">Answer:</span>
+         <span style="font-family:var(--display);font-size:17px;color:var(--brass)">${esc(q.a[0])}</span></div>`
+    : (q.t === "type" && (!ok || TYPO))
     ? `<div style="margin-top:5px;font-size:14px">
          <span style="color:var(--stone-dim)">${ok ? "Exact spelling:" : "Answer:"}</span>
          <span style="font-family:var(--display);font-size:17px;color:var(--brass)">${esc(TYPO || q.a[0])}</span>
@@ -4237,7 +4947,7 @@ function endDrill(){
     save();
   }
   if(D.skill && pct >= 60){ S.skills = S.skills || {}; S.skills[D.skill] = pct; save(); }
-  const next = D.unit ? UNITS.find(x=>x.id===D.unit+1) : null;
+  const next = D.unit ? unitAfter(D.unit) : null;
   shell("done · gotovo", "Your score", "",
     `<div class="card" style="text-align:center;padding:40px">
       <div style="font-family:var(--mono);font-size:56px;color:var(--brass);line-height:1">${D.score}<span style="font-size:26px;color:var(--stone-dim)">/${D.q.length}</span></div>
@@ -4522,7 +5232,7 @@ function vQuiz(){
       <div class="kicker">material · gradivo</div>
       <div class="chips" style="margin-bottom:14px;max-height:120px;overflow-y:auto">
         <button class="chip" aria-pressed="${QSEL.unit==='mix'}" onclick="QSEL.unit='mix';vQuiz()">${dual('All units','Sve cjeline')}</button>
-        ${UNITS.map(u=>`<button class="chip" aria-pressed="${QSEL.unit==u.id}" onclick="QSEL.unit=${u.id};vQuiz()">${u.id}</button>`).join("")}
+        ${UNITS.map(u=>`<button class="chip" aria-pressed="${QSEL.unit==u.id}" onclick="QSEL.unit=${u.id};vQuiz()">${unitNo(u)}</button>`).join("")}
       </div>
       <div class="kicker">question type · vrsta pitanja</div>
       <div class="chips">
@@ -4547,7 +5257,7 @@ async function genQuiz(){
   const out = $("#qout");
   out.innerHTML = `<div style="margin-top:16px"><span class="spin"></span> Writing questions…</div>`;
   const scope = QSEL.unit==="mix"
-    ? UNITS.map(u=>`${u.id}. ${u.title}`).join("; ")
+    ? UNITS.map(u=>`${unitNo(u)}. ${u.title}`).join("; ")
     : (()=>{ const u=UNITS.find(x=>x.id==QSEL.unit); return `${u.title} — ${u.goal}. Vocabulary: ${u.vocab.map(v=>v[0]).join(", ")}`; })();
   const focus = {mixed:"a mix of everything", mc:"multiple choice only", type:"translation-into-Croatian only",
                  case:"noun case endings (genitiv, akuzativ, dativ, lokativ, instrumental)",
@@ -5083,7 +5793,7 @@ function vGrammar(){
                   : st === "open" ? `color:${sec.color}` : "";
       path += `<div class="node ${side} ${st} ${u.id === cur ? "cur" : ""}">
         <button onclick="${st === "locked" ? "lockedMsg()" : `go('unit',${u.id})`}">
-          <span class="dotbig" style="${style}">${st === "done" ? "✓" : st === "locked" ? "&#128274;" : u.id}</span>
+          <span class="dotbig" style="${style}">${st === "done" ? "✓" : st === "locked" ? "&#128274;" : unitNo(u)}</span>
           <span class="lbl"><b>${esc(u.title)}</b><span>${st === "open" && stepsDoneN(u) ? `${stepsDoneN(u)}/${stepCount(u)} steps` : esc(u.sub)}</span></span>
         </button></div>`;
     });
