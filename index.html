@@ -416,6 +416,27 @@ select.field{font-family:var(--body);font-size:15px}
   .word .hr{min-width:110px;font-size:17px}
   .msg{max-width:95%}
 }
+/* grammar steps */
+.steplist{display:flex;flex-direction:column;gap:9px}
+.steprow{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:13px 15px;border-radius:var(--r);
+  background:rgba(234,240,250,.04);border:1px solid var(--line);color:var(--stone);font:inherit;cursor:pointer}
+.steprow:disabled{cursor:default;opacity:.55}
+.steprow.cur{border-color:var(--brass);background:rgba(107,166,255,.10)}
+.steprow.final{border-style:dashed}
+.steprow.final.cur{border-style:solid;border-color:var(--madder);background:rgba(224,54,47,.10)}
+.sdot{flex:0 0 34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:14px;border:2px solid var(--line)}
+.steprow.cur .sdot{border-color:var(--brass);color:var(--brass)}
+.steprow.done .sdot{background:var(--olive);border-color:var(--olive);color:#05132B}
+.stxt{flex:1;display:flex;flex-direction:column;min-width:0}
+.stxt b{font-weight:600;font-size:15px}
+.stxt span{font-size:12.5px;color:var(--stone-dim);margin-top:2px}
+.sgo{font-size:13px;color:var(--brass);white-space:nowrap}
+.stepdots{display:flex;gap:6px;margin:0 0 14px;flex-wrap:wrap}
+.stepdots i{width:26px;height:6px;border-radius:3px;background:var(--line)}
+.stepdots i.d{background:var(--olive)}
+.stepdots i.c{background:var(--brass)}
+.stepcheck{border-color:rgba(107,166,255,.45)}
 </style>
 </head>
 <body>
@@ -454,7 +475,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "9.7";
+const VERSION = "9.8";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -1278,6 +1299,304 @@ const UNITS = [
   ]
 }
 ];
+
+/* ============================================================
+   STEP CHECKS — 2–3 quick questions right after each small piece
+   of grammar. Keyed by unit id, one array per grammar section,
+   in the same order. Each only uses what's been taught so far.
+   ============================================================ */
+const SQm = (q, o, a, e) => ({t:"mc", q, o, a, e});
+const SQt = (q, a, e) => ({t:"type", q, a, e});
+const STEP_Q = {
+1:[
+  [SQm("What sound does j make in 'jutro'?",["j as in jam","y as in yes","h as in hat"],1,"j is always y: YOO-tro."),
+   SQm("Which letter sounds like 'sh'?",["ž","š","c"],1,"š = sh. ž is the s in measure, c is ts."),
+   SQm("'nj' in 'konj' (horse) is…",["two sounds, n then j","one sound, like ny in canyon"],1,"Nj is a single letter.")],
+  [SQm("In 'vrt' (garden), what acts as the vowel?",["v","r","t"],1,"r works as the vowel: VURT."),
+   SQm("How do you say 'trg' (square)?",["TURG — the r is the vowel","TREG","T-R-G with no sound in between"],0,"Treat the r as the vowel.")],
+  [SQm("Where is the stress in 'hvala'?",["HVA-la","hva-LA"],0,"Never on the last syllable."),
+   SQm("Do you need the four pitch accents to be understood?",["Yes, always","No — get the syllable right and move on"],1,"Nice to have later, not needed now.")]
+],
+2:[
+  [SQm("Talking to a friend your age, you use…",["ti","vi"],0,"ti for people you know."),
+   SQm("You ask a shop assistant how they are:",["Kako si?","Kako ste?"],1,"A stranger at work gets vi."),
+   SQm("'Možemo na ti' means…",["We can switch to ti","Please use vi","Goodbye"],0,"Their way of saying: let's be casual.")],
+  [SQm("Which one is NOT a way to say thanks?",["Hvala","Hvala puno","Nema frke"],2,"Nema frke = no worries."),
+   SQm("A friend says 'Hvala!' — a casual reply:",["Nema frke","Doviđenja","Laku noć"],0,"Nema frke or Nema na čemu."),
+   SQm("'Što ima?' is a casual way to say…",["What's up? / How's it going?","What is this?"],0,"Very common between friends.")],
+  [SQm("It's 8pm and you walk into a restaurant:",["Dobro jutro","Dobra večer","Laku noć"],1,"Evening = Dobra večer."),
+   SQm("Which works as both hi AND bye?",["Bok","Dobar dan","Laku noć"],0,"Bok does both."),
+   SQt("Say: See you.",["vidimo se"],"Vidimo se.")],
+  [SQm("Which is right?",["Zovem Ana.","Zovem se Ana."],1,"The se is part of the verb — you can't drop it."),
+   SQt("Ask a friend: What's your name?",["kako se zoveš","kako se ti zoveš"],"Kako se zoveš?")]
+],
+3:[
+  [SQm("'Umoran sam' vs 'Ja sam umoran' — the difference?",["The second adds emphasis: I'm tired","The second is wrong"],0,"Both are right; ja just stresses I."),
+   SQm("'they' for a group of only women:",["oni","one","ona"],1,"one = they (all female)."),
+   SQm("'mi' means…",["we","you","they"],0,"mi = we.")],
+  [SQm("'I'm not' is…",["ne sam","nisam"],1,"One word: nisam."),
+   SQm("Jesi li umoran? A short 'yes, I am':",["Sam.","Jesam."],1,"Short answers use the long form."),
+   SQm("Which form can never start a sentence?",["sam","jesam"],0,"The short forms always come after something.")],
+  [SQm("Where does li sit?",["First","Second","Last"],1,"li always sits second."),
+   SQt("Ask: Is this coffee?",["je li ovo kava","jel ovo kava","jel' ovo kava"],"Je li ovo kava?")],
+  [SQm("A woman says 'I'm happy':",["Sretan sam","Sretna sam"],1,"Women add -a."),
+   SQt("A man says: I'm hungry.",["gladan sam","ja sam gladan"],"Gladan sam.")]
+],
+4:[
+  [SQm("What gender is 'knjiga'?",["masculine","feminine","neuter"],1,"Ends in -a → feminine."),
+   SQm("What gender is 'more'?",["masculine","feminine","neuter"],2,"Ends in -e → neuter."),
+   SQm("Which is feminine even though it ends in a consonant?",["grad","stol","stvar"],2,"stvar is one of the exceptions.")],
+  [SQm("Plural of 'žena':",["ženi","žene","ženovi"],1,"Feminine → -e."),
+   SQt("Plural of 'stol':",["stolovi"],"One syllable, so -ov- goes in: stolovi."),
+   SQm("Plural of 'pivo':",["piva","pive"],0,"Neuter → -a.")],
+  [SQm("'djeca' means…",["children","people","brothers"],0,"dijete → djeca."),
+   SQm("'oči' means…",["ears","eyes"],1,"oko → oči.")],
+  [SQm("'Imam knjigu' means…",["I have a book","I have the book","Both"],2,"No articles — context decides."),
+   SQm("How do you say 'the' in Croatian?",["ta","You don't — there are no articles"],1,"Nothing to translate it into.")]
+],
+5:[
+  [SQm("ja form 'imam' (-am). So 'oni' is…",["imaju","imu","ime"],0,"-am verbs: oni imaju."),
+   SQt("Conjugate: ti + raditi",["radiš"],"radim → radiš."),
+   SQm("pisati → mi ___",["pišemo","pisamo"],0,"pišem → pišemo.")],
+  [SQm("'Mogu' means…",["I can","I want","I go"],0,"moći → mogu."),
+   SQt("ja + htjeti =",["hoću"],"hoću — I want."),
+   SQm("'Idemo' means…",["We're going","I'm going","They're going"],0,"ići → idemo.")],
+  [SQm("'Čitam' can mean…",["I read","I am reading","Both"],2,"One present tense covers both."),
+   SQm("How do you say 'I am working'?",["Ja sam radim","Radim"],1,"Just radim — no 'am' needed.")],
+  [SQm("'I don't have' is…",["ne imam","nemam"],1,"One of the three that fuse."),
+   SQm("'Nobody is here':",["Nitko je ovdje","Nitko nije ovdje"],1,"Double negative is correct."),
+   SQt("Say: I'm not working today.",["ne radim danas","danas ne radim"],"Ne radim danas.")]
+],
+6:[
+  [SQm("'zašto?' means…",["when","why","where"],1,"zašto = why."),
+   SQm("'where to?' is…",["gdje","kamo","odakle"],1,"kamo = where to."),
+   SQm("'koliko?' means…",["how much / how many","how","which"],0,"Koliko košta? = How much is it?")],
+  [SQm("'O čemu govoriš?' means…",["What are you talking about?","Who are you talking to?"],0,"o čemu = about what."),
+   SQm("'Kome pišeš?' means…",["Who are you writing to?","What are you writing?"],0,"kome = to whom.")],
+  [SQm("___ knjiga? (Which book?)",["Koji","Koja","Koje"],1,"knjiga is feminine → koja."),
+   SQm("___ pivo? (Which beer?)",["Koji","Koja","Koje"],2,"pivo is neuter → koje."),
+   SQm("'Čiji je ovo auto?' means…",["Whose car is this?","Which car is this?","What kind of car is this?"],0,"čiji = whose.")],
+  [SQm("Make 'Imaš kruha' a question:",["Imaš li kruha?","Li imaš kruha?","Imaš kruha li?"],0,"Verb first, then li."),
+   SQm("'Is he here?' =",["Jesi li ovdje?","Je li ovdje?","Jesu li ovdje?"],1,"he/she/it → je li."),
+   SQt("Ask a friend: Are you going?",["ideš li","ideš li ti"],"Ideš li?")],
+  [SQm("You didn't catch what they said. You say:",["Možete li ponoviti?","Koliko košta?","Gdje je?"],0,"Could you repeat that?"),
+   SQm("'Možete li govoriti sporije?' means…",["Could you speak more slowly?","Do you speak Croatian?"],0,"sporije = more slowly.")]
+],
+7:[
+  [SQm("'dvanaest' =",["2","12","20"],1,"dva + naest."),
+   SQt("Write 15 in words.",["petnaest"],"pet + naest."),
+   SQm("'dvadeset tri' =",["23","32","13"],0,"twenty three.")],
+  [SQm("two coffees =",["dva kava","dvije kave","dvije kava"],1,"dvije kave."),
+   SQm("five coffees =",["pet kave","pet kava"],1,"pet kava.")],
+  [SQm("'pola osam' is…",["7:30","8:30"],0,"Half on the way to eight."),
+   SQm("'tri i pol sata' means…",["3:30","three and a half hours"],1,"tri i pol is an amount, not a time."),
+   SQm("'petnaest do tri' is…",["3:15","2:45"],1,"Fifteen to three."),
+   SQt("Ask: What time is it?",["koliko je sati","koliko je sat"],"Koliko je sati?")],
+  [SQm("Which day is Friday?",["petak","subota","četvrtak"],0,"petak = Friday."),
+   SQm("'nedjelja' is…",["Monday","Sunday","week"],1,"nedjelja = Sunday; tjedan = week."),
+   SQm("Which month is April?",["travanj","listopad","lipanj"],0,"travanj — grass month.")]
+],
+8:[
+  [SQm("'Marka voli Ana' means…",["Marko loves Ana","Ana loves Marko"],1,"The -a on Marka marks who is loved."),
+   SQm("Which case is the object — the thing you see, want, eat?",["nominativ","akuzativ","lokativ"],1,"Akuzativ.")],
+  [SQm("Pijem ___ (kava)",["kava","kavu","kave"],1,"Feminine -a → -u."),
+   SQm("Pijem ___ (pivo)",["pivo","pivu"],0,"Neuter never changes."),
+   SQt("Say: I drink water. (voda)",["pijem vodu","ja pijem vodu"],"Pijem vodu.")],
+  [SQm("Vidim ___ (brat)",["brat","brata"],1,"Alive → -a."),
+   SQm("Imam ___ (auto)",["auto","auta"],0,"A thing, so no change.")],
+  [SQm("The safest polite way to order:",["Hoću kavu.","Molim vas jednu kavu.","Dajte mi kavu."],1,"Never wrong."),
+   SQm("'Može jedna kava?' sounds…",["casual and friendly","rude"],0,"What friends say.")],
+  [SQm("A woman says 'I'd like a beer':",["Htio bih jedno pivo","Htjela bih jedno pivo"],1,"htjela for women."),
+   SQm("'Hoću kavu' sounds…",["soft and polite","demanding"],1,"Use Htio/Htjela bih instead.")]
+],
+9:[
+  [SQm("Genitive of 'grad':",["grada","gradu","grade"],0,"m/n take -a."),
+   SQm("Genitive of 'kuća':",["kuću","kuće","kući"],1,"f takes -e.")],
+  [SQm("'centar grada' means…",["the center of the city","the city in the center"],0,"grada = of the city."),
+   SQt("Say: without milk (mlijeko)",["bez mlijeka"],"bez + genitive."),
+   SQm("'puno ljudi' means…",["a lot of people","full people"],0,"puno + genitive.")],
+  [SQm("two tables =",["dva stol","dva stola","dva stolova"],1,"2–4 → genitive singular."),
+   SQm("six tables =",["šest stola","šest stolova"],1,"5+ → genitive plural."),
+   SQm("two beers =",["dva piva","dvije piva"],0,"dva for masculine and neuter.")],
+  [SQm("'Ima li kruha?' means…",["Is there bread?","Do you want bread?"],0,"ima = there is."),
+   SQt("Say: There's no milk.",["nema mlijeka"],"Nema + genitive.")]
+],
+10:[
+  [SQm("Going to school:",["Idem u školu","Idem u školi"],0,"Going → accusative."),
+   SQm("Being at the beach:",["Ja sam na plažu","Ja sam na plaži"],1,"Being there → locative.")],
+  [SQm("I'm in the city: Ja sam u ___",["grad","gradu","grada"],1,"m/n take -u."),
+   SQm("The locative is always used…",["after a preposition","on its own"],0,"Never alone.")],
+  [SQm("at work =",["u poslu","na poslu"],1,"na poslu."),
+   SQm("in the shop =",["u dućanu","na dućanu"],0,"u dućanu."),
+   SQt("Say: I'm at the seaside. (more)",["na moru sam","ja sam na moru"],"Na moru sam.")],
+  [SQm("'Odakle si?' — a good answer:",["Iz Splita.","U Splitu."],0,"Where from → iz + genitive."),
+   SQm("'Gdje si?' — a good answer:",["Idem u kino.","Na poslu sam."],1,"Where are you → locative.")]
+],
+11:[
+  [SQm("Pišem ___ (Ana)",["Anu","Ani","Ana"],1,"To Ana → dative, f -i."),
+   SQm("Dative and locative endings are…",["the same","completely different"],0,"Same endings; dative has no preposition.")],
+  [SQm("'Daj mi to.' means…",["Give me that.","Give him that."],0,"mi = to me."),
+   SQm("'to her' (short) =",["mu","joj","im"],1,"joj = to her."),
+   SQt("Say: Help her.",["pomozi joj"],"Pomozi joj.")],
+  [SQm("'I like Croatia' =",["Sviđam se Hrvatska","Sviđa mi se Hrvatska"],1,"It is pleasing to me."),
+   SQm("'Sviđaju mi se' is plural because…",["the things liked are plural","I am plural"],0,"The thing liked is the subject.")],
+  [SQm("'Treba mi pomoć' means…",["I need help","I'm helping you"],0,"Literally: help is needed to me."),
+   SQm("Thanks to a stranger or a group:",["Hvala ti","Hvala vam"],1,"vam for vi.")]
+],
+12:[
+  [SQm("Instrumental of 'žena':",["ženom","ženu","ženi"],0,"f takes -om."),
+   SQm("Instrumental of 'more':",["moreom","morem"],1,"morem.")],
+  [SQm("'by train' =",["s vlakom","vlakom"],1,"A means → no s."),
+   SQm("'with my brother' =",["bratom","s bratom"],1,"A person → s."),
+   SQt("Say: I write with a pen. (olovka)",["pišem olovkom"],"A tool, so no s.")],
+  [SQm("'with me' =",["s mnom","sa mnom"],1,"sa before awkward clusters."),
+   SQm("'with Ana' =",["s Anom","sa Anom"],0,"Plain s here.")],
+  [SQm("'pod stolom' means…",["under the table","on the table"],0,"pod = under."),
+   SQm("'ljetom' means…",["in summer","last summer"],0,"ljetom = in summer.")]
+],
+13:[
+  [SQm("Calling Ana:",["Ana!","Ano!"],1,"Ano! — though many just say Ana."),
+   SQm("Calling Ivan:",["Ivane!","Ivano!"],0,"m → -e.")],
+  [SQm("Which case is number 4 in the order?",["Akuzativ","Dativ","Lokativ"],0,"N G D A V L I."),
+   SQm("Which case answers 's kim? čime?'",["Instrumental","Genitiv"],0,"With whom / with what → instrumental.")],
+  [SQm("'O kome govoriš?' means…",["Who are you talking about?","Who are you talking to?"],0,"o + locative = about."),
+   SQm("'Koga vidiš?' means…",["Who do you see?","Whose is it?"],0,"koga = who, as the object.")],
+  [SQm("Neuter accusative equals…",["the nominative","the genitive"],0,"It never changes."),
+   SQm("Dative and locative are…",["always identical","never identical"],0,"Same endings every time.")],
+  [SQm("In 's gradovima', the -ima ending is…",["D/L/I plural","genitive singular"],0,"One ending, three cases."),
+   SQm("Genitive plural of 'grad':",["gradovi","gradova","gradovima"],1,"gradova.")]
+],
+14:[
+  [SQm("raditi → past (male):",["radio sam","radil sam"],0,"radio sam."),
+   SQm("gledati → we watched:",["gledali smo","gledao smo"],0,"Plural → -li.")],
+  [SQm("A woman says 'I worked':",["Radio sam","Radila sam"],1,"The ending follows the doer."),
+   SQt("A man says: I was in Zagreb.",["bio sam u zagrebu","ja sam bio u zagrebu"],"Bio sam u Zagrebu.")],
+  [SQm("'She wasn't here' =",["Nije bila ovdje","Ne je bila ovdje"],0,"nije replaces je."),
+   SQm("'Jesi li bio u Splitu?' means…",["Have you been to Split?","Are you in Split?"],0,"Past question.")],
+  [SQm("Which is correct?",["Sam gledao film.","Gledao sam film."],1,"sam can't come first."),
+   SQm("Which is correct?",["Jučer sam gledao film.","Jučer gledao sam film."],0,"sam goes second.")],
+  [SQm("Past of 'doći' (male):",["došao","doćio"],0,"došao / došla."),
+   SQt("A woman says: I said.",["rekla sam"],"reći → rekla.")]
+],
+15:[
+  [SQm("'Ona će doći' means…",["She will come","She came"],0,"će = will."),
+   SQm("We will go =",["Ići ćemo","Ići će"],0,"mi → ćemo.")],
+  [SQm("Correct Croatian spelling:",["radit ću","raditi ću","radiću"],0,"Drop the -i, keep it separate."),
+   SQm("Correct spelling:",["ić ću","ići ću"],1,"-ći verbs don't change.")],
+  [SQt("Say: I won't work.",["neću raditi"],"Neću raditi."),
+   SQm("'Hoćeš li doći?' means…",["Will you come?","Did you come?"],0,"Future question.")],
+  [SQm("'Vlak polazi u pet' is about…",["a scheduled future event","the past"],0,"Present for timetables."),
+   SQm("For 'I'm going to Zagreb tomorrow', using the present is…",["natural","wrong"],0,"Sutra idem u Zagreb.")]
+],
+16:[
+  [SQm("'Volio bih ići u Dubrovnik' means…",["I'd love to go to Dubrovnik","I went to Dubrovnik"],0,"bih = would."),
+   SQm("A woman: 'I'd like a coffee'",["Htio bih kavu","Htjela bih kavu"],1,"-la for women.")],
+  [SQm("With someone you don't know, say…",["Hoću kavu","Htio / Htjela bih kavu"],1,"The conditional sounds polite.")],
+  [SQm("'Ako imaš vremena, dođi.' means…",["If you have time, come.","If you had time, you'd come."],0,"ako + present = a real if."),
+   SQm("'Kad bih imao novca, kupio bih auto' is…",["an imagined 'if' — would","a real plan"],0,"Kad bih… = if I had…")],
+  [SQm("'Wait!' to a stranger:",["Čekaj!","Čekajte!"],1,"-te for vi."),
+   SQm("'Idemo!' means…",["Let's go!","We went"],0,"Idemo!"),
+   SQm("A negative order uses…",["nemoj + infinitive","ne + past"],0,"Nemoj ići!")]
+],
+17:[
+  [SQm("Perfective partner of 'čitati':",["pročitati","čitavati"],0,"čitati → pročitati."),
+   SQm("Perfective verbs are about…",["finished, one-off actions","ongoing or repeated actions"],0,"Completed, with a result.")],
+  [SQm("'Pojeo sam' means…",["I ate it all up","I was eating"],0,"Perfective = finished."),
+   SQm("'Čitao sam knjigu' means…",["I was reading a book (maybe not finished)","I finished the book"],0,"Imperfective = ongoing.")],
+  [SQm("'I'm reading right now' =",["Čitam","Pročitam"],0,"Right now needs the imperfective."),
+   SQm("A perfective in present form points to…",["the future / once it's done","right now"],0,"No present meaning.")],
+  [SQm("'Every day I drink coffee' uses…",["imperfective (pijem)","perfective (popijem)"],0,"Habits → imperfective."),
+   SQm("Best way to learn these:",["Memorise pairs","Memorise rules"],0,"Learn them like plurals.")]
+],
+18:[
+  [SQm("A woman says 'my brother':",["moj brat","moja brat"],0,"Follows the noun, not the speaker."),
+   SQm("'our house' (kuća):",["naš kuća","naša kuća"],1,"kuća is feminine."),
+   SQm("'his beer' (pivo):",["njegov pivo","njegovo pivo"],1,"pivo is neuter.")],
+  [SQm("Vidim ___ sestru. (your, ti)",["tvoja","tvoju"],1,"Object, feminine → -u."),
+   SQm("'u našoj kući' means…",["in our house","our house"],0,"Locative.")],
+  [SQm("'Ana voli svoju mamu' means…",["Ana loves her own mom","Ana loves someone else's mom"],0,"svoj = the subject's own."),
+   SQm("'Marko voli njegovu sestru' means…",["his own sister","someone else's sister"],1,"For his own, use svoju.")],
+  [SQm("'Whose bag is this?' (torba)",["Čiji je ovo torba?","Čija je ovo torba?"],1,"torba is feminine.")]
+],
+19:[
+  [SQm("'this car' (near me):",["ovaj auto","onaj auto"],0,"ovaj = this."),
+   SQm("In 'Što je to?', 'to' means…",["that","this over there"],0,"to on its own = that."),
+   SQm("'that house over there' (kuća):",["ona kuća","ta kuća","ova kuća"],0,"onaj/ona/ono = over there.")],
+  [SQm("'a big sea':",["velik more","veliko more"],1,"more is neuter."),
+   SQm("'s velikim psom' means…",["with a big dog","a big dog"],0,"Instrumental.")],
+  [SQm("After ovaj/taj/onaj, a masculine adjective takes…",["the long form (-i)","the short form"],0,"taj veliki grad."),
+   SQm("'Stari grad' uses the long form because…",["it's a fixed name","it's plural"],0,"Fixed names use it.")],
+  [SQm("Opposite of 'jeftin':",["skup","star","spor"],0,"cheap / expensive."),
+   SQm("'hladan' means…",["cold","warm","empty"],0,"topao / hladan.")]
+],
+20:[
+  [SQm("Comparative of 'jeftin':",["jeftiniji","najjeftin"],0,"Add -iji."),
+   SQm("After od, the next word takes…",["the genitive","the nominative"],0,"veći od Splita.")],
+  [SQm("'better' =",["dobriji","bolji"],1,"dobar → bolji."),
+   SQm("'the biggest' =",["najveći","najvelik"],0,"naj- + comparative.")],
+  [SQm("Adverb from 'loš':",["loše","lošo"],0,"loše = badly."),
+   SQt("Say: He speaks quickly.",["govori brzo","on govori brzo"],"Govori brzo.")],
+  [SQm("'preskup' means…",["too expensive","very cheap"],0,"pre- = too."),
+   SQm("'uopće ne' means…",["not at all","almost"],0,"Uopće ne znam = I have no idea.")]
+],
+21:[
+  [SQm("'I see her' (short form):",["Vidim je.","Vidim joj."],0,"Object → je."),
+   SQm("'for you' (after a preposition):",["za te","za tebe"],1,"Long form after prepositions.")],
+  [SQm("'Nadam se' means…",["I hope","I'm afraid"],0,"nadati se = to hope."),
+   SQm("'to hang out' =",["družiti se","šaliti se"],0,"šaliti se = to joke.")],
+  [SQm("'Ovdje se ne puši.' means…",["No smoking here.","I don't smoke here."],0,"se makes it impersonal.")],
+  [SQm("'Govori o sebi.' means…",["He talks about himself.","He talks to himself."],0,"o sebi = about himself.")]
+],
+22:[
+  [SQm("Which is correct?",["Sutra ću doći.","Sutra doći ću."],0,"ću goes second."),
+   SQm("Little words like ga, se, li go…",["second in the clause","at the end"],0,"Second position.")],
+  [SQm("Which is correct?",["Jučer sam ga vidio.","Jučer ga sam vidio."],0,"sam comes before ga."),
+   SQm("In a cluster, which comes first?",["mi (to me)","ga (him / it)"],0,"Dative before accusative.")],
+  [SQm("'Marka voli Ana' stresses that…",["it's Marko she loves","Marko loves Ana"],0,"The ending still shows who loves whom.")],
+  [SQm("'He came back' — what people actually say:",["Vratio se.","Je se vratio."],0,"je usually drops after se.")]
+],
+23:[
+  [SQm("In 'Ja radim, a ona uči', 'a' shows…",["contrast","just adding"],0,"a sets two things against each other."),
+   SQm("'or' =",["ili","ali"],0,"ali = but.")],
+  [SQm("Which is correct?",["Mislim je dobro.","Mislim da je dobro."],1,"You can't drop da."),
+   SQt("Say: I know you're coming.",["znam da dolaziš"],"Znam da dolaziš.")],
+  [SQm("'because' =",["jer","iako","dok"],0,"jer / zato što."),
+   SQm("'iako' means…",["although","if"],0,"ako = if.")],
+  [SQm("'the man who is speaking' =",["čovjek koji govori","čovjek koja govori"],0,"čovjek is masculine."),
+   SQm("'the city I live in' =",["grad u kojem živim","grad koji živim"],0,"Locative after u.")]
+],
+24:[
+  [SQm("Vocative of 'Bog':",["Boge","Bože"],1,"g → ž."),
+   SQm("In palatalizacija, k becomes…",["č","c"],0,"k → č.")],
+  [SQm("Why the z in 'u knjizi'?",["g → z before -i","It's a typo"],0,"Sibilarizacija."),
+   SQm("Plural of 'vojnik':",["vojniki","vojnici"],1,"k → c before -i.")],
+  [SQm("d + j gives…",["đ","dž"],0,"mlad → mlađi."),
+   SQm("Comparative of 'mlad':",["mladiji","mlađi"],1,"d + j → đ.")],
+  [SQm("Genitive of 'otac':",["otaca","oca"],1,"The a vanishes.")],
+  [SQm("Male past of 'čitati':",["čitao","čital"],0,"Final l → o.")]
+],
+25:[
+  [SQm("'otići' means…",["to leave","to arrive"],0,"od- = away."),
+   SQm("'potpisati' means…",["to sign","to describe"],0,"opisati = to describe.")],
+  [SQm("The prefix u- tends to mean…",["into","away from"],0,"ući = to go in."),
+   SQm("'izaći' means…",["to go out","to go in"],0,"iz- = out of.")],
+  [SQm("'napisati' is…",["perfective","imperfective"],0,"A prefix usually makes it perfective."),
+   SQm("Imperfective partner of 'doći':",["dolaziti","dodati"],0,"doći → dolaziti.")],
+  [SQm("'razumjeti' (understand) is built from…",["raz- (apart) + umjeti (know how)","ra- + zumjeti"],0,"Take apart and know.")]
+],
+26:[
+  [SQm("'Nema veze' means…",["never mind","no internet"],0,"Never mind / it doesn't matter."),
+   SQm("'Fakat?' means…",["Really?","A fact"],0,"Fakat? = Really?"),
+   SQm("Handing something over, you say…",["Evo","Ma"],0,"Evo = here you go.")],
+  [SQm("What people actually say for 'fridge':",["frižider","hladnjak"],0,"hladnjak is the textbook word."),
+   SQm("What people say for 'airport':",["aerodrom","zračna luka"],0,"aerodrom.")],
+  [SQm("You need a second to think:",["Samo malo.","Nema frke."],0,"Just a moment."),
+   SQm("'Kako da kažem…' means…",["How do I put it…","How do you say hello?"],0,"A great time-buyer.")],
+  [SQm("'Ovisi.' means…",["It depends.","I agree."],0,"Ovisi."),
+   SQt("Say: I agree.",["slažem se"],"Slažem se.")]
+]
+};
+
 
 /* ============================================================
    VOCABULARY PACKS — thematic, for browsing and drilling
@@ -3020,7 +3339,7 @@ function paintNav(){
 function go(v, arg){
   CUR = v; paintNav();
   window.scrollTo({top:0, behavior:"instant"});
-  ({home:vHome, lekcije:vSkills, skill:vSkill, unit:vUnit, razgovor:vTalk, provjera:vQuiz,
+  ({home:vHome, lekcije:vSkills, skill:vSkill, unit:vUnit, step:vStep, unitall:vUnitFull, razgovor:vTalk, provjera:vQuiz,
     citanje:vRead, rjecnik:vPacks, kartice:vCards, gramatika:vGrammar, napredak:vSave}[v] || vHome)(arg);
 }
 function saveBanner(){
@@ -3466,8 +3785,12 @@ function vHome(){
       <div class="card">
         <div class="kicker">pick up here · nastavi ovdje</div>
         <h2 style="font-size:26px;margin-bottom:4px">${u.id}. ${esc(u.title)}</h2>
-        <p style="color:var(--stone-dim);font-size:14.5px">${esc(u.goal)}</p>
-        <button class="btn" onclick="go('unit',${u.id})">${dual("Open lesson","Otvori lekciju")}</button>
+        <p style="color:var(--stone-dim);font-size:14.5px">${(() => { const k = nextStepK(u);
+          return k < 0 ? "All steps done — just the big quiz left." : k === u.grammar.length ? `Step ${k + 1} of ${stepCount(u)}: Words and phrases` : `Step ${k + 1} of ${stepCount(u)}: ${esc(u.grammar[k].h)}`; })()}</p>
+        <div class="chips">
+          <button class="btn" onclick="${nextStepK(u) < 0 ? `startFinal(${u.id})` : `go('step','${u.id}:${nextStepK(u)}')`}">${dual(stepsDoneN(u) ? "Continue" : "Start", stepsDoneN(u) ? "Nastavi" : "Kreni")} →</button>
+          <button class="btn ghost sm" onclick="go('unit',${u.id})">${dual("See unit","Cjelina")}</button>
+        </div>
       </div>
       <div class="card">
         <div class="kicker">speaking · govor</div>
@@ -3507,7 +3830,7 @@ function vHome(){
 
     <div class="card" style="margin-top:14px">
       <div class="kicker">how to use this · kako ovo radi</div>
-      <p style="font-size:14.5px;color:var(--stone-dim);margin:0">Read a unit, do its six drills, then take the same material into <b style="color:var(--stone)">Razgovor</b> and try to use it on a real question. That loop — learn it, test it, then be forced to produce it under mild pressure — is what moves a word from recognised to owned. Star any word you want back later; it lands in <b style="color:var(--stone)">Kartice</b>.</p>
+      <p style="font-size:14.5px;color:var(--stone-dim);margin:0">Do a grammar step or two, then take the same material into <b style="color:var(--stone)">Razgovor</b> and try to use it on a real question. That loop — learn it, test it, then be forced to produce it under mild pressure — is what moves a word from recognised to owned. Star any word you want back later; it lands in <b style="color:var(--stone)">Kartice</b>.</p>
     </div>`);
   wireDaily();
 }
@@ -3613,8 +3936,9 @@ function unitState(u){
   if(d.read && d.drill != null && d.drill >= 60) return "done";
   const prev = UNITS.find(x => x.id === u.id - 1);
   if(!prev) return "open";
+  if(d.drill != null || Object.keys(d.st || {}).length) return "open";   // already started
   const pd = S.done[prev.id] || {};
-  return (pd.read && pd.drill != null) ? "open" : "locked";
+  return (pd.drill != null && pd.drill >= 60) ? "open" : "locked";
 }
 function firstOpen(){
   for(const u of UNITS) if(unitState(u) !== "done") return u.id;
@@ -3624,46 +3948,199 @@ function firstOpen(){
 function lockedMsg(){
   const el = document.createElement("div");
   el.className = "invite";
-  el.innerHTML = `<p><b>Locked.</b> Finish the unit before this one first — read it, then pass its practice quiz.</p>
+  el.innerHTML = `<p><b>Locked.</b> Finish the unit before this one first — do its steps, then get 60% on its big quiz.</p>
     <button class="btn sm" onclick="this.parentNode.remove()">OK</button>`;
   document.body.appendChild(el);
   setTimeout(()=>{ if(el.parentNode) el.remove(); }, 3500);
 }
 
+/* ============================================================
+   GRAMMAR IN STEPS — each unit is a few short steps: one small
+   idea, then 2–3 quick questions on it straight away. After the
+   steps, a words page and a big quiz (60% unlocks the next unit).
+   ============================================================ */
+function unitRec(id){ S.done[id] = S.done[id] || {}; return S.done[id]; }
+function stepCount(u){ return u.grammar.length + 1; }               // grammar steps + words page
+function stepDone(u, k){
+  const d = S.done[u.id] || {};
+  return !!((d.st || {})[k]) || (d.drill != null && d.drill >= 60);  // finished units count as all done
+}
+function stepsDoneN(u){ let n = 0; for(let k = 0; k < stepCount(u); k++) if(stepDone(u, k)) n++; return n; }
+function stepOpen(u, k){ for(let j = 0; j < k; j++) if(!stepDone(u, j)) return false; return true; }
+function nextStepK(u){ for(let k = 0; k < stepCount(u); k++) if(!stepDone(u, k)) return k; return -1; }
+function allStepsDone(u){ return stepsDoneN(u) === stepCount(u); }
+function shuffleOpts(q){
+  if(q.t !== "mc") return Object.assign({}, q);
+  const idx = shuffle(q.o.map((_, i) => i));
+  return Object.assign({}, q, { o: idx.map(i => q.o[i]), a: idx.indexOf(q.a) });
+}
+
 function vUnit(id){
-  CARD_SRC = "Grammar: " + ((UNITS.find(x=>x.id===id)||{}).title || "");
-  const u = UNITS.find(x=>x.id===id) || UNITS[0];
-  const gram = u.grammar.map((g,i)=>`<div class="card">
-      <div class="gsec"><span class="n">${i+1}</span><h3>${g.h}</h3></div>
-      <div style="font-size:15px">${g.b}</div></div>`).join("");
-  const vocab = `<div class="wordlist">${u.vocab.map(v=>wordRow(v[0],v[1])).join("")}</div>`;
-  const phr   = `<div class="wordlist">${u.phrases.map(v=>wordRow(v[0],v[1])).join("")}</div>`;
-  const next = UNITS.find(x=>x.id===id+1);
+  const u = UNITS.find(x => x.id === id) || UNITS[0];
+  if(unitState(u) === "locked"){ lockedMsg(); return go("gramatika"); }
+  CARD_SRC = "Grammar: " + u.title;
+  const n = stepCount(u), rec = S.done[u.id] || {};
+  const row = (k, title, sub, onclick) => {
+    const done = stepDone(u, k), open = stepOpen(u, k);
+    const cur = !done && open;
+    return `<button class="steprow ${done ? "done" : cur ? "cur" : "locked"}" ${open ? `onclick="${onclick}"` : "disabled"}>
+      <span class="sdot">${done ? "✓" : open ? (k + 1) : "&#128274;"}</span>
+      <span class="stxt"><b>${title}</b><span>${sub}</span></span>
+      ${cur ? `<span class="sgo">${k === 0 && !stepsDoneN(u) ? "Start" : "Continue"} →</span>` : ""}
+    </button>`;
+  };
+  const steps = u.grammar.map((g, k) => row(k, g.h, `Step ${k + 1} · about 2 minutes`, `go('step','${u.id}:${k}')`)).join("")
+    + row(u.grammar.length, "Words and phrases", "Star the ones you want in your cards", `go('step','${u.id}:${u.grammar.length}')`);
+  const ready = allStepsDone(u);
+  const best = rec.drill != null ? `Best score: ${rec.drill}%` : "";
+  const next = UNITS.find(x => x.id === id + 1);
   const done = unitState(u) === "done";
-  const locked = next ? unitState(next) === "locked" : false;
-  shell(`unit ${u.id} of ${UNITS.length}`, esc(u.title),
-    esc(u.goal),
-    `<div class="chips" style="margin-bottom:18px">
+  shell(`unit ${u.id} of ${UNITS.length}`, esc(u.title), esc(u.goal),
+    `<div class="chips" style="margin-bottom:16px">
       <button class="btn ghost sm" onclick="go('gramatika')">← ${dual("All grammar units","Sve cjeline")}</button>
-      <button class="btn sm" onclick="startDrill(${u.id})">${dual("Practise","Vježbaj")} (${u.drills.length})</button>
-      <button class="btn ghost sm" onclick="genPractice(${u.id})">${dual("More practice from AI","Još vježbi")}</button>
+    </div>
+    <div class="progressline"><i style="width:${(stepsDoneN(u) / n) * 100}%"></i></div>
+    <div style="font-family:var(--mono);font-size:11.5px;color:var(--stone-dim);margin:-12px 0 14px">${stepsDoneN(u)} of ${n} steps done</div>
+    <div class="steplist">${steps}
+      <button class="steprow final ${done ? "done" : ready ? "cur" : "locked"}" ${ready ? `onclick="startFinal(${u.id})"` : "disabled"}>
+        <span class="sdot">${done ? "✓" : ready ? "★" : "&#128274;"}</span>
+        <span class="stxt"><b>Big quiz</b><span>${ready ? (best || "Mixes everything from this unit · get 60% to unlock the next unit") : "Opens when every step is done"}</span></span>
+        ${ready && !done ? `<span class="sgo">Go →</span>` : ""}
+      </button>
+    </div>
+    ${done && next ? `<div class="note" style="margin-top:18px"><b>Unit complete.</b> Next up: ${esc(next.title)}.</div>
+      <div style="margin-top:12px"><button class="btn" onclick="go('unit',${next.id})">Next: ${esc(next.title)} →</button></div>` : ""}
+    <div style="margin-top:22px"><button class="btn ghost sm" onclick="go('unitall',${u.id})">${dual("See the whole unit on one page","Cijela cjelina")}</button></div>`);
+}
+
+/* The old one-page view, kept for looking things up. It doesn't unlock anything. */
+function vUnitFull(id){
+  const u = UNITS.find(x => x.id === id) || UNITS[0];
+  CARD_SRC = "Grammar: " + u.title;
+  const gram = u.grammar.map((g, i) => `<div class="card">
+      <div class="gsec"><span class="n">${i + 1}</span><h3>${g.h}</h3></div>
+      <div style="font-size:15px">${g.b}</div></div>`).join("");
+  shell(`unit ${u.id} · whole unit`, esc(u.title), esc(u.goal),
+    `<div class="chips" style="margin-bottom:18px">
+      <button class="btn ghost sm" onclick="go('unit',${u.id})">← ${dual("Back to the steps","Natrag na korake")}</button>
+      <button class="btn ghost sm" onclick="genPractice(${u.id})">${dual("More example sentences from AI","Još primjera")}</button>
     </div>
     ${gram}
     <hr class="rule">
-    <div class="kicker">vocabulary · rječnik</div>${vocab}
-    <div class="kicker" style="margin-top:22px">phrases · fraze</div>${phr}
-    <div id="extra"></div>
-    <div class="note" style="margin-top:26px">
-      ${done ? `<b>Unit complete.</b> ${next ? "Next up: " + esc(next.title) + "." : "That's the last unit in the course."}`
-             : `<b>To unlock the next unit,</b> finish the practice quiz below and score at least 60%. Reading the unit isn't enough on its own — you have to produce the language, not just recognise it.`}
-    </div>
-    <div style="margin-top:14px;display:flex;gap:9px;flex-wrap:wrap">
-      <button class="btn" onclick="startDrill(${u.id})">${done ? dual("Practise again","Vježbaj opet") : dual("Practise now","Vježbaj sada")}</button>
-      ${next && !locked ? `<button class="btn ghost" onclick="go('unit',${next.id})">Next: ${esc(next.title)} →</button>` : ""}
-      ${next && locked ? `<button class="btn ghost" disabled>&#128274; ${esc(next.title)}</button>` : ""}
+    <div class="kicker">vocabulary · rječnik</div><div class="wordlist">${u.vocab.map(v => wordRow(v[0], v[1])).join("")}</div>
+    <div class="kicker" style="margin-top:22px">phrases · fraze</div><div class="wordlist">${u.phrases.map(v => wordRow(v[0], v[1])).join("")}</div>
+    <div id="extra"></div>`);
+}
+
+let SQ = null;   // the step being done right now
+function vStep(arg){
+  const [uid, k] = String(arg).split(":").map(Number);
+  const u = UNITS.find(x => x.id === uid);
+  if(!u || unitState(u) === "locked") return go("gramatika");
+  if(!stepOpen(u, k)) return go("unit", uid);
+  CARD_SRC = "Grammar: " + u.title;
+  const n = stepCount(u);
+  const dots = Array.from({length:n}, (_, j) =>
+    `<i class="${stepDone(u, j) ? "d" : j === k ? "c" : ""}"></i>`).join("");
+  const top = `<div class="chips" style="margin-bottom:14px">
+      <button class="btn ghost sm" onclick="go('unit',${uid})">← ${dual("Unit steps","Koraci")}</button></div>
+    <div class="stepdots">${dots}</div>`;
+
+  if(k === u.grammar.length){                          // the words page
+    shell(`unit ${uid} · step ${k + 1} of ${n}`, "Words and phrases", esc(u.title),
+      `${top}<p style="font-size:14.5px;color:var(--stone-dim);margin:0 0 10px">Have a quick look. Tap 🔊 to hear one, ☆ to put it in your cards.</p>
+      <div class="kicker">words · riječi</div><div class="wordlist">${u.vocab.map(v => wordRow(v[0], v[1])).join("")}</div>
+      <div class="kicker" style="margin-top:22px">phrases · fraze</div><div class="wordlist">${u.phrases.map(v => wordRow(v[0], v[1])).join("")}</div>
+      <div style="margin-top:20px"><button class="btn" onclick="finishStep(${uid},${k})">${dual("Done — on to the big quiz","Gotovo")} →</button></div>`);
+    return;
+  }
+
+  const g = u.grammar[k];
+  SQ = { u:uid, k, q: shuffle((STEP_Q[uid] || [])[k] || []).map(shuffleOpts), i:0, again:new Set() };
+  shell(`unit ${uid} · step ${k + 1} of ${n}`, g.h, esc(u.title),
+    `${top}<div class="card"><div style="font-size:15px">${g.b}</div></div>
+    <div class="card stepcheck" style="margin-top:14px">
+      <div class="kicker">quick check · provjera</div>
+      <div id="sq"></div>
     </div>`);
-  if(!S.done[id]) S.done[id] = {};
-  if(!S.done[id].read){ S.done[id].read = true; addXP(10); } else save();
+  paintSQ();
+}
+
+function paintSQ(){
+  const box = $("#sq"); if(!box || !SQ) return;
+  if(SQ.i >= SQ.q.length) return finishStep(SQ.u, SQ.k);
+  const q = SQ.q[SQ.i];
+  box.innerHTML = `<div style="font-family:var(--mono);font-size:11.5px;color:var(--stone-dim);margin-bottom:6px">${SQ.i + 1} / ${SQ.q.length}</div>
+    <div class="q">${esc(q.q)}</div>
+    ${q.t === "mc"
+      ? `<div class="opts">${q.o.map((o, i) => `<button class="opt" onclick="pickSQ(${i})">${esc(o)}</button>`).join("")}</div>`
+      : `<input class="answer" id="sqa" placeholder="Type it in Croatian…" autocomplete="off" autocapitalize="off" spellcheck="false">
+         <div style="margin-top:12px"><button class="btn" onclick="pickSQ(-1)">${dual("Check","Provjeri")}</button></div>`}
+    <div id="sqv"></div>`;
+  const a = $("#sqa");
+  if(a) a.addEventListener("keydown", e => { if(e.key === "Enter") pickSQ(-1); });
+}
+function pickSQ(i){
+  const q = SQ.q[SQ.i];
+  let ok, typo = "";
+  if(q.t === "mc"){
+    ok = i === q.a;
+    $$("#sq .opt").forEach((b, j) => { b.disabled = true; if(j === q.a) b.classList.add("right"); else if(j === i) b.classList.add("wrong"); });
+  } else {
+    const inp = $("#sqa"), typed = inp.value;
+    if(!norm(typed)) return;
+    const r = checkTyped(typed, q.a);
+    ok = r.ok; typo = r.typo ? (r.meant || q.a[0]) : "";
+    inp.disabled = true; inp.style.borderWidth = "2px";
+    inp.style.borderColor = ok ? "var(--olive)" : "var(--madder)";
+  }
+  const key = q.q;
+  const retry = !ok && !SQ.again.has(key);
+  if(retry){ SQ.again.add(key); SQ.q.push(shuffleOpts(q)); }   // a missed one comes back once at the end
+  if(ok) addXP(2);
+  const ans = q.t === "type" && (!ok || typo)
+    ? `<div style="margin-top:5px"><span style="color:var(--stone-dim)">${ok ? "Exact spelling:" : "Answer:"}</span>
+       <span style="font-family:var(--display);font-size:17px;color:var(--brass)">${esc(typo || q.a[0])}</span></div>` : "";
+  $("#sqv").innerHTML = `<div class="verdict ${ok ? "ok" : "no"}">
+      <b style="color:${ok ? "var(--olive)" : "var(--madder)"}">${ok ? (typo ? "Close enough ✓" : "Correct ✓") : "Not quite ✗"}</b>
+      ${esc(q.e || "")}${ans}
+      ${retry ? `<div style="margin-top:6px;font-size:13px;color:var(--stone-dim)">You'll get this one again at the end.</div>` : ""}
+    </div>
+    <div style="margin-top:12px"><button class="btn" id="sqn">${SQ.i + 1 >= SQ.q.length ? "Finish step" : "Next →"}</button></div>`;
+  const nb = $("#sqn"); nb.focus();
+  nb.onclick = () => { SQ.i++; paintSQ(); };
+}
+
+function finishStep(uid, k){
+  const u = UNITS.find(x => x.id === uid), rec = unitRec(uid);
+  rec.st = rec.st || {};
+  const first = !rec.st[k];
+  rec.st[k] = 1;
+  if(first) addXP(10); else save();
+  SQ = null;
+  const n = stepCount(u), nextK = k + 1;
+  const last = nextK >= n;
+  const nextTitle = last ? "Big quiz" : nextK === u.grammar.length ? "Words and phrases" : u.grammar[nextK].h;
+  window.scrollTo({top:0, behavior:"instant"});
+  shell(`unit ${uid} · step ${k + 1} of ${n}`, "Step done ✓", esc(u.title),
+    `<div class="card" style="text-align:center;padding:34px 20px">
+      <div class="stepdots" style="justify-content:center">${Array.from({length:n}, (_, j) => `<i class="${stepDone(u, j) ? "d" : ""}"></i>`).join("")}</div>
+      <p style="font-family:var(--display);font-size:22px;margin:14px 0 4px">${stepsDoneN(u)} of ${n} steps done</p>
+      <p style="color:var(--stone-dim);font-size:14px;margin:0 0 18px">Next: ${esc(nextTitle)}</p>
+      <div class="chips" style="justify-content:center">
+        <button class="btn ghost sm" onclick="go('unit',${uid})">${dual("Stop here for now","Dosta za danas")}</button>
+        ${last ? `<button class="btn sm" onclick="startFinal(${uid})">${dual("Take the big quiz","Veliki kviz")} →</button>`
+               : `<button class="btn sm" onclick="go('step','${uid}:${nextK}')">${dual("Next step","Sljedeći korak")} →</button>`}
+      </div></div>`);
+}
+
+/* Big quiz: the unit's own drills plus one question from each step. */
+function startFinal(id){
+  const u = UNITS.find(x => x.id === id);
+  const fromSteps = (STEP_Q[id] || []).map(qs => qs[Math.floor(Math.random() * qs.length)]).filter(Boolean);
+  D = { unit:id, final:true, title: u.title + " — big quiz",
+        q: shuffle(u.drills.concat(fromSteps).map(shuffleOpts)), i:0, score:0 };
+  paintDrill();
 }
 
 async function genPractice(id){
@@ -3750,7 +4227,9 @@ function pick(i){
 }
 function endDrill(){
   const pct = Math.round(D.score/D.q.length*100);
-  const msg = pct===100 ? "Perfect. Every one right." : pct>=75 ? "Very good." : pct>=50 ? "Decent start — reread the lesson." : "Go back to the lesson and try again.";
+  const msg = D.final
+    ? (pct===100 ? "Perfect. Unit complete!" : pct>=60 ? "Passed — unit complete!" : "Not quite — you need 60%. Have another look at the steps and try again.")
+    : (pct===100 ? "Perfect. Every one right." : pct>=75 ? "Very good." : pct>=50 ? "Decent start — reread the lesson." : "Go back to the lesson and try again.");
   if(D.unit){
     S.done[D.unit] = S.done[D.unit] || {};
     S.done[D.unit].read = true;                       // completing the drill counts as done
@@ -3763,13 +4242,14 @@ function endDrill(){
     `<div class="card" style="text-align:center;padding:40px">
       <div style="font-family:var(--mono);font-size:56px;color:var(--brass);line-height:1">${D.score}<span style="font-size:26px;color:var(--stone-dim)">/${D.q.length}</span></div>
       <p style="font-family:var(--display);font-size:22px;margin-top:8px">${msg}</p>
-      ${D.unit && next ? `<p style="color:var(--olive);font-size:14px;margin:0">Unlocked: ${esc(next.title)}</p>` : ""}
+      ${D.unit && next && pct >= 60 ? `<p style="color:var(--olive);font-size:14px;margin:0">Unlocked: ${esc(next.title)}</p>` : ""}
       ${D.skill && pct >= 60 ? (()=>{ const si = SKILLS.findIndex(x => x.id === D.skill); const sn = SKILLS[si+1];
         return sn ? `<p style="color:var(--olive);font-size:14px;margin:0">Unlocked: ${esc(sn.title)}</p>` : ""; })() : ""}
       <div class="chips" style="justify-content:center;margin-top:16px">
-        ${D.unit?`<button class="btn ghost sm" onclick="startDrill(${D.unit})">${dual("Again","Opet")}</button>
-        <button class="btn ghost sm" onclick="go('gramatika')">${dual("Back to grammar","Natrag na gramatiku")}</button>`:""}
-        ${next?`<button class="btn sm" onclick="go('unit',${next.id})">${dual("Next unit","Sljedeća cjelina")} →</button>`:`<button class="btn sm" onclick="go('razgovor')">${dual("Go talk","Idi na razgovor")} →</button>`}
+        ${D.unit?`<button class="btn ghost sm" onclick="${D.final ? `startFinal(${D.unit})` : `startDrill(${D.unit})`}">${dual("Again","Opet")}</button>
+        <button class="btn ghost sm" onclick="go('unit',${D.unit})">${dual("Back to the unit","Natrag na cjelinu")}</button>`:""}
+        ${next && pct >= 60 ? `<button class="btn sm" onclick="go('unit',${next.id})">${dual("Next unit","Sljedeća cjelina")} →</button>`
+          : !D.unit ? `<button class="btn sm" onclick="go('razgovor')">${dual("Go talk","Idi na razgovor")} →</button>` : ""}
       </div></div>`);
 }
 
@@ -4106,7 +4586,21 @@ function vRead(){
         <button class="chip" onclick="genRead(READING_TOPICS[Math.floor(Math.random()*READING_TOPICS.length)][0])">${dual("Surprise me","Iznenadi me")}</button></div>
     </div>
     <div id="rout"></div>`);
+  if(!RD && S.lastRead && S.lastRead.text){                  // bring back the last one you made
+    RD = Object.assign({}, S.lastRead);
+    Object.assign(translationCache, RD.gloss || {});
+    (RD.glossary || []).forEach(g => { if(!translationCache[norm(g[0])]) translationCache[norm(g[0])] = g[1]; });
+  }
   if(RD) paintRead();
+}
+/* Only the latest reading is kept, replaced as soon as you make a new one. */
+function keepReading(){
+  if(!RD || !RD.text) return;
+  const gloss = {};
+  passageWords(RD.text).forEach(w => { const k = norm(w); if(translationCache[k]) gloss[k] = translationCache[k]; });
+  const { title, text, translation, glossary, questions, topic, at } = RD;
+  S.lastRead = { title, text, translation, glossary, questions, topic, at: at || Date.now(), gloss };
+  save();
 }
 function setLevelR(k){ S.level=k; save(); vRead(); }
 
@@ -4125,6 +4619,8 @@ Return ONLY this JSON, no markdown:
     if(!parsed || !parsed.text) throw new Error("BADJSON");
     RD = parsed; RD.topic = topic;
     (RD.glossary||[]).forEach(g=>{ GLOSSCACHE[norm(g[0])] = g[1]; });
+    RD.at = Date.now();
+    keepReading();
     paintRead(); addXP(8);
   }catch(e){
     const m = String((e && e.message) || "");
@@ -4152,6 +4648,7 @@ function paintRead(){
   const body = String(RD.text||"").split(/\n+/).map(p=>"<p>"+markup(p)+"</p>").join("");
   out.innerHTML = `<div class="card" style="margin-top:14px">
       <div class="kicker">${esc(RD.topic||"")} · ${S.level}</div>
+      <div style="font-size:12px;color:var(--stone-dim);margin:-4px 0 8px">Saved — this stays here until you make a new one.</div>
       <h2 style="font-size:27px;margin-bottom:12px">${esc(RD.title||"")} ${spk(RD.title||"")}</h2>
       <div class="read">${body}</div>
       <div class="chips" style="margin-top:18px">
@@ -4228,6 +4725,7 @@ function prefetchPassage(){
       if(!RD || RD.text !== text) return;                       // reading changed — stop
       await glossChunk(todo.slice(i, i + GLOSS_CHUNK), text);
     }
+    keepReading();                              // so taps stay free after a reload
   })().catch(e => { if(glossBatch === job) glossBatch = null; throw e; });  // let a later tap retry
   glossBatch = job;
   return job.promise;
@@ -4586,7 +5084,7 @@ function vGrammar(){
       path += `<div class="node ${side} ${st} ${u.id === cur ? "cur" : ""}">
         <button onclick="${st === "locked" ? "lockedMsg()" : `go('unit',${u.id})`}">
           <span class="dotbig" style="${style}">${st === "done" ? "✓" : st === "locked" ? "&#128274;" : u.id}</span>
-          <span class="lbl"><b>${esc(u.title)}</b><span>${esc(u.sub)}</span></span>
+          <span class="lbl"><b>${esc(u.title)}</b><span>${st === "open" && stepsDoneN(u) ? `${stepsDoneN(u)}/${stepCount(u)} steps` : esc(u.sub)}</span></span>
         </button></div>`;
     });
     path += `</div>`;
@@ -4598,7 +5096,7 @@ function vGrammarBody(path){
     ${rows.map(r=>`<tr><td class="cs">${r[0]}</td><td class="hr">${r[1]}</td><td class="hr">${r[2]}</td><td class="hr">${r[3]}</td><td style="color:var(--stone-dim);font-size:13px">${r[4]||""}</td></tr>`).join("")}</table></div>`;
   const total = UNITS.filter(u => unitState(u) === "done").length;
   shell("grammar · gramatika", "The <i>rules</i>",
-    `${total} of ${UNITS.length} units done. <b>Pass a unit's practice quiz to unlock the next one</b> — reading alone doesn't open it. Reference tables are underneath and always available.`,
+    `${total} of ${UNITS.length} units done. Each unit is a few <b>short steps</b> — one small idea, then a couple of quick questions. Finish the steps, get 60% on the <b>big quiz</b>, and the next unit opens. Reference tables are underneath and always available.`,
     `${path}
 
     <hr class="rule">
@@ -4677,7 +5175,12 @@ function mergeState(a, b){
     const x = (a.done || {})[k] || {}, y = (b.done || {})[k] || {};
     const d = [x.drill, y.drill].filter(v => v != null);
     out.done[k] = Object.assign({ read: !!(x.read || y.read) }, d.length ? { drill: Math.max(...d) } : {});
+    const st = Object.assign({}, y.st || {}, x.st || {});
+    if(Object.keys(st).length) out.done[k].st = st;
   });
+
+  out.lastRead = ((a.lastRead || {}).at || 0) >= ((b.lastRead || {}).at || 0) ? a.lastRead : b.lastRead;
+  if(!out.lastRead) delete out.lastRead;
 
   out.skills = {};
   keys("skills").forEach(k => out.skills[k] = Math.max((a.skills || {})[k] || 0, (b.skills || {})[k] || 0));
