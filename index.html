@@ -416,6 +416,9 @@ select.field{font-family:var(--body);font-size:15px}
   .word .hr{min-width:110px;font-size:17px}
   .msg{max-width:95%}
 }
+.dline{position:relative}
+.dsave{position:absolute;top:2px;right:0}
+.dline .say{padding-right:34px}
 /* build-a-sentence */
 .bline{min-height:52px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:9px;border:2px dashed var(--line);border-radius:12px;margin-top:4px}
 .bph{color:var(--stone-dim);font-size:13.5px;padding-left:4px}
@@ -483,7 +486,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "9.9";
+const VERSION = "10.0";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -1119,6 +1122,38 @@ const UNITS = [
 },
 /* ============ SECTION 4 — WORDS THAT CHANGE ============ */
 {
+  id:25, sec:3, title:"Verb prefixes", sub:"Prefiksi",
+  goal:"Turn one verb into fifteen. This is how Croatian builds most of its vocabulary.",
+  grammar:[
+    {h:"One root, many meanings",
+     b:"Take <b>ići</b> (to go) and watch:<br><b>doći</b> — come · <b>otići</b> — leave · <b>ući</b> — enter · <b>izaći</b> — exit<br><b>proći</b> — pass by · <b>naći</b> — find · <b>poći</b> — set off · <b>obići</b> — go around<br><b>prijeći</b> — cross · <b>sići</b> — get down · <b>ući</b> — go in<br><br>Same with <b>pisati</b>: napisati (write down), potpisati (sign), prepisati (copy), opisati (describe), zapisati (note down), ispisati (print out)."},
+    {h:"You need these — the everyday ones",
+     b:"These aren't fancy — they're some of the most common words in the language. Learn them as pairs, ongoing / done (Unit {u17}):<table><tr><th>meaning</th><th>ongoing</th><th>done / once</th></tr><tr><td class='cs'>come</td><td class='hr'>dolaziti</td><td class='hr'>doći</td></tr><tr><td class='cs'>leave</td><td class='hr'>odlaziti</td><td class='hr'>otići</td></tr><tr><td class='cs'>go in</td><td class='hr'>ulaziti</td><td class='hr'>ući</td></tr><tr><td class='cs'>go out</td><td class='hr'>izlaziti</td><td class='hr'>izaći</td></tr><tr><td class='cs'>go past</td><td class='hr'>prolaziti</td><td class='hr'>proći</td></tr><tr><td class='cs'>find</td><td class='hr'>nalaziti</td><td class='hr'>naći</td></tr><tr><td class='cs'>bring</td><td class='hr'>donositi</td><td class='hr'>donijeti</td></tr><tr><td class='cs'>take away</td><td class='hr'>odnositi</td><td class='hr'>odnijeti</td></tr><tr><td class='cs'>call (phone)</td><td class='hr'>zvati</td><td class='hr'>nazvati</td></tr><tr><td class='cs'>drink (up)</td><td class='hr'>piti</td><td class='hr'>popiti</td></tr><tr><td class='cs'>eat (up)</td><td class='hr'>jesti</td><td class='hr'>pojesti</td></tr><tr><td class='cs'>make / do</td><td class='hr'>raditi</td><td class='hr'>napraviti</td></tr><tr><td class='cs'>cook</td><td class='hr'>kuhati</td><td class='hr'>skuhati</td></tr><tr><td class='cs'>wash</td><td class='hr'>prati</td><td class='hr'>oprati</td></tr></table><b>Dođi ovamo!</b> — Come here! · <b>Uđite!</b> — Come in!<br><b>Izlazimo večeras?</b> — Are we going out tonight?<br><b>Donesi vodu.</b> — Bring some water. · <b>Nazovi Anu.</b> — Call Ana.<br><b>Popio sam kavu.</b> — I drank my coffee."},
+    {h:"What each prefix tends to mean",
+     b:"<b>do-</b> arrival, up to · <b>od-</b> away from · <b>u-</b> into · <b>iz-</b> out of<br><b>pre-</b> across, over, re- · <b>pro-</b> through, past · <b>za-</b> begin, behind<br><b>na-</b> onto, a quantity of · <b>po-</b> a bit, completion · <b>s-/z-</b> together, down<br><b>raz-</b> apart · <b>ob-/o-</b> around · <b>pri-</b> near, adding<br><br>These are tendencies, not rules. But once you know them, you can often guess a new verb."},
+    {h:"Prefixes usually make a verb perfective",
+     b:"Adding a prefix to an imperfective verb generally makes it perfective:<br>pisati (impf) → napisati (pf)<br>čitati (impf) → pročitati (pf)<br>jesti (impf) → pojesti (pf)<br><br>To get an imperfective back, Croatian adds a suffix:<br>napisati → napisivati · doći → dolaziti · otići → odlaziti"},
+    {h:"Learn them as families",
+     b:"When you meet a new verb, look for the root you already know. <em>Prevesti</em> looks new until you see <b>pre-</b> (across) + <b>voditi</b> (lead) = translate, lead across.<br><br><em>Razumjeti</em> = <b>raz-</b> (apart) + <b>umjeti</b> (to know how) = to take apart and know = understand.<br><br>This is why Croatian vocabulary accelerates: after a few hundred words you start guessing correctly."}
+  ],
+  vocab:[["doći","to come"],["otići","to leave"],["ući","to enter"],["izaći","to go out"],
+    ["proći","to pass"],["naći","to find"],["prijeći","to cross"],["napisati","to write down"],
+    ["potpisati","to sign"],["opisati","to describe"],["prevesti","to translate"],
+    ["razumjeti","to understand"],["nastaviti","to continue"],["prestati","to stop"],
+    ["početi","to begin"],["završiti","to finish"],["ponoviti","to repeat"],["promijeniti","to change"]],
+  phrases:[["Dođi ovamo!","Come here!"],["Sutra odlazim.","I'm leaving tomorrow."],
+    ["Možeš li to prevesti?","Can you translate that?"],["Nastavimo sutra.","Let's continue tomorrow."],
+    ["Ne mogu naći ključeve.","I can't find the keys."]],
+  drills:[
+    {t:"mc",q:"'doći' is built from:",o:["do + ići","dok + ići","d + oći","doba + ići"],a:0,e:"do- (arrival) + ići."},
+    {t:"mc",q:"Which prefix means 'out of'?",o:["u-","iz-","na-","pri-"],a:1,e:"iz- — izaći, izlaz (exit)."},
+    {t:"type",q:"Say: I can't find the keys.",a:["ne mogu naći ključeve","ne mogu naci kljuceve"],e:"Ne mogu naći ključeve."},
+    {t:"mc",q:"Adding a prefix usually makes a verb:",o:["imperfective","perfective","reflexive","plural"],a:1,e:"Prefix → perfective, generally."},
+    {t:"mc",q:"'prevesti' literally breaks down as:",o:["before + lead","across + lead","through + speak","around + write"],a:1,e:"pre- (across) + voditi (lead) = translate."},
+    {t:"type",q:"Say: Come here! (informal)",a:["dođi ovamo","dodi ovamo"],e:"Dođi ovamo!"}
+  ]
+},
+{
   id:28, sec:3, title:"Must, can, may, should", sub:"Moram, mogu, smijem, trebam",
   goal:"Say what you have to, can, may and should do — and the sentences with no 'who' at all, like 'I'm cold'.",
   grammar:[
@@ -1351,6 +1386,36 @@ const UNITS = [
   ]
 },
 {
+  id:36, sec:5, title:"Why the order moves around", sub:"Red riječi u govoru",
+  goal:"Understand the sentences that don't follow who → does → what — and start making them yourself.",
+  grammar:[
+    {h:"Old info first, new info last",
+     b:"Croatian puts what you're both already talking about <b>first</b>, and the <b>new, important part last</b>.<br><br><em>Tko je došao?</em> — Who came?<br>→ <b>Došao je Marko.</b> — Marko is the news, so he goes last.<br><br><em>Što je Marko napravio?</em> — What did Marko do?<br>→ <b>Marko je otišao.</b> — now 'left' is the news.<br><br><em>Kada počinje film?</em> → <b>Film počinje u osam.</b><br><br>That's why the same words come out in different orders: it depends on what the other person already knows. English does this with voice stress; Croatian does it with order."},
+    {h:"Verb first: something happens or exists",
+     b:"When you announce that something exists or happens, the verb often comes <b>first</b> and the 'who' after it:<br><b>Ima jedan problem.</b> — There's a problem.<br><b>Pada kiša.</b> — It's raining. (literally: falls rain)<br><b>Došla je zima.</b> — Winter's here.<br><b>Zvala te mama.</b> — Mom called you.<br><b>Zove se Ana.</b> — Her name is Ana.<br><br>English needs 'there is' or 'it' to do this. Croatian just starts with the verb."},
+    {h:"Questions: the 'who' goes after the verb",
+     b:"After a question word, a full subject usually goes <b>after</b> the verb:<br><b>Gdje radi tvoj brat?</b> — Where does your brother work?<br><b>Kada počinje film?</b> — When does the film start?<br><b>Koliko košta ova jakna?</b> — How much is this jacket?<br><b>Kako se zove tvoja sestra?</b> — What's your sister's name?<br><br>English flips the order with 'does'. Croatian flips it by moving the subject to the end."},
+    {h:"The thing first, for contrast",
+     b:"To set one thing against another, put it <b>first</b>:<br><b>Kavu ne pijem, ali čaj pijem.</b> — Coffee I don't drink, but tea I do.<br><b>Ovo ne razumijem.</b> — This (bit) I don't understand.<br><b>Tebe nisam vidio.</b> — It's you I didn't see.<br><br>The meaning doesn't change, only the emphasis. The endings still say who did what (Unit {u8}) — that's what makes the moving possible."},
+    {h:"Feelings: the person often goes first",
+     b:"In the dative sentences (Unit {u11}, Unit {u28}), people often start with the long form of the person to stress it:<br><b>Meni se sviđa.</b> — I like it (as for me…).<br><b>Meni je hladno, a tebi?</b> — I'm cold — what about you?<br><b>Ani je dosadno.</b> — Ana's bored.<br><br><b>meni</b> and <b>tebi</b> are the long forms of mi and ti. Without the emphasis the short form sits second as usual: <b>Sviđa mi se.</b> · <b>Hladno mi je.</b>"},
+    {h:"The little words reshape everything",
+     b:"Because sam, ću, mi, ti, ga, se must sit second (Unit {u22}), whatever you put first decides where everything else goes:<br><b>Ja ću ti to sutra reći.</b><br><b>Sutra ću ti to reći.</b><br><b>Reći ću ti to sutra.</b><br>All three mean 'I'll tell you tomorrow'. Only the first word changed, and <b>ću ti</b> followed it.<br><br><b>Tip:</b> when a sentence looks scrambled, find the little words. The chunk in front of them is where the sentence starts, and the rest unpacks from there."}
+  ],
+  vocab:[["počinjati","to start (ongoing)"],["padati","to fall"],["kiša","rain"],["zima","winter"],["problem","problem"],
+    ["jakna","jacket"],["meni","to me (long form)"],["tebi","to you (long form)"]],
+  phrases:[["Pada kiša.","It's raining."],["Ima jedan problem.","There's a problem."],["Zvala te mama.","Mom called you."],
+    ["Gdje radi tvoj brat?","Where does your brother work?"],["Meni je hladno, a tebi?","I'm cold, and you?"]],
+  drills:[
+    {t:"mc",q:"Natural answer to 'Tko je došao?'",o:["Došao je Marko.","Je došao Marko."],a:0,e:"The news (Marko) goes last; je can't start."},
+    {t:"type",q:"Say: Her name is Ana.",a:["zove se ana","ona se zove ana"],e:"Zove se Ana."},
+    {t:"build",q:"Make: Where does your sister live?",w:["gdje","živi","tvoja","sestra"],a:["Gdje živi tvoja sestra?"],e:"Subject after the verb."},
+    {t:"mc",q:"'Ovo ne razumijem' — why does ovo come first?",o:["To stress 'this'","Because it's a question"],a:0,e:"First = contrast."},
+    {t:"build",q:"Make: Mom called you.",w:["zvala","te","mama"],a:["Zvala te mama.","Mama te zvala."],e:"Verb first is very common here."},
+    {t:"mc",q:"The end of a Croatian sentence usually holds…",o:["the new information","the subject"],a:0,e:"New info last."}
+  ]
+},
+{
   id:23, sec:5, title:"Joining sentences", sub:"Veznici",
   goal:"Stop speaking in short bursts. Connectors are what turn phrases into conversation.",
   grammar:[
@@ -1436,36 +1501,6 @@ const UNITS = [
     {t:"mc",q:"Why does the feminine keep 'čitala'?",o:["It's irregular","The l isn't word-final there","Feminines never change","It's a different verb"],a:1,e:"The l is followed by -a, so it stays."},
     {t:"type",q:"Say: I have a headache.",a:["boli me glava"],e:"Boli me glava — literally 'the head hurts me'."},
     {t:"mc",q:"t + j gives:",o:["č","ć","đ","š"],a:1,e:"Jotacija: t+j → ć, as in braća."}
-  ]
-},
-{
-  id:25, sec:5, title:"Verb prefixes", sub:"Prefiksi",
-  goal:"Turn one verb into fifteen. This is how Croatian builds most of its vocabulary.",
-  grammar:[
-    {h:"One root, many meanings",
-     b:"Take <b>ići</b> (to go) and watch:<br><b>doći</b> — come · <b>otići</b> — leave · <b>ući</b> — enter · <b>izaći</b> — exit<br><b>proći</b> — pass by · <b>naći</b> — find · <b>poći</b> — set off · <b>obići</b> — go around<br><b>prijeći</b> — cross · <b>sići</b> — get down · <b>ući</b> — go in<br><br>Same with <b>pisati</b>: napisati (write down), potpisati (sign), prepisati (copy), opisati (describe), zapisati (note down), ispisati (print out)."},
-    {h:"What each prefix tends to mean",
-     b:"<b>do-</b> arrival, up to · <b>od-</b> away from · <b>u-</b> into · <b>iz-</b> out of<br><b>pre-</b> across, over, re- · <b>pro-</b> through, past · <b>za-</b> begin, behind<br><b>na-</b> onto, a quantity of · <b>po-</b> a bit, completion · <b>s-/z-</b> together, down<br><b>raz-</b> apart · <b>ob-/o-</b> around · <b>pri-</b> near, adding<br><br>These are tendencies, not rules. But once you know them, you can often guess a new verb."},
-    {h:"Prefixes usually make a verb perfective",
-     b:"Adding a prefix to an imperfective verb generally makes it perfective:<br>pisati (impf) → napisati (pf)<br>čitati (impf) → pročitati (pf)<br>jesti (impf) → pojesti (pf)<br><br>To get an imperfective back, Croatian adds a suffix:<br>napisati → napisivati · doći → dolaziti · otići → odlaziti"},
-    {h:"Learn them as families",
-     b:"When you meet a new verb, look for the root you already know. <em>Prevesti</em> looks new until you see <b>pre-</b> (across) + <b>voditi</b> (lead) = translate, lead across.<br><br><em>Razumjeti</em> = <b>raz-</b> (apart) + <b>umjeti</b> (to know how) = to take apart and know = understand.<br><br>This is why Croatian vocabulary accelerates: after a few hundred words you start guessing correctly."}
-  ],
-  vocab:[["doći","to come"],["otići","to leave"],["ući","to enter"],["izaći","to go out"],
-    ["proći","to pass"],["naći","to find"],["prijeći","to cross"],["napisati","to write down"],
-    ["potpisati","to sign"],["opisati","to describe"],["prevesti","to translate"],
-    ["razumjeti","to understand"],["nastaviti","to continue"],["prestati","to stop"],
-    ["početi","to begin"],["završiti","to finish"],["ponoviti","to repeat"],["promijeniti","to change"]],
-  phrases:[["Dođi ovamo!","Come here!"],["Moram otići.","I have to leave."],
-    ["Možeš li to prevesti?","Can you translate that?"],["Nastavimo sutra.","Let's continue tomorrow."],
-    ["Ne mogu naći ključeve.","I can't find the keys."]],
-  drills:[
-    {t:"mc",q:"'doći' is built from:",o:["do + ići","dok + ići","d + oći","doba + ići"],a:0,e:"do- (arrival) + ići."},
-    {t:"mc",q:"Which prefix means 'out of'?",o:["u-","iz-","na-","pri-"],a:1,e:"iz- — izaći, izlaz (exit)."},
-    {t:"type",q:"Say: I can't find the keys.",a:["ne mogu naći ključeve","ne mogu naci kljuceve"],e:"Ne mogu naći ključeve."},
-    {t:"mc",q:"Adding a prefix usually makes a verb:",o:["imperfective","perfective","reflexive","plural"],a:1,e:"Prefix → perfective, generally."},
-    {t:"mc",q:"'prevesti' literally breaks down as:",o:["before + lead","across + lead","through + speak","around + write"],a:1,e:"pre- (across) + voditi (lead) = translate."},
-    {t:"type",q:"Say: Come here! (informal)",a:["dođi ovamo","dodi ovamo"],e:"Dođi ovamo!"}
   ]
 },
 {
@@ -2254,6 +2289,218 @@ const FINAL_Q = {
    SQm("'Ovisi' means…",["It depends","It's fine"],0,"Ovisi."),SQm("Everyday word for 'elevator':",["lift","dizalo"],0,"lift."),
    SQt("Say: Not bad.",["nije loše"],"Nije loše."),SQm("'Pa…' at the start of a reply means…",["Well…","No!"],0,"Pa…")]
 };
+
+/* ============================================================
+   PHRASES PER STEP — the ready-made bits from each grammar step,
+   shown with a ☆ so they can go straight into your cards.
+   One array per grammar section, in order.
+   ============================================================ */
+const PHR = {
+1:[[["Ne razumijem.","I don't understand."],["Kako se to izgovara?","How do you pronounce that?"]],
+   [["Hrvatska","Croatia"],["vrt","garden"],["trg","square"]],
+   [["Hvala.","Thanks."],["Dobar dan.","Hello / Good day."]]],
+2:[[["Kako si?","How are you? (ti)"],["Kako ste?","How are you? (vi)"],["Možemo na ti.","We can use ti."]],
+   [["Kako ide?","How's it going?"],["Što ima?","What's up?"],["Ne mogu se žaliti.","Can't complain."],["Hvala puno.","Thanks a lot."],["Nema frke.","No worries."],["Žao mi je.","I'm sorry."]],
+   [["Dobro jutro.","Good morning."],["Dobra večer.","Good evening."],["Laku noć.","Good night."],["Vidimo se.","See you."],["Doviđenja.","Goodbye."]],
+   [["Zovem se…","My name is…"],["Kako se zoveš?","What's your name?"],["Drago mi je.","Nice to meet you."]]],
+3:[[["Umoran sam.","I'm tired. (m)"],["Ja sam umoran.","I'm tired (as opposed to you)."]],
+   [["Jesi li umoran? — Jesam.","Are you tired? — I am."],["Nisam.","I'm not."],["Ana je ovdje.","Ana is here."]],
+   [["Je li ovo kava?","Is this coffee?"],["Jesi li ti student?","Are you a student?"]],
+   [["Umorna sam.","I'm tired. (f)"],["Gladan sam / Gladna sam.","I'm hungry. (m / f)"],["Sretan sam / Sretna sam.","I'm happy. (m / f)"]]],
+4:[[["Gdje je stol?","Where's the table?"]],
+   [["Gdje su žene?","Where are the women?"]],
+   [["Puno ljudi.","A lot of people."],["Djeca su ovdje.","The kids are here."]],
+   [["Imam knjigu.","I have a / the book."]]],
+5:[[["Imam vremena.","I have time."],["Radim danas.","I'm working today."],["Imam pitanje.","I have a question."]],
+   [["Idem kući.","I'm going home."],["Mogu li?","Can I?"],["Hoću!","I want to!"],["Možeš li?","Can you?"]],
+   [["Što radiš?","What are you doing?"]],
+   [["Ne znam.","I don't know."],["Ne znam ništa.","I don't know anything."],["Nemam vremena.","I don't have time."],["Neću.","I won't / I don't want to."],["Nikad ne idem tamo.","I never go there."]]],
+6:[[["Tko je to?","Who's that?"],["Što je to?","What's that?"],["Gdje si?","Where are you?"],["Kamo ideš?","Where are you going?"],["Odakle si?","Where are you from?"],["Zašto?","Why?"]],
+   [["S kim ideš?","Who are you going with?"],["O čemu govoriš?","What are you talking about?"],["Od koga je to?","Who is that from?"],["Kome pišeš?","Who are you writing to?"]],
+   [["Koji auto?","Which car?"],["Čija je ovo torba?","Whose bag is this?"],["Kakvo je vrijeme?","What's the weather like?"]],
+   [["Ideš li?","Are you going?"],["Govorite li engleski?","Do you speak English?"],["Možeš li mi pomoći?","Can you help me?"],["Jesi li umoran?","Are you tired?"],["Je li ovo tvoje?","Is this yours?"]],
+   [["Što znači to?","What does that mean?"],["Kako se kaže … na hrvatskom?","How do you say … in Croatian?"],["Možete li ponoviti?","Could you repeat that?"],["Možete li govoriti sporije?","Could you speak more slowly?"],["Koliko košta?","How much is it?"],["Ne razumijem.","I don't understand."]]],
+27:[[["Pijem čaj.","I drink tea."],["Gledamo film.","We're watching a film."],["Učimo hrvatski.","We're learning Croatian."]],
+   [["Čaj je dobar.","The tea is good."],["hladno pivo","cold beer"],["jako dobar","very good"]],
+   [["Danas radim.","I'm working today."],["kod kuće","at home"],["Sutra gledam film kod kuće.","Tomorrow I'm watching a film at home."]],
+   [["Danas ne radim.","I'm not working today."],["Ne pijem pivo.","I don't drink beer."],["Nisam umoran.","I'm not tired. (m)"]],
+   [["Danas sam umoran.","Today I'm tired. (m)"],["Ana i Marko su ovdje.","Ana and Marko are here."]],
+   [["Gdje radiš?","Where do you work?"],["Što piješ?","What are you drinking?"],["Kada dolaziš?","When are you coming?"],["Piješ li čaj?","Do you drink tea?"]]],
+7:[[["dvadeset jedan","twenty-one"],["sto","a hundred"],["tisuća","a thousand"]],
+   [["jedna kava","one coffee"],["dvije kave","two coffees"],["pet kava","five coffees"]],
+   [["Koliko je sati?","What time is it?"],["pola tri","2:30"],["petnaest do tri","2:45"],["U koliko sati?","At what time?"],["Oko osam.","Around eight."],["tri i pol sata","three and a half hours"]],
+   [["Vidimo se u petak.","See you on Friday."],["svaki tjedan","every week"],["ovaj tjedan","this week"]]],
+8:[[["Pijem kavu.","I'm drinking coffee."]],
+   [["Imam sestru.","I have a sister."],["Volim kavu.","I love coffee."]],
+   [["Vidim psa.","I see the dog."],["Imam brata.","I have a brother."]],
+   [["Kavu, molim.","Coffee, please."],["Može jedna kava?","Could I get a coffee?"],["Molim vas jednu kavu.","A coffee, please."]],
+   [["Htio bih jedno pivo.","I'd like a beer. (m)"],["Htjela bih jedno pivo.","I'd like a beer. (f)"],["Račun, molim vas.","The bill, please."]]],
+9:[[["čaša vode","a glass of water"]],
+   [["centar grada","the city centre"],["kava bez šećera","coffee without sugar"],["Ja sam iz Amerike.","I'm from America."],["kod mene","at my place"],["puno ljudi","a lot of people"]],
+   [["dva piva","two beers"],["tri kave","three coffees"],["pet minuta","five minutes"]],
+   [["Ima li kruha?","Is there any bread?"],["Nema problema.","No problem."],["Nema mlijeka.","There's no milk."],["Ima li ovdje zahod?","Is there a toilet here?"]]],
+10:[[["Idem u školu.","I'm going to school."],["Ja sam u školi.","I'm at school."],["Idem na plažu.","I'm going to the beach."]],
+   [["u gradu","in the city"],["na moru","at the seaside"]],
+   [["na poslu","at work"],["u dućanu","in the shop"],["na otoku","on the island"],["Živim u Hrvatskoj.","I live in Croatia."]],
+   [["Gdje si? — Na poslu sam.","Where are you? — I'm at work."],["Kamo ideš? — U kino.","Where are you going? — To the cinema."]]],
+11:[[["Pišem Ani.","I'm writing to Ana."],["Pomažem sestri.","I'm helping my sister."]],
+   [["Daj mi to.","Give me that."],["Reci mu.","Tell him."],["Pomozi joj.","Help her."]],
+   [["Sviđa mi se.","I like it."],["Kako ti se sviđa?","How do you like it?"],["Sviđa mi se Zagreb.","I like Zagreb."]],
+   [["Treba mi pomoć.","I need help."],["Nedostaješ mi.","I miss you."],["Hvala vam.","Thank you. (vi)"],["Čini mi se…","It seems to me…"]]],
+12:[[["s prijateljem","with a friend"]],
+   [["Idem s prijateljem.","I'm going with a friend."],["kava s mlijekom","coffee with milk"],["Idem autobusom.","I'm going by bus."],["Putujem vlakom.","I'm travelling by train."]],
+   [["sa mnom","with me"],["s tobom","with you"],["Hoćeš li ići sa mnom?","Do you want to come with me?"]],
+   [["pod stolom","under the table"],["pred kućom","in front of the house"],["ljeti / ljetom","in summer"]]],
+13:[[["Bok, Ivane!","Hi, Ivan!"],["Hvala, prijatelju!","Thanks, mate!"],["Gospodine!","Sir!"]],
+   [],
+   [["S kim?","With whom?"],["O čemu?","About what?"],["Od koga?","From whom?"],["Čime?","With what?"]],
+   [],
+   [["s prijateljima","with friends"],["o gradovima","about the cities"]]],
+29:[[["blizu mora","near the sea"],["zbog kiše","because of the rain"],["kroz grad","through the city"],["umjesto kave","instead of coffee"]],
+   [["Stavi to pod stol.","Put it under the table."],["Torba je pod stolom.","The bag is under the table."]],
+   [["prije dva dana","two days ago"],["za tjedan dana","in a week"],["od ponedjeljka do petka","from Monday to Friday"],["nakon posla","after work"],["u subotu","on Saturday"]],
+   [["Ovo je za Anu.","This is for Ana."],["za pet minuta","in five minutes"],["za stolom","at the table"],["Hvala na pomoći.","Thanks for the help."]]],
+30:[[["Netko je na vratima.","Someone's at the door."],["Imaš li nešto?","Do you have anything?"],["negdje u gradu","somewhere in town"]],
+   [["Nitko ne zna.","Nobody knows."],["Ništa ne vidim.","I can't see anything."],["Ne idem nigdje.","I'm not going anywhere."],["Nikad!","Never!"]],
+   [["Sve je u redu.","Everything's fine."],["Svi su ovdje.","Everyone's here."],["svaki dan","every day"],["kao i uvijek","as always"]],
+   [["Ne vidim nikoga.","I don't see anyone."],["ni s kim","with nobody"],["Treba li ti nešto?","Do you need anything?"]]],
+14:[[["Radio sam.","I worked. (m)"],["Radila sam.","I worked. (f)"]],
+   [["Bio sam u Splitu.","I was in Split. (m)"],["Bila sam u Splitu.","I was in Split. (f)"],["Bili smo tamo.","We were there."]],
+   [["Nisam radio jučer.","I didn't work yesterday. (m)"],["Jesi li bio u Hrvatskoj?","Have you been to Croatia? (m)"]],
+   [["Jučer sam radio.","Yesterday I worked. (m)"]],
+   [["Išao sam kući.","I went home. (m)"],["Rekla sam ti.","I told you. (f)"],["Došao je.","He came."],["Jeste li jeli?","Have you eaten?"]]],
+15:[[["Radit ću sutra.","I'll work tomorrow."],["Što ćeš raditi?","What will you do?"],["Ići ćemo na more.","We'll go to the seaside."]],
+   [["Vidjet ćemo.","We'll see."],["Bit ću tamo.","I'll be there."]],
+   [["Neću raditi.","I won't work."],["Hoćeš li doći?","Will you come?"]],
+   [["Sutra idem u Zagreb.","I'm going to Zagreb tomorrow."],["Vlak polazi u pet.","The train leaves at five."]]],
+16:[[["Htio bih kavu.","I'd like a coffee. (m)"],["Htjela bih kavu.","I'd like a coffee. (f)"],["Volio bih ići.","I'd love to go. (m)"],["Mogli biste mi pomoći?","Could you help me?"]],
+   [["Htio bih platiti.","I'd like to pay. (m)"]],
+   [["Ako imaš vremena, dođi.","If you have time, come."],["Da sam znao, došao bih.","Had I known, I'd have come."]],
+   [["Čekaj! / Čekajte!","Wait!"],["Dođi! / Dođite!","Come!"],["Idemo!","Let's go!"],["Daj!","Come on!"],["Nemoj!","Don't!"],["Molim te.","Please. (ti)"]]],
+17:[[["čitati / pročitati","read (ongoing / done)"],["pisati / napisati","write (ongoing / done)"],["kupovati / kupiti","buy (ongoing / done)"]],
+   [["Pročitao sam knjigu.","I read (finished) the book. (m)"],["Pojeo sam sve.","I ate it all. (m)"]],
+   [["Čitam.","I'm reading."]],
+   [["Svaki dan pijem kavu.","I drink coffee every day."],["Popio sam kavu.","I drank (finished) the coffee. (m)"]]],
+25:[[["doći","to come"],["otići","to leave"],["ući","to go in"],["izaći","to go out"],["naći","to find"],["potpisati","to sign"]],
+   [["Dođi ovamo!","Come here!"],["Uđite!","Come in!"],["Izlazimo večeras?","Are we going out tonight?"],["Donesi vodu.","Bring some water."],["Nazovi Anu.","Call Ana."],["Ne mogu naći ključeve.","I can't find the keys."]],
+   [["prijeći ulicu","to cross the street"],["proći pored","to go past"]],
+   [["napisati","to write (finish)"],["dolaziti / doći","come (ongoing / done)"],["odlaziti / otići","leave (ongoing / done)"]],
+   [["prevesti","to translate"],["razumjeti","to understand"]]],
+28:[[["Mogu doći.","I can come."],["Moram ići.","I have to go."],["Smijem li ući?","May I come in?"],["Znam plivati.","I can swim."]],
+   [["Treba mi pomoć.","I need help."],["Trebam ići.","I need to go."],["Ne trebaš doći.","You don't need to come."],["Trebao bih ići.","I should go. (m)"]],
+   [["Ne moraš.","You don't have to."],["Ne smiješ!","You mustn't!"]],
+   [["Morao sam ići.","I had to go. (m)"],["Nisam mogla doći.","I couldn't come. (f)"],["Morat ću raditi.","I'll have to work."]],
+   [["Hladno mi je.","I'm cold."],["Vruće mi je.","I'm hot."],["Dosadno mi je.","I'm bored."],["Žao mi je.","I'm sorry."],["Kasno je.","It's late."]]],
+33:[[["Kad budem imao vremena…","When I have time… (m)"]],
+   [["ako bude padala kiša","if it rains"],["kad budemo imali novca","when we have money"]],
+   [["Kad dođem kući, javit ću se.","When I get home, I'll let you know."],["Čim stignem…","As soon as I arrive…"],["Javi se!","Get in touch!"]],
+   [["Kad dođeš u Zagreb, javi se.","When you're in Zagreb, get in touch."],["Ako imaš vremena…","If you have time…"]]],
+18:[[["moj brat","my brother"],["moja sestra","my sister"],["naša kuća","our house"],["njihov pas","their dog"]],
+   [["s mojim prijateljem","with my friend"],["u našoj kući","in our house"]],
+   [["Volim svoj posao.","I love my job."],["Uzmi svoju torbu.","Take your bag."]],
+   [["Čije je ovo?","Whose is this?"],["Čiji je ovo ključ?","Whose key is this?"]]],
+19:[[["Ovaj je moj.","This one's mine."],["Ta knjiga je dobra.","That book is good."],["Što je to?","What's that?"],["Ono tamo je muzej.","That over there is the museum."]],
+   [["velika kuća","a big house"],["u velikoj kući","in a big house"]],
+   [["Stari grad","the Old Town"],["taj veliki grad","that big city"]],
+   [["Preskupo je.","It's too expensive."],["jeftino i dobro","cheap and good"],["Hladno je.","It's cold."]]],
+20:[[["Zagreb je veći od Splita.","Zagreb is bigger than Split."],["Ovo je bolje nego ono.","This is better than that."]],
+   [["Bolje je.","It's better."],["najbolja kava","the best coffee"],["sve gore","worse and worse"]],
+   [["Govoriš dobro hrvatski!","You speak Croatian well!"],["Polako!","Slowly! / Take it easy!"],["Brzo!","Quick!"]],
+   [["jako dobro","very good"],["Malo sam umoran.","I'm a bit tired. (m)"],["Baš lijepo!","Really nice!"],["Skoro sam gotov.","I'm almost done. (m)"]]],
+31:[[["prvi put","the first time"],["zadnji put","the last time"],["sljedeći tjedan","next week"]],
+   [["Koji je danas datum?","What's the date today?"],["prvog svibnja","on the 1st of May"]],
+   [["Koliko imaš godina?","How old are you?"],["Imam dvadeset godina.","I'm twenty."]],
+   [["Imam dvoje djece.","I have two kids."],["nas troje","the three of us"],["oboje","both of them"]]],
+21:[[["Vidim ga.","I see him."],["Daj mi ga.","Give it to me."],["Za mene.","For me."],["Volim te.","I love you."]],
+   [["Kako se osjećaš?","How do you feel?"],["Ne sjećam se.","I don't remember."],["Nadam se.","I hope so."],["Šališ se!","You're joking!"],["Vidimo se!","See you!"]],
+   [["Kako se kaže…?","How do you say…?"],["Ovdje se ne puši.","No smoking here."]],
+   [["Kupio sam sebi knjigu.","I bought myself a book. (m)"],["Govori o sebi.","He talks about himself."]]],
+22:[[["Jučer sam ga vidio.","I saw him yesterday. (m)"]],
+   [["Dao mi ga je.","He gave it to me."],["Kako ti se sviđa?","How do you like it?"],["Ne bih ti to rekao.","I wouldn't tell you that. (m)"]],
+   [["Marka voli Ana.","It's Marko that Ana loves."]],
+   [["Vratio se.","He came back."],["Vidio ga je.","He saw him."]]],
+36:[[["Došao je Marko.","Marko came. (Marko is the news)"],["Film počinje u osam.","The film starts at eight."]],
+   [["Ima jedan problem.","There's a problem."],["Pada kiša.","It's raining."],["Zvala te mama.","Mom called you."],["Došla je zima.","Winter's here."]],
+   [["Gdje radi tvoj brat?","Where does your brother work?"],["Kada počinje film?","When does the film start?"],["Koliko košta ova jakna?","How much is this jacket?"]],
+   [["Kavu ne pijem.","Coffee, I don't drink."],["Ovo ne razumijem.","This bit I don't understand."]],
+   [["Meni se sviđa.","I like it (myself)."],["Meni je hladno, a tebi?","I'm cold, and you?"]],
+   [["Sutra ću ti to reći.","I'll tell you tomorrow."],["Reći ću ti to sutra.","I'll tell you that tomorrow."]]],
+23:[[["Ja radim, a ona uči.","I work, and she studies."],["ili","or"],["ali","but"]],
+   [["Mislim da je dobro.","I think it's good."],["Nadam se da ćeš doći.","I hope you'll come."],["Znam da…","I know that…"]],
+   [["Ne idem jer sam umoran.","I'm not going because I'm tired. (m)"],["Ako imaš vremena…","If you have time…"],["Iako je hladno, idem van.","Although it's cold, I'm going out."]],
+   [["čovjek koji govori","the man who's talking"],["knjiga koju čitam","the book I'm reading"],["grad u kojem živim","the city I live in"]]],
+32:[[["Rekao je da će doći.","He said he'd come."],["Kaže da je umorna.","She says she's tired."]],
+   [["Ne znam gdje je.","I don't know where it is."],["Znaš li što to znači?","Do you know what that means?"]],
+   [["Ne znam hoće li doći.","I don't know if he's coming."],["Pitaj ga ima li vremena.","Ask him if he has time."]],
+   [["Rekla mi je da čekam.","She told me to wait."],["Mama želi da učim.","Mom wants me to study."]]],
+24:[[["Bože!","God! / Oh my God!"],["Bože moj!","My God!"]],
+   [["u knjizi","in the book"],["na ruci","on the hand"]],
+   [["mlađi brat","younger brother"],["stariji brat","older brother"]],
+   [["Vidim psa.","I see the dog."],["kod oca","at Dad's"]],
+   [["Bio sam.","I was. (m)"],["Bila sam.","I was. (f)"]]],
+34:[[["Zatvoreno.","Closed."],["Otvoreno.","Open."],["Je li ovo mjesto slobodno?","Is this seat free?"],["Zauzeto je.","It's taken."]],
+   [["Račun je plaćen.","The bill is paid."],["Ovdje se prodaju karte.","Tickets are sold here."]],
+   [["Učim slušajući glazbu.","I study listening to music."]],
+   []],
+35:[[],
+   [["Odoh ja!","I'm off!"],["Rekoh ti!","Told you!"]],
+   [["Bijaše jednom…","Once upon a time…"]],
+   [["Već sam jeo.","I've already eaten. (m)"]]],
+26:[[["Može?","OK? Works for you?"],["Može!","Sure!"],["Ajde!","Come on! / Let's go!"],["Nema veze.","Never mind."],["Nema frke.","No worries."],["Fakat?","Really?"],["Evo!","Here you go!"]],
+   [["avion","plane"],["aerodrom","airport"],["dućan","shop"],["frižider","fridge"],["pješke","on foot"]],
+   [["Kako da kažem…","How do I put it…"],["Samo malo.","Just a moment."],["Ne znam kako se kaže.","I don't know how to say it."]],
+   [["Mislim da…","I think that…"],["Slažem se.","I agree."],["Ne slažem se.","I don't agree."],["Imaš pravo.","You're right."],["Ovisi.","It depends."],["Nije loše.","Not bad."],["Odlično!","Great!"]]]
+};
+
+
+/* ---- unit 36 and the new everyday-prefix step in unit 25 ---- */
+Object.assign(STEP_Q, {
+36:[
+  [SQm("Natural answer to 'Tko je došao?'",["Došao je Marko.","Marko došao je."],0,"Marko is the news → last."),
+   SQm("New, important information usually goes…",["at the end","at the start"],0,"New info last."),
+   SQb("Answer 'When does the film start?': It starts at eight.",["film","počinje","u","osam"],["Film počinje u osam."],"The time is the news → last."),
+   SQm("'Došao je Marko' stresses…",["that it was Marko who came","that Marko came rather than left"],0,"Last = the news.")],
+  [SQm("'Pada kiša' means…",["It's raining","The rain fell over"],0,"Verb first for things that happen."),
+   SQb("Make: There's a problem.",["ima","jedan","problem"],["Ima jedan problem."],"Ima first."),
+   SQt("Say: It's raining.",["pada kiša"],"Pada kiša."),
+   SQm("'Zvala te mama' means…",["Mom called you","You called Mom"],0,"-la = mama did it.")],
+  [SQb("Make: Where does your brother work?",["gdje","radi","tvoj","brat"],["Gdje radi tvoj brat?"],"Subject after the verb."),
+   SQm("More usual:",["Kada film počinje?","Kada počinje film?"],1,"Both are heard; verb right after the question word is the usual one."),
+   SQt("Ask: What's your sister's name? (ti)",["kako se zove tvoja sestra"],"Kako se zove tvoja sestra?"),
+   SQm("In 'Gdje radi tvoj brat?' the subject is…",["tvoj brat — after the verb","gdje"],0,"It moved to the end.")],
+  [SQm("'Kavu ne pijem' means…",["Coffee, I don't drink (contrast)","Coffee doesn't drink me"],0,"The ending -u still shows it's the object."),
+   SQb("Make: This (bit) I don't understand.",["ovo","ne","razumijem"],["Ovo ne razumijem."],"Thing first for contrast."),
+   SQm("Moving the object to the front changes…",["only the emphasis","who did what"],0,"Endings keep the meaning."),
+   SQm("'Tebe nisam vidio' stresses…",["you","seeing"],0,"First = contrast.")],
+  [SQm("'Meni je hladno, a tebi?' means…",["I'm cold — and you?","Give me something cold"],0,"meni / tebi = long forms."),
+   SQm("Without emphasis, 'I like it' is…",["Sviđa mi se.","Meni sviđa se."],0,"Short form, second."),
+   SQt("Say with emphasis: I'm bored. (start with meni)",["meni je dosadno"],"Meni je dosadno."),
+   SQm("'Ani je dosadno' means…",["Ana's bored","Ana is boring"],0,"Dative = who feels it.")],
+  [SQb("Make: Tomorrow I'll tell you that.",["sutra","ću","ti","to","reći"],["Sutra ću ti to reći."],"ću ti right after the first word."),
+   SQm("Which is NOT correct?",["Ja ću ti to reći.","Reći ću ti to.","Ću ti to reći."],2,"ću can't start."),
+   SQb("Make: I'll tell you tomorrow. (start with the verb)",["reći","ću","ti","sutra"],["Reći ću ti sutra."],"Verb first, then ću ti."),
+   SQm("A sentence looks scrambled. First find…",["the little words","the longest word"],0,"They sit second.")]
+]});
+FINAL_Q[36] = [
+  SQb("Answer 'Who called?': Ana called.",["zvala","je","ana"],["Zvala je Ana."],"Ana is the news → last."),
+  SQm("'Došla je zima' means…",["Winter has come","She came in winter"],0,"Verb first."),
+  SQb("Make: When does the shop open?",["kada","se","otvara","dućan"],["Kada se otvara dućan?"],"Subject after the verb."),
+  SQt("Say: There's a problem.",["ima jedan problem","ima problem","imamo problem"],"Ima jedan problem."),
+  SQb("Make: I'm cold — and you?",["meni","je","hladno","a","tebi"],["Meni je hladno, a tebi?"],"Long forms for emphasis."),
+  SQm("Which is correct?",["Sutra ću ti reći.","Sutra ti ću reći."],0,"ću before ti."),
+  SQm("'Čaj pijem, kavu ne' means…",["Tea I drink, coffee I don't","I drink tea and coffee"],0,"Contrast.")
+];
+STEP_Q[25].splice(1, 0, [
+  SQt("Say: Bring some water. (to a friend)",["donesi vodu"],"Donesi vodu."),
+  SQm("'Izlazimo večeras?' means…",["Are we going out tonight?","Are we coming in tonight?"],0,"izlaziti = go out."),
+  SQm("Ongoing partner of 'donijeti' (bring):",["donositi","nositi"],0,"donositi / donijeti."),
+  SQt("Say: Come in! (vi)",["uđite"],"Uđite!"),
+  SQm("Are these prefixed verbs fancy?",["No — they're basic everyday words","Yes, mostly formal"],0,"You'll use them daily.")
+]);
+FINAL_Q[25].push(
+  SQb("Make: Call Ana tomorrow.",["nazovi","anu","sutra"],["Nazovi Anu sutra.","Sutra nazovi Anu."],"nazvati = call (once)."),
+  SQm("'Prošao sam pored škole' means…",["I went past the school","I went into the school"],0,"proći = pass.")
+);
 
 /* Unit numbers inside the lesson text are written {uID} and filled in by position. */
 UNITS.forEach(u => u.grammar.forEach(g => { g.h = fillUnitRefs(g.h); g.b = fillUnitRefs(g.b); }));
@@ -4545,6 +4792,7 @@ function vSkill(id){
     <div class="dline ${(d[0] === "B" || d[0] === "K") ? "b" : ""}">
       <span class="who">${esc(d[0])}</span>
       <span class="say"><span class="cro">${esc(d[1])} ${spk(d[1])}</span><br><span class="eng">${esc(d[2])}</span></span>
+      <button class="save dsave" aria-pressed="${cardSet().has(cardKey(d[1], d[2]))}" title="Dodaj u kartice" data-card="${esc(cardKey(d[1], d[2]))}">${cardSet().has(cardKey(d[1], d[2])) ? "★" : "☆"}</button>
     </div>`).join("")}</div>`;
 
   const blocks = s.blocks.map(b => `
@@ -4681,12 +4929,25 @@ function vUnit(id){
 }
 
 /* The old one-page view, kept for looking things up. It doesn't unlock anything. */
+function phrasesHTML(uid, k, title){
+  const list = ((PHR[uid] || [])[k] || []);
+  if(!list.length) return "";
+  return `<div class="card phrcard" style="margin-top:14px">
+      <div class="kicker">${title || "phrases from this step · fraze"}</div>
+      <p style="font-size:13px;color:var(--stone-dim);margin:2px 0 8px">Tap ☆ to put one in your flashcards.</p>
+      <div class="wordlist">${list.map(x => wordRow(x[0], x[1])).join("")}</div></div>`;
+}
+function allPhrases(uid){
+  const seen = new Set(), out = [];
+  (PHR[uid] || []).flat().forEach(x => { const k = x[0] + "|" + x[1]; if(!seen.has(k)){ seen.add(k); out.push(x); } });
+  return out;
+}
 function vUnitFull(id){
   const u = UNITS.find(x => x.id === id) || UNITS[0];
   CARD_SRC = "Grammar: " + u.title;
   const gram = u.grammar.map((g, i) => `<div class="card">
       <div class="gsec"><span class="n">${i + 1}</span><h3>${g.h}</h3></div>
-      <div style="font-size:15px">${fillUnitRefs(g.b)}</div></div>`).join("");
+      <div style="font-size:15px">${fillUnitRefs(g.b)}</div></div>${phrasesHTML(u.id, i)}`).join("");
   shell(`unit ${unitNo(u)} · whole unit`, esc(u.title), esc(u.goal),
     `<div class="chips" style="margin-bottom:18px">
       <button class="btn ghost sm" onclick="go('unit',${u.id})">← ${dual("Back to the steps","Natrag na korake")}</button>
@@ -4748,7 +5009,7 @@ function vStep(arg){
     shell(`unit ${unitNo(uid)} · step ${k + 1} of ${n}`, "Words and phrases", esc(u.title),
       `${top}<p style="font-size:14.5px;color:var(--stone-dim);margin:0 0 10px">Have a quick look. Tap 🔊 to hear one, ☆ to put it in your cards.</p>
       <div class="kicker">words · riječi</div><div class="wordlist">${u.vocab.map(v => wordRow(v[0], v[1])).join("")}</div>
-      <div class="kicker" style="margin-top:22px">phrases · fraze</div><div class="wordlist">${u.phrases.map(v => wordRow(v[0], v[1])).join("")}</div>
+      <div class="kicker" style="margin-top:22px">phrases · fraze</div><div class="wordlist">${u.phrases.concat(allPhrases(uid)).filter((x, i, arr) => arr.findIndex(y => y[0] === x[0]) === i).map(v => wordRow(v[0], v[1])).join("")}</div>
       <div style="margin-top:20px"><button class="btn" onclick="finishStep(${uid},${k})">${dual("Done — on to the big quiz","Gotovo")} →</button></div>`);
     return;
   }
@@ -4756,7 +5017,7 @@ function vStep(arg){
   const g = u.grammar[k];
   SQ = { u:uid, k, q: shuffle((STEP_Q[uid] || [])[k] || []).map(shuffleOpts), i:0, again:new Set() };
   shell(`unit ${unitNo(uid)} · step ${k + 1} of ${n}`, g.h, esc(u.title),
-    `${top}<div class="card"><div style="font-size:15px">${fillUnitRefs(g.b)}</div></div>
+    `${top}<div class="card"><div style="font-size:15px">${fillUnitRefs(g.b)}</div></div>${phrasesHTML(uid, k)}
     <div class="card stepcheck" style="margin-top:14px">
       <div class="kicker">quick check · provjera</div>
       <div id="sq"></div>
