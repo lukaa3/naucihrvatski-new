@@ -493,7 +493,7 @@ select.field{font-family:var(--body);font-size:15px}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.2";
+const VERSION = "10.3";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -764,8 +764,8 @@ const UNITS = [
   grammar:[
     {h:"Counting",
      b:"nula, jedan, dva, tri, četiri, pet, šest, sedam, osam, devet, deset,<br>jedanaest, dvanaest, trinaest, četrnaest, petnaest, šesnaest, sedamnaest, osamnaest, devetnaest, dvadeset.<br><br>From 11 up it's just <em>digit + naest</em>. Tens: dvadeset, trideset, četrdeset, pedeset, šezdeset, sedamdeset, osamdeset, devedeset, <b>sto</b>, <b>tisuća</b>.<br><br>21 = dvadeset jedan. 135 = sto trideset pet."},
-    {h:"Counting things — three phrases for now",
-     b:"Numbers slightly change the word that follows them. The reason is the case system, which starts in Unit {u8}, so we'll leave the rule until <b>Unit {u9}</b> where it can be explained properly.<br><br>For now, just learn these three by heart. They cover almost everything you'll order:<br><br><b>jedna kava</b> — one coffee<br><b>dvije kave</b> — two coffees<br><b>pet kava</b> — five coffees<br><br>Say them out loud a few times. That's genuinely all you need at this stage — and when the rule arrives in Unit {u9}, you'll already have the pattern in your ear."},
+    {h:"Counting things: 1, a few, many",
+     b:"After a number, the word changes its ending. Croatian sorts numbers into three groups — <b>1</b>, <b>a few</b> (2, 3, 4) and <b>many</b> (5 and up):<table><tr><th></th><th>kava (f)</th><th>stol (m)</th><th>pivo (n)</th></tr><tr><td class='cs'>1</td><td class='hr'>jedna kava</td><td class='hr'>jedan stol</td><td class='hr'>jedno pivo</td></tr><tr><td class='cs'>2, 3, 4</td><td class='hr'>dvije kave</td><td class='hr'>dva stola</td><td class='hr'>dva piva</td></tr><tr><td class='cs'>5 and up</td><td class='hr'>pet kava</td><td class='hr'>pet stolova</td><td class='hr'>pet piva</td></tr></table><b>1</b> — the word stays normal. <b>jedan / jedna / jedno</b> matches its gender (Unit {u4}).<br><br><b>2, 3, 4</b> — feminine <b>-a → -e</b> (kave) · masculine <b>adds -a</b> (stola) · neuter <b>-o → -a</b> (piva). Use <b>dvije</b> for feminine words and <b>dva</b> for the others.<br><br><b>5 and up</b> — feminine keeps <b>-a</b> (pet kava — it only <em>looks</em> like one) · short masculine words add <b>-ova</b>, like their plural (stolova, sokova) · neuter <b>-a</b> (piva).<br><br><b>Two extra rules:</b><br>• <b>11–19 count as 'many'</b>: dvanaest kava, petnaest stolova.<br>• For bigger numbers, <b>only the last word counts</b>: dvadeset <b>jedna</b> kava · dvadeset <b>dvije</b> kave · dvadeset <b>pet</b> kava.<br><br>Why does this happen? It's a case called the genitive, which you'll meet properly in Unit {u9}. You don't need the name to use the pattern — just ask: <em>1, a few, or many?</em>"},
     {h:"Telling the time",
      b:"<b>Koliko je sati?</b> — What time is it?<br><br><b>On the hour</b>, say the number then the word for hour:<br>Jedan sat · Dva sata · Pet sati · Deset sati<br><br><b>Half past — the one that catches everyone.</b> Croatian counts <em>towards</em> the next hour:<table><tr><th>time</th><th>Croatian</th><th>literally</th></tr><tr><td class='cs'>2:30</td><td class='hr'>pola tri</td><td>half to three</td></tr><tr><td class='cs'>3:30</td><td class='hr'>pola četiri</td><td>half to four</td></tr><tr><td class='cs'>7:30</td><td class='hr'>pola osam</td><td>half to eight</td></tr></table>So <b>pola tri is 2:30, not 3:30.</b> Take the hour you're heading towards and put <em>pola</em> in front.<br><br><b>Careful — <em>tri i pol</em> is not a time.</b> It means <em>three and a half</em> as an amount: <em>tri i pol sata</em> = three and a half <b>hours</b>.<br><br><b>Other ways to say the same time</b> — all used:<table><tr><th>time</th><th>everyday</th><th>digital / official</th></tr><tr><td class='cs'>2:30</td><td class='hr'>pola tri</td><td class='hr'>dva i trideset</td></tr><tr><td class='cs'>2:15</td><td class='hr'>dva i petnaest</td><td class='hr'>dva i petnaest</td></tr><tr><td class='cs'>2:45</td><td class='hr'>petnaest do tri</td><td class='hr'>dva i četrdeset pet</td></tr></table>Digital forms are what you hear at stations and on the radio; <em>pola</em> and <em>do</em> are what people say to each other. Recognise both, use whichever is easier.<br><br><b>Arranging a time:</b><br><b>U koliko sati?</b> / <b>Kad?</b> — At what time? / When?<br><b>U osam.</b> — At eight. · <b>Oko osam.</b> — Around eight.<br><em>U osam ujutro</em> — 8am · <em>U osam navečer</em> — 8pm"},
     {h:"Days and months",
@@ -832,7 +832,7 @@ const UNITS = [
     {h:"Four jobs",
      b:"<b>1 · Possession</b> — English <em>of</em> or <em>'s</em>:<br>knjiga <b>profesora</b> · centar <b>grada</b> · kraj <b>filma</b><br><br><b>2 · After these prepositions:</b> <b>iz</b> from/out of, <b>od</b> from, <b>do</b> to/until, <b>bez</b> without, <b>kod</b> at someone's, <b>blizu</b> near, <b>poslije/nakon</b> after, <b>prije</b> before, <b>oko</b> around, <b>preko</b> across, <b>zbog</b> because of, <b>umjesto</b> instead of<br><br><b>3 · After quantities</b> — 5+, and <em>puno, malo, čaša, boca, kilogram</em>:<br>puno <b>ljudi</b> · čaša <b>vode</b> · kilogram <b>jabuka</b><br><br><b>4 · After nema</b>:<br><b>Nema</b> kruha. — There's no bread. · <b>Nema</b> problema."},
     {h:"Numbers use the genitive — the rule from Unit {u7}",
-     b:"Back in Unit {u7} you learned <em>jedna kava · dvije kave · pet kava</em> as three phrases. Here's why they differ — it's the genitive doing the work.<table><tr><th>after…</th><th>what the noun takes</th><th>example</th></tr><tr><td class='cs'>1</td><td>nothing special, it just agrees</td><td class='hr'>jedan stol · jedna kava</td></tr><tr><td class='cs'>2, 3, 4</td><td>genitive <b>singular</b></td><td class='hr'>dva stola · tri kave</td></tr><tr><td class='cs'>5 and up</td><td>genitive <b>plural</b></td><td class='hr'>pet stolova · šest kava</td></tr></table>That's it — the same genitive endings you just learned, triggered by a number instead of a preposition.<br><br>Two extra details:<br>• <b>dva</b> for masculine and neuter, <b>dvije</b> for feminine — <em>dva piva</em>, <em>dvije kave</em><br>• Anything <em>ending</em> in 2, 3 or 4 follows the middle row: <em>dvadeset dva stola</em> (22 tables). Anything ending 5–0 follows the bottom row: <em>dvadeset pet stolova</em>.<br><br>Now say the Unit {u7} phrases again and you'll hear the pattern: <b>jedna kava · dvije kave · pet kava</b>."},
+     b:"Back in Unit {u7} you learned the <em>1 / a few / many</em> pattern — jedna kava · dvije kave · pet kava. Here's what's behind it: the genitive.<table><tr><th>after…</th><th>what the noun takes</th><th>example</th></tr><tr><td class='cs'>1</td><td>nothing special, it just agrees</td><td class='hr'>jedan stol · jedna kava</td></tr><tr><td class='cs'>2, 3, 4</td><td>genitive <b>singular</b></td><td class='hr'>dva stola · tri kave</td></tr><tr><td class='cs'>5 and up</td><td>genitive <b>plural</b></td><td class='hr'>pet stolova · šest kava</td></tr></table>That's it — the same genitive endings you just learned, triggered by a number instead of a preposition.<br><br>Two extra details:<br>• <b>dva</b> for masculine and neuter, <b>dvije</b> for feminine — <em>dva piva</em>, <em>dvije kave</em><br>• Anything <em>ending</em> in 2, 3 or 4 follows the middle row: <em>dvadeset dva stola</em> (22 tables). Anything ending 5–0 follows the bottom row: <em>dvadeset pet stolova</em>.<br><br>Now say the Unit {u7} phrases again and you'll hear the pattern: <b>jedna kava · dvije kave · pet kava</b>."},
     {h:"ima and nema",
      b:"<b>Ima</b> + noun = there is / there are.<br><b>Nema</b> + <b>genitive</b> = there isn't.<br>Ima li kruha? — Is there bread?<br>Nema mlijeka. — There's no milk.<br>Ima li ovdje zahod? — Is there a toilet here?"}
   ],
@@ -2830,6 +2830,30 @@ EXTRA_STEPS.forEach(x => {
   (PHR[x.u] = PHR[x.u] || []).push(x.p || []);
   (x.f || []).forEach(q => FINAL_Q[x.u].push(q));
 });
+
+
+/* ---- Unit "Numbers, time and dates": the counting rule explained properly, plus the words you'll count most ---- */
+(() => {
+  const u = UNITS.find(v => v.id === 7);
+  u.grammar.splice(2, 0, {h:"The things you'll count most",
+    b:"The same three groups, for the words you'll actually count every day:<table><tr><th></th><th>1</th><th>2, 3, 4</th><th>5 and up</th></tr><tr><td class='cs'>day</td><td class='hr'>jedan dan</td><td class='hr'>dva dana</td><td class='hr'>pet dana</td></tr><tr><td class='cs'>year</td><td class='hr'>jedna godina</td><td class='hr'>dvije godine</td><td class='hr'>pet godina</td></tr><tr><td class='cs'>minute</td><td class='hr'>jedna minuta</td><td class='hr'>dvije minute</td><td class='hr'>pet minuta</td></tr><tr><td class='cs'>euro</td><td class='hr'>jedan euro</td><td class='hr'>dva eura</td><td class='hr'>pet eura</td></tr><tr><td class='cs'>hour</td><td class='hr'>jedan sat</td><td class='hr'>dva sata</td><td class='hr'>pet <b>sati</b></td></tr><tr><td class='cs'>person</td><td class='hr'>jedan čovjek</td><td class='hr'>dva čovjeka</td><td class='hr'>pet <b>ljudi</b></td></tr></table>Only the two in bold break the pattern: <b>sati</b> and <b>ljudi</b>. Learn those two and you can count anything.<br><br><b>Imam dvadeset godina.</b> — I'm twenty. · <b>Za pet minuta.</b> — In five minutes. · <b>Dva dana.</b> — Two days."});
+  STEP_Q[7][1].push(
+    SQm("two tables =",["dva stola","dvije stola","dva stol"],0,"Masculine: dva + -a."),
+    SQt("Say: five beers",["pet piva"],"Neuter, 5+: -a."),
+    SQm("12 coffees =",["dvanaest kava","dvanaest kave"],0,"11–19 count as 'many'."),
+    SQt("Say: five juices (sok)",["pet sokova"],"Short masculine words: -ova."));
+  STEP_Q[7].splice(2, 0, [
+    SQm("two days =",["dva dana","dvije dane"],0,"dan is masculine → dva dana."),
+    SQt("Say: five days",["pet dana"],"pet dana."),
+    SQm("three hours =",["tri sata","tri sati"],0,"A few → sata."),
+    SQt("Say: seven hours",["sedam sati"],"The odd one: sati."),
+    SQt("Say: two years",["dvije godine"],"godina is feminine → dvije godine."),
+    SQm("five people =",["pet čovjeka","pet ljudi"],1,"The other odd one: ljudi.")]);
+  PHR[7][1] = [["jedna kava · dvije kave · pet kava","1 · 2 · 5 coffees"],["jedan stol · dva stola · pet stolova","1 · 2 · 5 tables"],["jedno pivo · dva piva · pet piva","1 · 2 · 5 beers"]];
+  PHR[7].splice(2, 0, [["jedan dan · dva dana · pet dana","1 · 2 · 5 days"],["jedna godina · dvije godine · pet godina","1 · 2 · 5 years"],["jedan sat · dva sata · pet sati","1 · 2 · 5 hours"],["jedan euro · dva eura · pet eura","1 · 2 · 5 euros"],["Za pet minuta.","In five minutes."]]);
+  FINAL_Q[7].push(SQt("Say: four beers",["četiri piva"],"A few → piva."),
+                  SQm("21 coffees =",["dvadeset jedna kava","dvadeset jedna kave"],0,"Only the last word counts: jedna."));
+})();
 
 /* Unit numbers inside the lesson text are written {uID} and filled in by position. */
 UNITS.forEach(u => u.grammar.forEach(g => { g.h = fillUnitRefs(g.h); g.b = fillUnitRefs(g.b); }));
