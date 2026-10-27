@@ -1,7 +1,7 @@
 /* Nauči hrvatski — keeps a copy of the app on the device so it opens fast and
    works without internet. Always tries the network first, so updates show up
    straight away; the saved copy is only used when you're offline. */
-const CACHE = "nauci-hrvatski-v1";
+const CACHE = "nauci-hrvatski-v2";
 const CORE = ["/", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/favicon-32.png"];
 const CDN = ["fonts.googleapis.com", "fonts.gstatic.com", "cdn.jsdelivr.net"];   // fonts + the sign-in library
 
