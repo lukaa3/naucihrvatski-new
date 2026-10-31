@@ -458,6 +458,8 @@ html,body{max-width:100%;overflow-x:hidden}
 .casetbl .exrow td{padding-top:0;padding-bottom:12px;border-top:0}
 .casetbl tr:not(.exrow) td{border-bottom:0;padding-bottom:4px}
 .exl{display:block;font-style:normal;font-family:var(--display);font-size:15.5px;color:var(--stone);margin-top:3px}
+.glance{margin-top:16px;padding-top:12px;border-top:1px dashed var(--line)}
+.glance-h{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--brass);margin-bottom:6px}
 /* build-a-sentence */
 .bline{min-height:52px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:9px;border:2px dashed var(--line);border-radius:12px;margin-top:4px}
 .bph{color:var(--stone-dim);font-size:13.5px;padding-left:4px}
@@ -526,7 +528,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.11";
+const VERSION = "10.12";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -2913,6 +2915,47 @@ EXTRA_STEPS.forEach(x => {
              SQm("Why 's psom' and not 's pasom'?",["The a inside drops","It's a typo"],0,"Same as psa."));
   add(13, 0, SQm("Calling your friend Luka:",["Luka!","Luke!"],0,"Men ending in -a don't change."),
              SQt("Call your brother (brat):",["brate"],"-e."));
+})();
+
+
+/* ---- "At a glance" tables: every unit about changing forms gets one, genders always m → f → n ---- */
+(() => {
+  const T = (head, rows) => `<div class="glance"><div class="glance-h">At a glance</div><table><tr>${head.map(h => `<th>${h}</th>`).join("")}</tr>${
+    rows.map(r => `<tr><td class='cs'>${r[0]}</td>${r.slice(1).map(c => `<td class='hr'>${c}</td>`).join("")}</tr>`).join("")}</table></div>`;
+  const G = {
+    3:{1:T(["","short","long","not"],[["ja","sam","jesam","nisam"],["ti","si","jesi","nisi"],["on / ona / ono","je","jest","nije"],["mi","smo","jesmo","nismo"],["vi","ste","jeste","niste"],["oni / one","su","jesu","nisu"]])},
+    4:{1:T(["","one","more than one"],[["m · one syllable","stol","stolovi"],["m · longer","prijatelj","prijatelji"],["f · -a","žena","žene"],["f · other","noć","noći"],["n · -o","selo","sela"],["n · -e","more","mora"]])},
+    10:{1:T(["","basic","where — one","where — more"],[["m","grad","u gradu","u gradovima"],["f","škola","u školi","u školama"],["n","more","na moru","na morima"]])},
+    11:{0:T(["","basic","to — one","to — more"],[["m","prijatelj","prijatelju","prijateljima"],["f","sestra","sestri","sestrama"],["n","selo","selu","selima"]])},
+    12:{0:T(["","basic","with — one","with — more"],[["m","grad","gradom","gradovima"],["m · soft","prijatelj","prijateljem","prijateljima"],["f","žena","ženom","ženama"],["n · -o","selo","selom","selima"],["n · -e","more","morem","morima"]])},
+    13:{0:T(["","basic","calling"],[["m","Ivan","Ivane!"],["m · soft","prijatelj","prijatelju!"],["m · -o / -a names","Marko · Luka","Marko! · Luka!"],["f · -a","Ana","Ano!"],["f · other","Kim","Kim!"],["n","dijete","dijete!"],["more than one","prijatelji","prijatelji! (same as basic)"]])},
+    14:{0:T(["","man / mixed","woman"],[["ja","radio sam","radila sam"],["ti","radio si","radila si"],["on (he)","radio je","—"],["ona (she)","—","radila je"],["mi","radili smo","radile smo"],["vi","radili ste","radile ste"],["oni · one","radili su","radile su"]]) + "<p style='font-size:13px;color:var(--stone-dim);margin:6px 0 0'>ono (it, neuter): <b>radilo je</b></p>"},
+    15:{0:T(["","ću","verb first","not"],[["ja","ja ću raditi","radit ću","neću raditi"],["ti","ti ćeš raditi","radit ćeš","nećeš raditi"],["on / ona","on će raditi","radit će","neće raditi"],["mi","mi ćemo raditi","radit ćemo","nećemo raditi"],["vi","vi ćete raditi","radit ćete","nećete raditi"],["oni / one","oni će raditi","radit će","neće raditi"]])},
+    16:{0:T(["","bih","man / mixed","woman"],[["ja","bih","radio bih","radila bih"],["ti","bi","radio bi","radila bi"],["on / ona","bi","radio bi","radila bi"],["mi","bismo","radili bismo","radile bismo"],["vi","biste","radili biste","radile biste"],["oni / one","bi","radili bi","radile bi"]])},
+    28:{0:T(["","morati (must)","moći (can)","smjeti (may)"],[["ja","moram","mogu","smijem"],["ti","moraš","možeš","smiješ"],["on / ona","mora","može","smije"],["mi","moramo","možemo","smijemo"],["vi","morate","možete","smijete"],["oni / one","moraju","mogu","smiju"]])},
+    33:{1:T(["","budem","when I come (m / f)"],[["ja","budem","kad budem došao / došla"],["ti","budeš","kad budeš došao / došla"],["on / ona","bude","kad bude došao / došla"],["mi","budemo","kad budemo došli / došle"],["vi","budete","kad budete došli / došle"],["oni / one","budu","kad budu došli / došle"]])},
+    19:{0:T(["","m","f","n"],[["this (near me)","ovaj","ova","ovo"],["that (near you)","taj","ta","to"],["that over there","onaj","ona","ono"]]),
+        1:T(["","m","f","n"],[["one","velik grad","velika kuća","veliko more"],["more than one","veliki gradovi","velike kuće","velika mora"]])},
+    20:{1:T(["","-er","the -est"],[["jeftin (cheap)","jeftiniji","najjeftiniji"],["brz (fast)","brži","najbrži"],["dobar (good)","bolji","najbolji"],["loš (bad)","gori","najgori"],["velik (big)","veći","najveći"],["malen (small)","manji","najmanji"],["lijep (beautiful)","ljepši","najljepši"],["dug (long)","duži","najduži"]])},
+    31:{0:T(["","m","f","n"],[["1st","prvi","prva","prvo"],["2nd","drugi","druga","drugo"],["3rd","treći","treća","treće"],["4th","četvrti","četvrta","četvrto"],["5th","peti","peta","peto"],["10th","deseti","deseta","deseto"]]),
+        1:T(["month","on the …th of"],[["siječanj","siječnja"],["veljača","veljače"],["ožujak","ožujka"],["travanj","travnja"],["svibanj","svibnja"],["lipanj","lipnja"],["srpanj","srpnja"],["kolovoz","kolovoza"],["rujan","rujna"],["listopad","listopada"],["studeni","studenoga"],["prosinac","prosinca"]])},
+    39:{1:T(["","m","f","n"],[["1","jedan velik stol","jedna velika kuća","jedno veliko selo"],["2, 3, 4","dva velika stola","dvije velike kuće","dva velika sela"],["5 and up","pet velikih stolova","pet velikih kuća","pet velikih sela"]]),
+        2:T(["","now","in the past"],[["1","Jedan čovjek čeka.","Jedan čovjek je došao."],["2, 3, 4","Dva čovjeka čekaju.","Dva čovjeka su došla."],["5 and up","Pet ljudi čeka.","Pet ljudi je došlo."]])},
+    22:{1:T(["slot","the little words"],[["1","li"],["2","sam si smo ste su · ću ćeš će… · bih bi bismo…"],["3","mi ti mu joj nam vam im (to whom)"],["4","me te ga je nas vas ih (whom)"],["5","se"],["6","je (is)"]])},
+    23:{0:T(["word","means","example"],[["i","and","kava i čaj"],["a","and / but (contrast)","Ja radim, a ona uči."],["ali","but","Volim ga, ali…"],["ili","or","kava ili čaj?"],["pa","so / and then","Umoran sam, pa idem spavati."],["nego","but rather / than","bolje nego ono"]]),
+        2:T(["word","means","example"],[["jer · zato što","because","jer sam umoran"],["ako","if","ako imaš vremena"],["kad(a)","when","kad sam bio mali"],["dok","while","dok ja kuham"],["iako","although","iako je hladno"],["zato","that's why","zato ne idem"]])},
+    32:{0:T(["they said","you pass it on"],[["Umorna sam.","Rekla je da je umorna."],["Doći ću.","Rekao je da će doći."],["Gdje je?","Ne znam gdje je."],["Ideš li?","Pitao je ideš li."],["Čekaj!","Rekao mi je da čekam."]])},
+    24:{0:T(["change","when","example"],[["k g h → č ž š","calling someone, -ica, -ić","ruka → ručica · Bog → Bože"],["k g h → c z s","before -i","knjiga → knjizi · učenik → učenici"],["t d + j → ć đ","comparatives","mlad → mlađi"],["vanishing a","other cases","pas → psa · otac → oca"],["l → o","end of a word","radil → radio"]])},
+    40:{0:T(["man","woman"],[["student","studentica"],["učitelj","učiteljica"],["prijatelj","prijateljica"],["konobar","konobarica"],["Hrvat","Hrvatica"],["Amerikanac","Amerikanka"]])},
+    34:{0:T(["verb","m","f","n"],[["otvoriti (open)","otvoren","otvorena","otvoreno"],["zatvoriti (close)","zatvoren","zatvorena","zatvoreno"],["platiti (pay)","plaćen","plaćena","plaćeno"],["napisati (write)","napisan","napisana","napisano"],["prodati (sell)","prodan","prodana","prodano"]])},
+    1:{0:T(["letter","sounds like","example"],[["c","ts (cats)","cesta"],["č","ch (church) — hard","čaj"],["ć","ch — softer","kuća"],["dž","j (judge) — hard","džep"],["đ","j — softer","đak"],["j","y (yes)","ja"],["lj","lli (million)","ljubav"],["nj","ny (canyon)","konj"],["š","sh","šuma"],["ž","s in measure","žena"],["h","raspy, like Bach","hvala"]])},
+    27:{2:T(["when","verb","what","where"],[["Sutra","gledam","film","kod kuće."],["Danas","radim","—","u gradu."],["Navečer","pijem","čaj","ovdje."]])},
+    36:{5:T(["situation","what goes where","example"],[["answering 'who?'","the news goes last","Došao je Marko."],["something happens","verb first","Pada kiša."],["question about someone","verb, then the person","Gdje radi tvoj brat?"],["contrast","the thing first","Kavu ne pijem."],["feelings, stressed","the person first","Meni je hladno."]])},
+    26:{1:T(["textbook word","what people say","means"],[["zrakoplov","avion","plane"],["zračna luka","aerodrom","airport"],["trgovina","dućan","shop"],["računalo","kompjuter","computer"],["hladnjak","frižider","fridge"],["dizalo","lift","elevator"],["pješice","pješke","on foot"]])},
+    35:{1:T(["","reći — aorist","means"],[["ja","rekoh","I said"],["ti","reče","you said"],["on / ona","reče","he / she said"],["mi","rekosmo","we said"],["vi","rekoste","you said"],["oni / one","rekoše","they said"]])}
+  };
+  Object.keys(G).forEach(id => { const u = UNITS.find(x => x.id === Number(id)); if(!u) return;
+    Object.keys(G[id]).forEach(k => { const g = u.grammar[Number(k)]; if(g && g.b.indexOf("glance-h") < 0) g.b += G[id][k]; }); });
 })();
 
 /* Unit numbers inside the lesson text are written {uID} and filled in by position. */
