@@ -447,6 +447,14 @@ html,body{max-width:100%;overflow-x:hidden}
 .cact:hover{color:var(--brass)}
 .linkbtn{background:none;border:0;color:var(--stone-dim);font:inherit;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .linkbtn:hover{color:var(--brass)}
+.slowbtn{margin-top:12px;background:none;border:1px solid var(--line);color:var(--stone-dim);font:inherit;font-size:12.5px;padding:5px 11px;border-radius:999px;cursor:pointer}
+.slowbtn[aria-pressed="true"]{border-color:var(--brass);color:var(--brass);background:rgba(107,166,255,.10)}
+.ttl{cursor:pointer;border-bottom:1px dotted var(--stone-dim)}
+.ttl-en{color:var(--stone-dim);font-style:italic;font-size:15px;margin:0 0 4px}
+.tr-en{display:block;color:var(--stone-dim);font-style:italic;font-size:13.5px;margin:2px 0 8px}
+.opt-en{margin:3px 0 0;font-size:12.5px}
+.qread w{cursor:pointer;border-bottom:1px dotted rgba(234,240,250,.35)}
+.gstar{font-size:17px;padding:0 4px 0 0}
 /* build-a-sentence */
 .bline{min-height:52px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:9px;border:2px dashed var(--line);border-radius:12px;margin-top:4px}
 .bph{color:var(--stone-dim);font-size:13.5px;padding-left:4px}
@@ -500,6 +508,7 @@ html,body{max-width:100%;overflow-x:hidden}
       </div>
       <svg class="board" viewBox="0 0 240 20" preserveAspectRatio="none" aria-hidden="true" id="board"></svg>
       <div style="margin-top:8px" id="pl-label">Your checkerboard fills as you learn.</div>
+      <button class="slowbtn" id="slowbtn" onclick="toggleSlow()" aria-pressed="false" title="Play Croatian audio at 0.75× speed">🐢 Slow audio: off</button>
     </div>
   </aside>
 
@@ -514,7 +523,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.5";
+const VERSION = "10.6";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -4038,8 +4047,15 @@ const READING_TOPICS = [
   ["Istra i tartufi","Istria & truffles"],["hrvatski otoci","The Croatian islands"],
   ["nogomet u Hrvatskoj","Football in Croatia"],["godišnja doba","The seasons"],
   ["advent u Zagrebu","Christmas in Zagreb"],["tržnica Dolac","Dolac market"],
-  ["putovanje vlakom","Travelling by train"],["glazba i festivali","Music & festivals"]
+  ["putovanje vlakom","Travelling by train"],["glazba i festivali","Music & festivals"],
+  ["naručivanje hrane u restoranu","Ordering food"],["ljeto na plaži","Summer at the beach"],
+  ["javni prijevoz u gradu","Public transport"],["sport i rekreacija","Sports"],
+  ["kupnja namirnica u dućanu","Grocery shopping"]
 ];
+function surpriseRead(){
+  const pool = READING_TOPICS.filter(t => !RD || t[0] !== RD.topic);
+  genRead(pool[Math.floor(Math.random() * pool.length)][0]);
+}
 
 /* ============================================================
    STATE + STORAGE
@@ -4162,13 +4178,19 @@ function editDistance(a, b){
   }
   return prev[n];
 }
+/* Exact spelling, every ending must be right (plaži ≠ plažu). Two things are
+   forgiven: missing accents (č ć š ž đ → c c s z d) and word order. */
 function checkTyped(input, accepted){
-  const v = norm(input);
+  const bag = s => norm(s).split(" ").filter(Boolean).sort().join(" ");
+  const bagAcc = s => String(s).toLowerCase().replace(/[.,!?;:…"'„“”]/g, "").split(/\s+/).filter(Boolean).sort().join(" ");
+  const v = bag(input);
   if(!v) return { ok:false, typo:false };
-  for(const a of accepted) if(norm(a) === v) return { ok:true, typo:false };
   for(const a of accepted){
-    const t = norm(a);
-    if(t.length >= 6 && editDistance(v, t) <= 2) return { ok:true, typo:true, meant:a };
+    if(bag(a) === v){
+      // right answer — but if the accents were left off, show the proper spelling
+      const accents = bagAcc(input) !== bagAcc(a) && /[čćšžđ]/i.test(a);
+      return { ok:true, typo:accents, meant:a };
+    }
   }
   return { ok:false, typo:false };
 }
@@ -4241,10 +4263,17 @@ function speak(text){
   try{
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(String(text).replace(/\s*\/\s*/g," , "));
-    u.lang = v.lang || "hr-HR"; u.rate = .88; u.voice = v;
+    u.lang = v.lang || "hr-HR"; u.rate = S.slowAudio ? .66 : .88; u.voice = v;   // slow = 0.75× normal
     speechSynthesis.speak(u);
   }catch(e){}
 }
+
+function paintSlow(){
+  const b = $("#slowbtn"); if(!b) return;
+  b.setAttribute("aria-pressed", S.slowAudio ? "true" : "false");
+  b.textContent = "🐢 Slow audio: " + (S.slowAudio ? "on" : "off");
+}
+function toggleSlow(){ S.slowAudio = !S.slowAudio; save(); paintSlow(); speak("Polako i jasno."); }
 
 function voiceHelp(){
   if($("#voicebar")) return;
@@ -4651,7 +4680,7 @@ function paintNav(){
   ).join("");
 }
 function go(v, arg){
-  CUR = v; paintNav();
+  CUR = v; paintNav(); paintSlow();
   window.scrollTo({top:0, behavior:"instant"});
   ({home:vHome, lekcije:vSkills, skill:vSkill, unit:vUnit, step:vStep, unitall:vUnitFull, razgovor:vTalk, provjera:vQuiz,
     citanje:vRead, rjecnik:vPacks, kartice:vCards, gramatika:vGrammar, napredak:vSave}[v] || vHome)(arg);
@@ -4868,6 +4897,8 @@ const FORM_NOTES = {
 };
 function formNote(){ return FORM_NOTES[todayWord()[0].toLowerCase()] || null; }
 
+const NOTE_RETRIED = new Set();
+function retryNote(kind){ NOTE_FAIL.delete(kind); NOTE_RETRIED.delete(kind); if(CUR === "home") vHome(); fetchNote(kind); }
 async function fetchNote(kind){
   const r = todayRec();
   if(r[kind + "Note"] || NOTE_BUSY.has(kind) || NOTE_FAIL.has(kind)) return;
@@ -4888,7 +4919,15 @@ Return ONLY JSON, no markdown: {"meaning":"..."}`;
     if(!j || !j.meaning) throw new Error("no meaning");
     r[kind + "Note"] = { meaning:String(j.meaning), ex:String(j.ex || ""), exEn:String(j.exEn || "") };
     save();
-  }catch(e){ NOTE_FAIL.add(kind); }
+  }catch(e){
+    NOTE_BUSY.delete(kind);
+    if(!NOTE_RETRIED.has(kind)){                     // one quiet automatic retry first
+      NOTE_RETRIED.add(kind);
+      setTimeout(() => fetchNote(kind), 4000);
+      return;
+    }
+    NOTE_FAIL.add(kind);
+  }
   NOTE_BUSY.delete(kind);
   if(CUR === "home") vHome();
 }
@@ -4897,7 +4936,8 @@ function noteHTML(kind){
   if(fn) return `<div class="dmean"><b>Forms:</b> <span style="font-family:var(--display);font-size:16px">${esc(fn.f)}</span><div style="margin-top:6px"><b>Meaning:</b> ${esc(fn.m)}</div>
     <div style="margin-top:6px"><span style="font-family:var(--display);font-size:16px">${esc(fn.ex)}</span> ${spk(fn.ex)}<br><span style="color:var(--stone-dim);font-style:italic;font-size:13px">${esc(fn.exEn)}</span></div></div>`;
   const n = ((S.daily || {})[todayKey()] || {})[kind + "Note"];
-  if(NOTE_FAIL.has(kind) && !n) return "";
+  if(NOTE_FAIL.has(kind) && !n) return `<div class="dmean"><span style="color:var(--stone-dim)">Couldn't load the meaning — the AI was busy.</span>
+    <button class="btn ghost sm" style="margin-left:6px" onclick="retryNote('${kind}')">↻ ${dual("Retry","Opet")}</button></div>`;
   if(!n) return `<div class="dmean"><span class="spin"></span> <span style="color:var(--stone-dim)">Looking up how it's used…</span></div>`;
   return `<div class="dmean"><b>Meaning:</b> ${esc(n.meaning)}${n.ex
     ? `<div style="margin-top:6px"><span style="font-family:var(--display);font-size:16px">${esc(n.ex)}</span> ${spk(n.ex)}<br><span style="color:var(--stone-dim);font-style:italic;font-size:13px">${esc(n.exEn)}</span></div>` : ""}</div>`;
@@ -4937,6 +4977,8 @@ ${UNITS.map(u => unitNo(u) + ". " + u.title).join("; ")}.
 When you explain a correction: use plain everyday English. Don't use grammar terms like "accusative" or "genitive" on their own — describe what's happening instead (e.g. "here the wolves are the thing being seen, so the ending changes"). If the correction depends on something taught in a unit AFTER Unit ${cur}, end the explanation with: "You'll learn this in Unit N (Title) — no need to worry about it yet." using the right unit from the list.`;
 }
 
+const DC_RETRIED = new Set();
+function retryDailyCheck(kind){ DC_RETRIED.delete(kind); DC_BUSY.delete(kind); checkDailySentence(kind); }
 async function checkDailySentence(kind){
   const r = todayRec(), slot = $("#dcf-" + kind);
   if(!slot || !r[kind + "S"]) return;
@@ -4954,9 +4996,17 @@ Return ONLY JSON, no markdown: {"ok":true or false,"fixed":"<the corrected sente
     r[kind + "F"] = { ok: !!j.ok, fixed: String(j.fixed || ""), en: String(j.en || ""), note: String(j.note || "") };
     save();
   }catch(e){
-    const s2 = $("#dcf-" + kind);
-    if(s2) s2.innerHTML = `<span style="font-size:13px;color:var(--stone-dim)">Couldn't check it right now — it still counts.</span>`;
     DC_BUSY.delete(kind);
+    if(!DC_RETRIED.has(kind)){                       // one quiet automatic retry first
+      DC_RETRIED.add(kind);
+      const s1 = $("#dcf-" + kind);
+      if(s1) s1.innerHTML = `<span class="spin"></span> <span style="font-size:13px;color:var(--stone-dim)">The AI is busy — trying again…</span>`;
+      setTimeout(() => checkDailySentence(kind), 4000);
+      return;
+    }
+    const s2 = $("#dcf-" + kind);
+    if(s2) s2.innerHTML = `<span style="font-size:13px;color:var(--stone-dim)">Couldn't check it right now — it still counts.</span>
+      <button class="btn ghost sm" style="margin-left:6px" onclick="retryDailyCheck('${kind}')">↻ ${dual("Retry AI feedback","Pokušaj opet")}</button>`;
     return;
   }
   DC_BUSY.delete(kind);
@@ -5105,7 +5155,7 @@ function vHome(){
   const doneCount = UNITS.filter(u => unitState(u) === "done").length;
   const wordCount = UNITS.reduce((n,x)=>n+x.vocab.length+x.phrases.length,0) + PACKS.reduce((n,p)=>n+p.w.length,0);
   shell(S.name ? `bok, ${esc(S.name)} — nastavljamo` : "dobro došao — welcome", `Naučimo <i>hrvatski</i>.`,
-    "Seven cases, one alphabet where every letter says exactly what it looks like, and a country that will talk back to you. ${UNITS.length} grammar units, twelve speaking lessons, a word and a verb every day, a tutor who only speaks standard Croatian, and as much practice as you want.",
+    `Seven cases, one alphabet where every letter says exactly what it looks like, and a country that will talk back to you. ${UNITS.length} grammar units, ${SKILLS.length} speaking lessons, a word and a verb every day, a tutor who only speaks standard Croatian, and as much practice as you want.`,
     `<div class="grid g2">
       <div class="card">
         <div class="kicker">pick up here · nastavi ovdje</div>
@@ -5269,12 +5319,12 @@ function skillTalk(id){
 
 function unitState(u){
   const d = S.done[u.id] || {};
-  if(d.read && d.drill != null && d.drill >= 60) return "done";
+  if(unitPassed(d)) return "done";
   const prev = unitBefore(u.id);
   if(!prev) return "open";
   if(d.drill != null || Object.keys(d.st || {}).length) return "open";   // already started
   const pd = S.done[prev.id] || {};
-  return (pd.drill != null && pd.drill >= 60) ? "open" : "locked";
+  return unitPassed(pd) ? "open" : "locked";
 }
 function firstOpen(){
   for(const u of UNITS) if(unitState(u) !== "done") return u.id;
@@ -5284,7 +5334,7 @@ function firstOpen(){
 function lockedMsg(){
   const el = document.createElement("div");
   el.className = "invite";
-  el.innerHTML = `<p><b>Locked.</b> Finish the unit before this one first — do its steps, then get 60% on its big quiz.</p>
+  el.innerHTML = `<p><b>Locked.</b> Finish the unit before this one first — do its steps, then pass its big quiz with at most one mistake.</p>
     <button class="btn sm" onclick="this.parentNode.remove()">OK</button>`;
   document.body.appendChild(el);
   setTimeout(()=>{ if(el.parentNode) el.remove(); }, 3500);
@@ -5293,8 +5343,12 @@ function lockedMsg(){
 /* ============================================================
    GRAMMAR IN STEPS — each unit is a few short steps: one small
    idea, then 2–3 quick questions on it straight away. After the
-   steps, a words page and a big quiz (60% unlocks the next unit).
+   steps, a words page and a big quiz (at most 1 mistake unlocks the next unit).
    ============================================================ */
+/* A quiz is passed with at most ONE wrong answer. Units passed under the
+   old 60% rule stay passed — nobody gets locked out of work already done. */
+function quizPassed(score, total){ return total - score <= 1; }
+function unitPassed(d){ d = d || {}; return !!d.pass || (d.v !== 2 && d.drill != null && d.drill >= 60); }
 function unitNo(x){ const id = typeof x === "object" ? x.id : Number(x); return UNITS.findIndex(u => u.id === id) + 1; }
 function unitAfter(id){ return UNITS[UNITS.findIndex(u => u.id === id) + 1] || null; }
 function unitBefore(id){ return UNITS[UNITS.findIndex(u => u.id === id) - 1] || null; }
@@ -5303,7 +5357,7 @@ function unitRec(id){ S.done[id] = S.done[id] || {}; return S.done[id]; }
 function stepCount(u){ return u.grammar.length + 1; }               // grammar steps + words page
 function stepDone(u, k){
   const d = S.done[u.id] || {};
-  return !!((d.st || {})[k]) || (d.drill != null && d.drill >= 60);  // finished units count as all done
+  return !!((d.st || {})[k]) || unitPassed(d);  // finished units count as all done
 }
 function stepsDoneN(u){ let n = 0; for(let k = 0; k < stepCount(u); k++) if(stepDone(u, k)) n++; return n; }
 function stepOpen(u, k){ for(let j = 0; j < k; j++) if(!stepDone(u, j)) return false; return true; }
@@ -5345,7 +5399,7 @@ function vUnit(id){
     <div class="steplist">${steps}
       <button class="steprow final ${done ? "done" : ready ? "cur" : "locked"}" ${ready ? `onclick="startFinal(${u.id})"` : "disabled"}>
         <span class="sdot">${done ? "✓" : ready ? "★" : "&#128274;"}</span>
-        <span class="stxt"><b>Big quiz</b><span>${ready ? (best || "Mixes everything from this unit · get 60% to unlock the next unit") : "Opens when every step is done"}</span></span>
+        <span class="stxt"><b>Big quiz</b><span>${ready ? (best || "Mixes everything from this unit · pass with at most 1 mistake to unlock the next unit") : "Opens when every step is done"}</span></span>
         ${ready && !done ? `<span class="sgo">Go →</span>` : ""}
       </button>
     </div>
@@ -5489,10 +5543,10 @@ function pickSQ(i){
   if(retry){ SQ.again.add(key); SQ.q.push(shuffleOpts(q)); }   // a missed one comes back once at the end
   if(ok) addXP(2);
   const ans = (q.t === "type" || q.t === "build") && (!ok || typo)
-    ? `<div style="margin-top:5px"><span style="color:var(--stone-dim)">${ok ? "Exact spelling:" : "Answer:"}</span>
+    ? `<div style="margin-top:5px"><span style="color:var(--stone-dim)">${ok ? "With the accents:" : "Answer:"}</span>
        <span style="font-family:var(--display);font-size:17px;color:var(--brass)">${esc(typo || q.a[0])}</span></div>` : "";
   $("#sqv").innerHTML = `<div class="verdict ${ok ? "ok" : "no"}">
-      <b style="color:${ok ? "var(--olive)" : "var(--madder)"}">${ok ? (typo ? "Close enough ✓" : "Correct ✓") : "Not quite ✗"}</b>
+      <b style="color:${ok ? "var(--olive)" : "var(--madder)"}">${ok ? "Correct ✓" : "Not quite ✗"}</b>
       ${esc(q.e || "")}${ans}
       ${retry ? `<div style="margin-top:6px;font-size:13px;color:var(--stone-dim)">You'll get this one again at the end.</div>` : ""}
     </div>
@@ -5571,11 +5625,43 @@ function paintDrill(){
     : q.t === "build" ? buildHTML(q, "drill")
     : `<input class="answer" id="ans" placeholder="Type it in Croatian…" autocomplete="off" autocapitalize="off" spellcheck="false">
        <div style="margin-top:12px"><button class="btn" onclick="pick(-1)">${dual("Check","Provjeri")}</button></div>`;
+  const isRead = D.reading && q.t === "mc";
+  if(isRead) GLOSS_CTX = q.q + " " + q.o.join(" ");
+  const qHTML = isRead
+    ? `<div class="q qread">${markup(q.q)}</div>
+       <div class="tr-en ${D.showEn ? "" : "hidden"}" id="q-en">${esc(q.qEn || "")}</div>
+       <button class="linkbtn" style="margin:-4px 0 10px" onclick="toggleQuizEn(this)">🌐 ${D.showEn ? "Hide English" : "Show English"}</button>`
+    : `<div class="q">${esc(q.q)}</div>`;
+  const body2 = isRead
+    ? `<div class="opts">${q.o.map((o,i)=>`<button class="opt" onclick="pick(${i})">${esc(o)}<span class="tr-en opt-en ${D.showEn ? "" : "hidden"}">${esc((q.oEn || [])[i] || "")}</span></button>`).join("")}</div>`
+    : body;
   shell(`question ${D.i+1} of ${D.q.length}`, esc(D.title), "",
-    `${bar}<div class="card"><div class="q">${esc(q.q)}</div>${body}<div id="verdict"></div></div>`);
+    `${bar}<div class="card">${qHTML}${body2}<div id="verdict"></div></div>`);
+  if(isRead && D.showEn && !q.qEn) fillQuizEn();
   if(q.t === "build") paintBuild();
   const a = $("#ans");
   if(a){ a.focus(); a.addEventListener("keydown", e=>{ if(e.key==="Enter") pick(-1); }); }
+}
+let GLOSS_CTX = "";
+/* Show / hide English without redrawing — so an answered question stays answered. */
+function toggleQuizEn(btn){
+  D.showEn = !D.showEn;
+  $$(".tr-en").forEach(el => el.classList.toggle("hidden", !D.showEn));
+  if(btn) btn.textContent = "🌐 " + (D.showEn ? "Hide English" : "Show English");
+  if(D.showEn && !D.q[D.i].qEn) fillQuizEn();
+}
+async function fillQuizEn(){
+  const q = D.q[D.i]; if(!q || q.qEn) return;
+  const el = $("#q-en"); if(el) el.innerHTML = `<span class="spin"></span>`;
+  try{
+    const tr = await translateLines([q.q].concat(q.o));
+    q.qEn = tr[0]; q.oEn = tr.slice(1);
+    const src = RD && RD.questions && RD.questions[q.n];
+    if(src){ src.qEn = q.qEn; src.oEn = q.oEn; keepReading(); }
+    if(D.q[D.i] !== q) return;
+    const e1 = $("#q-en"); if(e1) e1.textContent = q.qEn;
+    $$(".opt-en").forEach((e, i) => e.textContent = q.oEn[i] || "");
+  }catch(e){ const e2 = $("#q-en"); if(e2) e2.innerHTML = `Couldn't translate right now. <button class="linkbtn" onclick="fillQuizEn()">Retry</button>`; }
 }
 function pick(i){
   const q = D.q[D.i];
@@ -5607,12 +5693,12 @@ function pick(i){
          <span style="font-family:var(--display);font-size:17px;color:var(--brass)">${esc(q.a[0])}</span></div>`
     : (q.t === "type" && (!ok || TYPO))
     ? `<div style="margin-top:5px;font-size:14px">
-         <span style="color:var(--stone-dim)">${ok ? "Exact spelling:" : "Answer:"}</span>
+         <span style="color:var(--stone-dim)">${ok ? "With the accents:" : "Answer:"}</span>
          <span style="font-family:var(--display);font-size:17px;color:var(--brass)">${esc(TYPO || q.a[0])}</span>
        </div>` : "";
 
   $("#verdict").innerHTML = `<div class="verdict ${ok?"ok":"no"}">
-    <b style="color:${ok?"var(--olive)":"var(--madder)"}">${ok ? (TYPO ? "Close enough \u2713" : "Correct \u2713") : "Not quite \u2717"}</b>
+    <b style="color:${ok?"var(--olive)":"var(--madder)"}">${ok ? "Correct \u2713" : "Not quite \u2717"}</b>
     ${esc(q.e||"")}${yours}${answer}
     </div>
     <div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -5624,29 +5710,48 @@ function pick(i){
 }
 function endDrill(){
   const pct = Math.round(D.score/D.q.length*100);
-  const msg = D.final
-    ? (pct===100 ? "Perfect. Unit complete!" : pct>=60 ? "Passed — unit complete!" : "Not quite — you need 60%. Have another look at the steps and try again.")
-    : (pct===100 ? "Perfect. Every one right." : pct>=75 ? "Very good." : pct>=50 ? "Decent start — reread the lesson." : "Go back to the lesson and try again.");
+  const wrong = D.q.length - D.score;
+  const passed = quizPassed(D.score, D.q.length);
+  const gate = D.final || D.skill;                     // quizzes that unlock the next one
+  const msg = gate
+    ? (wrong === 0 ? "Perfect — passed!" : passed ? "Passed — only one mistake!" : `${wrong} mistakes — you need at most 1 to pass. Have another look and try again.`)
+    : (pct===100 ? "Perfect. Every one right." : pct>=75 ? "Very good." : pct>=50 ? "Decent start — have another look." : "Go back over it and try again.");
+  let unlocked = null;
   if(D.unit){
-    S.done[D.unit] = S.done[D.unit] || {};
-    S.done[D.unit].read = true;                       // completing the drill counts as done
-    S.done[D.unit].drill = Math.max(S.done[D.unit].drill || 0, pct);
+    const rec = S.done[D.unit] = S.done[D.unit] || {};
+    const before = unitPassed(rec);
+    rec.read = true;
+    rec.drill = Math.max(rec.drill || 0, pct);
+    if(D.final){ rec.pass = before || passed; rec.v = 2; }
+    if(D.final && passed && !before) unlocked = unitAfter(D.unit);
     save();
   }
-  if(D.skill && pct >= 60){ S.skills = S.skills || {}; S.skills[D.skill] = pct; save(); }
-  const next = D.unit ? unitAfter(D.unit) : null;
+  if(D.skill && passed){
+    S.skills = S.skills || {};
+    if(!S.skills[D.skill]){ const si = SKILLS.findIndex(x => x.id === D.skill); unlocked = SKILLS[si + 1] || null; }
+    S.skills[D.skill] = Math.max(S.skills[D.skill] || 0, pct); save();
+  }
+  const nextUnit = D.unit ? unitAfter(D.unit) : null;
+  const nextOpen = D.unit && nextUnit && unitState(nextUnit) !== "locked";
+  const si = D.skill ? SKILLS.findIndex(x => x.id === D.skill) : -1;
+  const nextSkill = si > -1 ? SKILLS[si + 1] : null;
+  const again = D.reading ? "readQuiz()" : D.skill ? `startSkillDrill('${D.skill}')` : D.final ? `startFinal(${D.unit})` : D.unit ? `startDrill(${D.unit})` : "go('provjera')";
+  const back = D.reading ? `<button class="btn ghost sm" onclick="go('citanje')">${dual("Back to the reading","Natrag na tekst")}</button>`
+    : D.skill ? `<button class="btn ghost sm" onclick="go('skill','${D.skill}')">${dual("Back to the lesson","Natrag na lekciju")}</button>`
+    : D.unit ? `<button class="btn ghost sm" onclick="go('unit',${D.unit})">${dual("Back to the unit","Natrag na cjelinu")}</button>`
+    : `<button class="btn ghost sm" onclick="go('provjera')">${dual("Back to quizzes","Natrag na provjere")}</button>`;
+  const fwd = D.reading ? `<button class="btn sm" onclick="go('citanje')">${dual("New reading","Novi tekst")} →</button>`
+    : D.skill ? (passed && nextSkill ? `<button class="btn sm" onclick="go('skill','${nextSkill.id}')">${dual("Next lesson","Sljedeća lekcija")} →</button>` : "")
+    : D.unit ? (nextOpen ? `<button class="btn sm" onclick="go('unit',${nextUnit.id})">${dual("Next unit","Sljedeća cjelina")} →</button>` : "")
+    : "";
   shell("done · gotovo", "Your score", "",
     `<div class="card" style="text-align:center;padding:40px">
       <div style="font-family:var(--mono);font-size:56px;color:var(--brass);line-height:1">${D.score}<span style="font-size:26px;color:var(--stone-dim)">/${D.q.length}</span></div>
       <p style="font-family:var(--display);font-size:22px;margin-top:8px">${msg}</p>
-      ${D.unit && next && pct >= 60 ? `<p style="color:var(--olive);font-size:14px;margin:0">Unlocked: ${esc(next.title)}</p>` : ""}
-      ${D.skill && pct >= 60 ? (()=>{ const si = SKILLS.findIndex(x => x.id === D.skill); const sn = SKILLS[si+1];
-        return sn ? `<p style="color:var(--olive);font-size:14px;margin:0">Unlocked: ${esc(sn.title)}</p>` : ""; })() : ""}
+      ${unlocked ? `<p style="color:var(--olive);font-size:14px;margin:0">Unlocked: ${esc(unlocked.title)}</p>` : ""}
       <div class="chips" style="justify-content:center;margin-top:16px">
-        ${D.unit?`<button class="btn ghost sm" onclick="${D.final ? `startFinal(${D.unit})` : `startDrill(${D.unit})`}">${dual("Again","Opet")}</button>
-        <button class="btn ghost sm" onclick="go('unit',${D.unit})">${dual("Back to the unit","Natrag na cjelinu")}</button>`:""}
-        ${next && pct >= 60 ? `<button class="btn sm" onclick="go('unit',${next.id})">${dual("Next unit","Sljedeća cjelina")} →</button>`
-          : !D.unit ? `<button class="btn sm" onclick="go('razgovor')">${dual("Go talk","Idi na razgovor")} →</button>` : ""}
+        <button class="btn ghost sm" onclick="${again}">${dual("Again","Opet")}</button>
+        ${back}${fwd}
       </div></div>`);
 }
 
@@ -5977,11 +6082,12 @@ function vRead(){
   shell("čitanje · reading", "Pročitaj pa <i>odgovori</i>",
     "A short text written at your level, then questions about it. Tap any word you don't know and it'll tell you — including what its dictionary form is, which matters a lot in a language where every noun has seven shapes.",
     `<div class="card">
-      <div class="kicker">topic · tema</div>
+      <button class="btn" style="margin-bottom:14px" onclick="surpriseRead()">🎲 ${dual("Surprise me!","Iznenadi me!")}</button>
+      <div class="kicker">or pick a topic · ili odaberi temu</div>
       <div class="chips" style="margin-bottom:14px">${READING_TOPICS.map(t=>
         `<button class="chip" onclick="genRead(${JSON.stringify(t[0]).replace(/"/g,'&quot;')})">${dual(esc(t[1]), esc(t[0]))}</button>`).join("")}</div>
       <div class="chips">${LEVELS.map(l=>`<button class="chip" aria-pressed="${l.k===S.level}" onclick="setLevelR('${l.k}')">${dual(l.k + " · " + l.en, l.l)}</button>`).join("")}
-        <button class="chip" onclick="genRead(READING_TOPICS[Math.floor(Math.random()*READING_TOPICS.length)][0])">${dual("Surprise me","Iznenadi me")}</button></div>
+</div>
     </div>
     <div id="rout"></div>`);
   if(!RD && S.lastRead && S.lastRead.text){                  // bring back the last one you made
@@ -5996,8 +6102,8 @@ function keepReading(){
   if(!RD || !RD.text) return;
   const gloss = {};
   passageWords(RD.text).forEach(w => { const k = norm(w); if(translationCache[k]) gloss[k] = translationCache[k]; });
-  const { title, text, translation, glossary, questions, topic, at } = RD;
-  S.lastRead = { title, text, translation, glossary, questions, topic, at: at || Date.now(), gloss };
+  const { title, titleEn, text, translation, glossary, questions, topic, at } = RD;
+  S.lastRead = { title, titleEn, text, translation, glossary, questions, topic, at: at || Date.now(), gloss };
   save();
 }
 function setLevelR(k){ S.level=k; save(); vRead(); }
@@ -6011,7 +6117,7 @@ async function genRead(topic, retried){
 Write a short original text in standard Croatian: ${S.level==="A1"?"60-90":S.level==="A2"?"110-150":"170-220"} words. Natural, warm, specific, with real Croatian detail. Present tense dominant at A1.
 Then: a glossary of the 10-14 hardest words (give the DICTIONARY form plus the English), and 4 comprehension questions in Croatian with 4 options each.
 Return ONLY this JSON, no markdown:
-{"title":"<Croatian title>","text":"<the text>","translation":"<full English translation>","glossary":[["<dictionary form>","<English>"]],"questions":[{"q":"<question in Croatian>","o":["","","",""],"a":<index>,"e":"<short English explanation>"}]}`}], 6000);
+{"title":"<Croatian title>","titleEn":"<English title>","text":"<the text>","translation":"<full English translation>","glossary":[["<dictionary form>","<English>"]],"questions":[{"q":"<question in Croatian>","qEn":"<the question in English>","o":["","","",""],"oEn":["<option 1 in English>","","",""],"a":<index>,"e":"<short English explanation>"}]}`}], 6000);
     let parsed;
     try{ parsed = parseJSON(txt); }catch(pe){ throw new Error("BADJSON"); }
     if(!parsed || !parsed.text) throw new Error("BADJSON");
@@ -6047,7 +6153,9 @@ function paintRead(){
   out.innerHTML = `<div class="card" style="margin-top:14px">
       <div class="kicker">${esc(RD.topic||"")} · ${S.level}</div>
       <div style="font-size:12px;color:var(--stone-dim);margin:-4px 0 8px">Saved — this stays here until you make a new one.</div>
-      <h2 style="font-size:27px;margin-bottom:12px">${esc(RD.title||"")} ${spk(RD.title||"")}</h2>
+      <h2 style="font-size:27px;margin-bottom:4px"><span class="ttl" onclick="toggleTitleEn()" title="Tap for English">${esc(RD.title||"")}</span> ${spk(RD.title||"")}</h2>
+      <div id="ttl-en" class="ttl-en ${RD.showTitleEn ? "" : "hidden"}">${esc(RD.titleEn || "")}</div>
+      <div style="font-size:12px;color:var(--stone-dim);margin:0 0 10px">Tap the title, or any word, for English.</div>
       <div class="read">${body}</div>
       <div class="chips" style="margin-top:18px">
         <button class="btn ghost sm" onclick="speak(${JSON.stringify(RD.text||"").replace(/"/g,'&quot;')})">🔊 ${dual("Listen to the whole text","Poslušaj sve")}</button>
@@ -6058,10 +6166,32 @@ function paintRead(){
     </div>
     ${(RD.glossary||[]).length?`<div class="kicker" style="margin-top:22px">words from the text · rječnik</div>
       <div class="wordlist">${RD.glossary.map(g=>wordRow(g[0],g[1])).join("")}</div>`:""}`;
+  prefetchPassage().catch(() => {});               // by the time you tap a word, it's ready
+}
+
+/* Small translations (title, quiz questions) — asked once, then remembered with the reading. */
+async function translateLines(lines){
+  const txt = await ask(STYLE_RULES + "You translate Croatian into natural English. Be accurate and brief.",
+    [{role:"user", content:`Translate each of these into English. Return ONLY a JSON array of strings, same order, no markdown:
+${JSON.stringify(lines)}`}], 800);
+  const arr = parseJSON(txt);
+  if(!Array.isArray(arr) || arr.length !== lines.length) throw new Error("bad translation");
+  return arr.map(String);
+}
+async function toggleTitleEn(){
+  if(!RD) return;
+  RD.showTitleEn = !RD.showTitleEn;
+  const el = $("#ttl-en"); if(!el) return;
+  el.classList.toggle("hidden", !RD.showTitleEn);
+  if(!RD.showTitleEn || RD.titleEn) return;
+  el.innerHTML = `<span class="spin"></span>`;
+  try{ RD.titleEn = (await translateLines([RD.title]))[0]; keepReading(); el.textContent = RD.titleEn; }
+  catch(e){ el.innerHTML = `Couldn't translate right now. <button class="linkbtn" onclick="RD.showTitleEn=false;toggleTitleEn()">Retry</button>`; }
 }
 function readQuiz(){
   if(!RD || !RD.questions) return;
-  D = {unit:null, title:RD.title||"Pitanja", q:RD.questions.map(q=>({t:"mc",q:q.q,o:q.o,a:q.a,e:q.e})), i:0, score:0};
+  D = {unit:null, reading:true, title:RD.title||"Pitanja",
+       q:RD.questions.map((q, n)=>({t:"mc",q:q.q,o:q.o,a:q.a,e:q.e,qEn:q.qEn,oEn:q.oEn,n})), i:0, score:0};
   paintDrill();
 }
 
@@ -6117,13 +6247,21 @@ function prefetchPassage(){
   if(glossBatch && glossBatch.text === RD.text) return glossBatch.promise;
   const text = RD.text;
   const todo = passageWords(text).filter(w => !batchDone(norm(w)));
-  const job = { text, promise: null };
+  const job = { text, promise: null, byWord: {} };
   job.promise = (async () => {
-    for(let i = 0; i < todo.length; i += GLOSS_CHUNK){
-      if(!RD || RD.text !== text) return;                       // reading changed — stop
-      await glossChunk(todo.slice(i, i + GLOSS_CHUNK), text);
-    }
+    if(!todo.length) return;
+    // every chunk at once, so a word near the end doesn't wait for the beginning
+    const chunks = [];
+    for(let i = 0; i < todo.length; i += GLOSS_CHUNK) chunks.push(todo.slice(i, i + GLOSS_CHUNK));
+    const runs = chunks.map(c => { const p = glossChunk(c, text); c.forEach(w => job.byWord[norm(w)] = p.catch(() => {})); return p; });
+    const res = await Promise.allSettled(runs);
+    if(!RD || RD.text !== text) return;                         // reading changed — stop
+    // the AI sometimes skips a word: one catch-up request for whatever's missing
+    const missing = passageWords(text).filter(w => !batchDone(norm(w)));
+    if(missing.length && missing.length <= 90){ try{ await glossChunk(missing, text); }catch(e){} }
     keepReading();                              // so taps stay free after a reload
+    const bad = res.find(r => r.status === "rejected");
+    if(bad && passageWords(text).filter(w => !batchDone(norm(w))).length > 10) throw bad.reason;
   })().catch(e => { if(glossBatch === job) glossBatch = null; throw e; });  // let a later tap retry
   glossBatch = job;
   return job.promise;
@@ -6136,7 +6274,7 @@ async function gloss(ev, word){
   const key = norm(word);
   const target = ev.target;
   const put = txt => {
-    g.innerHTML = `<b>${esc(word)}</b>${txt}`;
+    g.innerHTML = `<b>${esc(word)}</b>${txt}${glossStar(key)}`;
     g.classList.remove("hidden");
     const r = target.getBoundingClientRect();
     g.style.left = Math.min(window.innerWidth - 260, Math.max(8, r.left)) + "px";
@@ -6157,7 +6295,11 @@ async function gloss(ev, word){
   if(RD && RD.text && RD.text.indexOf(word) > -1){
     put(`<span class="spin"></span> <span style="color:var(--stone-dim);font-size:12px">translating the passage\u2026</span>`);
     try{
-      await prefetchPassage();
+      const all = prefetchPassage();
+      const own = glossBatch && glossBatch.byWord[key];
+      if(own) await own;                                       // just this word's part of the passage
+      if(batchDone(key)) return put(esc(translationCache[key]));
+      await all;
       if(batchDone(key)) return put(esc(translationCache[key]));
     }catch(e){
       const m = String((e && e.message) || "");
@@ -6179,7 +6321,7 @@ async function gloss(ev, word){
     if(since < GLOSS_COOLDOWN) return wait("Please wait a moment before clicking another word.");
     glossLastCall = Date.now();
     glossInFlight[key] = ask(STYLE_RULES + "You are a Croatian dictionary. Be terse.",
-      [{role:"user", content:`The word "${word}" appears in this Croatian text: "${String(RD && RD.text || "").slice(0, 400)}".
+      [{role:"user", content:`The word "${word}" appears in this Croatian text: "${String(RD && RD.text && RD.text.indexOf(word) > -1 ? RD.text : (GLOSS_CTX || (RD && RD.text) || "")).slice(0, 400)}".
 Reply with ONLY this, one line, no JSON, no extra words:
 <dictionary form> — <English meaning> (<short grammatical note in English, e.g. genitive singular, 1st person present>)`}], 200)
       .then(txt => { const t = String(txt || "").trim(); if(!t) throw new Error("empty"); translationCache[key] = t; return t; })
@@ -6200,11 +6342,23 @@ Reply with ONLY this, one line, no JSON, no extra words:
     }
   }
 }
+/* ☆ in the word popup: saves the dictionary form + meaning to your cards. */
+function glossStar(key){
+  const line = translationCache[key];
+  if(!line || line.indexOf("—") < 0) return "";
+  const parts = line.split("—");
+  const hr = parts[0].trim();
+  const en = parts.slice(1).join("—").replace(/\s*\([^)]*\)\s*$/, "").trim();
+  if(!hr || !en) return "";
+  const k = cardKey(withForms(hr), en), on = cardSet().has(k);
+  return `<div style="margin-top:7px"><button class="save gstar" aria-pressed="${on}" data-card="${esc(k)}">${on ? "★" : "☆"}</button>
+    <span style="font-size:12px;color:var(--stone-dim)">add “${esc(withForms(hr))}” to your flashcards</span></div>`;
+}
 function hideGloss(){ const g = $("#gloss"); if(g) g.classList.add("hidden"); }
 document.addEventListener("click", e => {
   const g = $("#gloss");
   if(!g || g.classList.contains("hidden")) return;
-  if(e.target.closest && e.target.closest(".read w")) return;     // tapping another word switches to it
+  if(e.target.closest && (e.target.closest("w") || e.target.closest("#gloss"))) return;   // another word, or the popup itself
   hideGloss();
 }, true);
 document.addEventListener("keydown", e => { if(e.key === "Escape") hideGloss(); });
@@ -6558,7 +6712,7 @@ function vGrammarBody(path){
     ${rows.map(r=>`<tr><td class="cs">${r[0]}</td><td class="hr">${r[1]}</td><td class="hr">${r[2]}</td><td class="hr">${r[3]}</td><td style="color:var(--stone-dim);font-size:13px">${r[4]||""}</td></tr>`).join("")}</table></div>`;
   const total = UNITS.filter(u => unitState(u) === "done").length;
   shell("grammar · gramatika", "The <i>rules</i>",
-    `${total} of ${UNITS.length} units done. Each unit is a few <b>short steps</b> — one small idea, then a couple of quick questions. Finish the steps, get 60% on the <b>big quiz</b>, and the next unit opens. Reference tables are underneath and always available.`,
+    `${total} of ${UNITS.length} units done. Each unit is a few <b>short steps</b> — one small idea, then a couple of quick questions. Finish the steps, pass the <b>big quiz</b> with at most one mistake, and the next unit opens. Reference tables are underneath and always available.`,
     `${path}
 
     <hr class="rule">
@@ -6639,6 +6793,8 @@ function mergeState(a, b){
     out.done[k] = Object.assign({ read: !!(x.read || y.read) }, d.length ? { drill: Math.max(...d) } : {});
     const st = Object.assign({}, y.st || {}, x.st || {});
     if(Object.keys(st).length) out.done[k].st = st;
+    if(x.pass || y.pass || (!x.v && !y.v && unitPassed(out.done[k]))) out.done[k].pass = true;
+    if(x.v === 2 || y.v === 2) out.done[k].v = 2;
   });
 
   out.lastRead = ((a.lastRead || {}).at || 0) >= ((b.lastRead || {}).at || 0) ? a.lastRead : b.lastRead;
@@ -7172,7 +7328,7 @@ async function loadBackupsUI(){
     box.innerHTML = `<div class="wordlist">${rows.map(r => {
       const s = r.state || {};
       const cards = Object.keys(s.cards || {}).length;
-      const units = Object.values(s.done || {}).filter(d => d && d.read && d.drill != null && d.drill >= 60).length;
+      const units = Object.values(s.done || {}).filter(d => d && unitPassed(d)).length;
       const when = new Date(r.created_at).toLocaleString([], { weekday:"short", month:"short", day:"numeric", hour:"numeric", minute:"2-digit" });
       return `<div class="word">
         <span class="hr" style="min-width:0;flex:1;font-size:15px">${esc(when)}</span>
