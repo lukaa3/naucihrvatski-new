@@ -457,6 +457,7 @@ html,body{max-width:100%;overflow-x:hidden}
 .gstar{font-size:17px;padding:0 4px 0 0}
 .casetbl .exrow td{padding-top:0;padding-bottom:12px;border-top:0}
 .casetbl tr:not(.exrow) td{border-bottom:0;padding-bottom:4px}
+.exl{display:block;font-style:normal;font-family:var(--display);font-size:15.5px;color:var(--stone);margin-top:3px}
 /* build-a-sentence */
 .bline{min-height:52px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:9px;border:2px dashed var(--line);border-radius:12px;margin-top:4px}
 .bph{color:var(--stone-dim);font-size:13.5px;padding-left:4px}
@@ -525,7 +526,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.8";
+const VERSION = "10.11";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -641,9 +642,9 @@ const UNITS = [
   goal:"Tell m/f/n apart at a glance — everything in the case system depends on this.",
   grammar:[
     {h:"You can usually see the gender",
-     b:"<b>Muški (m)</b> — ends in a consonant: <em>grad, stol, prijatelj</em><br><b>Ženski (f)</b> — ends in <b>-a</b>: <em>žena, knjiga, kava</em><br><b>Srednji (n)</b> — ends in <b>-o</b> or <b>-e</b>: <em>more, selo, pivo</em><br><br><b>The exceptions worth memorising:</b> <b>noć, stvar, ljubav, riječ, večer, sol, krv, misao</b> end in consonants but are <b>feminine</b>. Mostly abstract nouns."},
+     b:"Every noun is <b>masculine</b>, <b>feminine</b> or <b>neuter</b>, and the <b>last letter</b> usually tells you which:<br><b>Muški (m)</b> — ends in a consonant: <em>grad, stol, prijatelj</em><br><b>Ženski (f)</b> — ends in <b>-a</b>: <em>žena, knjiga, kava</em><br><b>Srednji (n)</b> — ends in <b>-o</b> or <b>-e</b>: <em>more, selo, pivo</em><br><br><b>The exceptions worth memorising:</b> <b>noć, stvar, ljubav, riječ, večer, sol, krv, misao</b> end in consonants but are <b>feminine</b>. Mostly abstract nouns.<br><br><b>People: their real gender wins.</b> A man is masculine even if the word or name ends in -a or -o: <em>tata, Luka, Nikola, Marko, Ivo</em>. A woman is feminine whatever her name ends in: <em>Ana, Kim, Ellen</em>.<br><b>Careful — two separate things:</b> the <b>ending</b> decides how the word itself changes, but the <b>real gender</b> decides every word around it. <em>Luka</em> ends in -a, so it changes like žena (<em>Vidim <b>Luku</b></em>) — but he's a man, so the words that describe him are masculine: <em>Luka je <b>umoran</b></em> (not umorna) · <em>Tata je <b>gladan</b></em>. He isn't feminine; he just borrows the -a endings.<br><b>People are never neuter</b> — the one exception is <b>dijete</b> (child).<br><br><b>Most people-words have a male and a female version:</b> <em>prijatelj / prijateljica</em> (friend) · <em>student / studentica</em> · <em>susjed / susjeda</em> (neighbour) · <em>Hrvat / Hrvatica</em>. Use the one that matches the person."},
     {h:"Plurals",
-     b:"<b>m → -i</b> · <b>f → -e</b> · <b>n → -a</b><br>stol → stolovi · žena → žene · selo → sela<br><br>One-syllable masculine nouns insert <b>-ov-</b> first: grad → grad<b>ov</b>i, stol → stol<b>ov</b>i. After soft consonants (č ć š ž đ j lj nj) it's <b>-ev-</b>: muž → muž<b>ev</b>i, kralj → kralj<b>ev</b>i."},
+     b:"<b>masculine → add -i</b> · <b>feminine -a → -e</b> · <b>neuter -o / -e → -a</b><br>stol → stolovi · žena → žene · selo → sela · more → mora<br><br><b>Masculine details:</b><br>• One-syllable words add <b>-ov-</b> first: grad → grad<b>ov</b>i, stol → stol<b>ov</b>i. After soft consonants (č ć š ž đ j lj nj) it's <b>-ev-</b>: muž → muž<b>ev</b>i.<br>• Longer words just add -i: prijatelj → prijatelj<b>i</b>, Amerikanac → Amerikanc<b>i</b>.<br>• Words ending in <b>-k, -g, -h</b> turn that letter into <b>c, z, s</b> before the -i: učenik → učeni<b>ci</b>, dječak → dječa<b>ci</b>.<br><br><b>Feminine words ending in a consonant</b> (noć, stvar) add <b>-i</b>: noć → noći, stvar → stvari.<br><br><b>A mixed group</b> of men and women uses the <b>masculine</b> plural: <em>prijatelji</em> = friends (boys, or boys and girls); <em>prijateljice</em> = only girls."},
     {h:"Irregular plurals you'll meet immediately",
      b:"<b>čovjek → ljudi</b> (person → people)<br><b>dijete → djeca</b> (child → children; djeca behaves as feminine singular!)<br><b>brat → braća</b> · <b>vrata</b> is always plural (door)<br><b>oko → oči</b> (eye) · <b>uho → uši</b> (ear)"},
     {h:"There are no articles",
@@ -797,7 +798,7 @@ const UNITS = [
     {h:"Counting",
      b:"nula, jedan, dva, tri, četiri, pet, šest, sedam, osam, devet, deset,<br>jedanaest, dvanaest, trinaest, četrnaest, petnaest, šesnaest, sedamnaest, osamnaest, devetnaest, dvadeset.<br><br>From 11 up it's just <em>digit + naest</em>. Tens: dvadeset, trideset, četrdeset, pedeset, šezdeset, sedamdeset, osamdeset, devedeset, <b>sto</b>, <b>tisuća</b>.<br><br>21 = dvadeset jedan. 135 = sto trideset pet."},
     {h:"Counting things: 1, a few, many",
-     b:"After a number, the word changes its ending. Croatian sorts numbers into three groups — <b>1</b>, <b>a few</b> (2, 3, 4) and <b>many</b> (5 and up):<table><tr><th></th><th>kava (f)</th><th>stol (m)</th><th>pivo (n)</th></tr><tr><td class='cs'>1</td><td class='hr'>jedna kava</td><td class='hr'>jedan stol</td><td class='hr'>jedno pivo</td></tr><tr><td class='cs'>2, 3, 4</td><td class='hr'>dvije kave</td><td class='hr'>dva stola</td><td class='hr'>dva piva</td></tr><tr><td class='cs'>5 and up</td><td class='hr'>pet kava</td><td class='hr'>pet stolova</td><td class='hr'>pet piva</td></tr></table><b>1</b> — the word stays normal. <b>jedan / jedna / jedno</b> matches its gender (Unit {u4}).<br><br><b>2, 3, 4</b> — feminine <b>-a → -e</b> (kave) · masculine <b>adds -a</b> (stola) · neuter <b>-o → -a</b> (piva). Use <b>dvije</b> for feminine words and <b>dva</b> for the others.<br><br><b>5 and up</b> — feminine keeps <b>-a</b> (pet kava — it only <em>looks</em> like one) · short masculine words add <b>-ova</b>, like their plural (stolova, sokova) · neuter <b>-a</b> (piva).<br><br><b>Two extra rules:</b><br>• <b>11–19 count as 'many'</b>: dvanaest kava, petnaest stolova.<br>• For bigger numbers, <b>only the last word counts</b>: dvadeset <b>jedna</b> kava · dvadeset <b>dvije</b> kave · dvadeset <b>pet</b> kava.<br><br>Why does this happen? It's a case called the genitive, which you'll meet properly in Unit {u9}. You don't need the name to use the pattern — just ask: <em>1, a few, or many?</em>"},
+     b:"After a number, the word changes its ending. Croatian sorts numbers into three groups — <b>1</b>, <b>a few</b> (2, 3, 4) and <b>many</b> (5 and up):<table><tr><th></th><th>stol (m)</th><th>kava (f)</th><th>pivo (n)</th></tr><tr><td class='cs'>1</td><td class='hr'>jedan stol</td><td class='hr'>jedna kava</td><td class='hr'>jedno pivo</td></tr><tr><td class='cs'>2, 3, 4</td><td class='hr'>dva stola</td><td class='hr'>dvije kave</td><td class='hr'>dva piva</td></tr><tr><td class='cs'>5 and up</td><td class='hr'>pet stolova</td><td class='hr'>pet kava</td><td class='hr'>pet piva</td></tr></table><b>1</b> — the word stays normal. <b>jedan / jedna / jedno</b> matches its gender (Unit {u4}).<br><br><b>2, 3, 4</b> — masculine <b>adds -a</b> (stola) · feminine <b>-a → -e</b> (kave) · neuter <b>-o → -a</b> (piva). Use <b>dva</b> for masculine and neuter words, <b>dvije</b> for feminine.<br><br><b>5 and up</b> — short masculine words add <b>-ova</b>, like their plural (stolova, sokova) · feminine keeps <b>-a</b> (pet kava — it only <em>looks</em> like one) · neuter <b>-a</b> (piva).<br><br><b>Two extra rules:</b><br>• <b>11–19 count as 'many'</b>: dvanaest kava, petnaest stolova.<br>• For bigger numbers, <b>only the last word counts</b>: dvadeset <b>jedna</b> kava · dvadeset <b>dvije</b> kave · dvadeset <b>pet</b> kava.<br><br>Why does this happen? It's a case called the genitive, which you'll meet properly in Unit {u9}. You don't need the name to use the pattern — just ask: <em>1, a few, or many?</em>"},
     {h:"Telling the time",
      b:"<b>Koliko je sati?</b> — What time is it?<br><br><b>On the hour</b>, say the number then the word for hour:<br>Jedan sat · Dva sata · Pet sati · Deset sati<br><br><b>Half past — the one that catches everyone.</b> Croatian counts <em>towards</em> the next hour:<table><tr><th>time</th><th>Croatian</th><th>literally</th></tr><tr><td class='cs'>2:30</td><td class='hr'>pola tri</td><td>half to three</td></tr><tr><td class='cs'>3:30</td><td class='hr'>pola četiri</td><td>half to four</td></tr><tr><td class='cs'>7:30</td><td class='hr'>pola osam</td><td>half to eight</td></tr></table>So <b>pola tri is 2:30, not 3:30.</b> Take the hour you're heading towards and put <em>pola</em> in front.<br><br><b>Careful — <em>tri i pol</em> is not a time.</b> It means <em>three and a half</em> as an amount: <em>tri i pol sata</em> = three and a half <b>hours</b>.<br><br><b>Other ways to say the same time</b> — all used:<table><tr><th>time</th><th>everyday</th><th>digital / official</th></tr><tr><td class='cs'>2:30</td><td class='hr'>pola tri</td><td class='hr'>dva i trideset</td></tr><tr><td class='cs'>2:15</td><td class='hr'>dva i petnaest</td><td class='hr'>dva i petnaest</td></tr><tr><td class='cs'>2:45</td><td class='hr'>petnaest do tri</td><td class='hr'>dva i četrdeset pet</td></tr></table>Digital forms are what you hear at stations and on the radio; <em>pola</em> and <em>do</em> are what people say to each other. Recognise both, use whichever is easier.<br><br><b>Arranging a time:</b><br><b>U koliko sati?</b> / <b>Kad?</b> — At what time? / When?<br><b>U osam.</b> — At eight. · <b>Oko osam.</b> — Around eight.<br><em>U osam ujutro</em> — 8am · <em>U osam navečer</em> — 8pm"},
     {h:"Days and months",
@@ -829,9 +830,9 @@ const UNITS = [
     {h:"What cases actually do",
      b:"English shows who-does-what by <b>word order</b>. Croatian marks it on the <b>word ending</b> instead, so the order is free.<br><em>Ana voli Marka</em> and <em>Marka voli Ana</em> both mean Ana loves Marko — the <b>-a</b> on Marko is what marks him as the one being loved.<br><br>Croatian has seven of these endings. Here's the whole map, <b>in the order you'll learn them</b>:<table><tr><th>case</th><th>job</th><th>example</th><th>unit</th></tr><tr><td class='cs'>N nominativ</td><td>the subject — who does it</td><td class='hr'>Ana pije kavu.</td><td>you know it</td></tr><tr><td class='cs'>A akuzativ</td><td>the object — what it's done to</td><td class='hr'>Pijem kavu.</td><td>this unit</td></tr><tr><td class='cs'>G genitiv</td><td>of, from, without</td><td class='hr'>čaša vode</td><td>Unit {u9}</td></tr><tr><td class='cs'>L lokativ</td><td>where, about</td><td class='hr'>u Zagrebu</td><td>Unit {u10}</td></tr><tr><td class='cs'>D dativ</td><td>to / for whom</td><td class='hr'>Pišem Ani.</td><td>Unit {u11}</td></tr><tr><td class='cs'>I instrumental</td><td>with, by means of</td><td class='hr'>s Anom</td><td>Unit {u12}</td></tr><tr><td class='cs'>V vokativ</td><td>calling someone</td><td class='hr'>Ano!</td><td>Unit {u13}</td></tr></table>The reference tables on the Grammar page use this same order. (Croatian school books list them differently — Unit {u13} shows you that once you know all seven.)<br><br>This unit is the <b>akuzativ</b> — the direct object: the thing had, wanted, seen, eaten, bought."},
     {h:"The endings",
-     b:"<table><tr><th></th><th>N</th><th>A</th></tr><tr><td class='cs'>f</td><td class='hr'>kava</td><td class='hr'>kavu</td></tr><tr><td class='cs'>n</td><td class='hr'>pivo</td><td class='hr'>pivo</td></tr><tr><td class='cs'>m thing</td><td class='hr'>stol</td><td class='hr'>stol</td></tr><tr><td class='cs'>m alive</td><td class='hr'>pas</td><td class='hr'>psa</td></tr></table><b>Feminine -a → -u.</b> The single most useful ending in the language.<br>Neuter never changes. Masculine changes <b>only if it's alive</b>."},
+     b:"What happens to each kind of word when it's the object (the thing seen, had, wanted, bought). <b>Alive</b> = people and animals.<table><tr><th>word</th><th>what to do</th></tr><tr><td class='cs'>m<br>thing</td><td>nothing — no change<br><em class='exl'>stol → stol · auto → auto</em></td></tr><tr><td class='cs'>m<br>alive</td><td><b>add -a</b> · names in -o / -e: change it to -a<br><em class='exl'>brat → brata · Ivan → Ivana · Marko → Marka</em></td></tr><tr><td class='cs'>f<br>-a</td><td><b>-a → -u</b> (alive or not)<br><em class='exl'>kava → kavu · mama → mamu · Ana → Anu</em></td></tr><tr><td class='cs'>f<br>other</td><td>nothing — no change<br><em class='exl'>noć → noć · Kim → Kim</em></td></tr><tr><td class='cs'>n</td><td>nothing — no change (even dijete)<br><em class='exl'>pivo → pivo · more → more</em></td></tr></table><b>Feminine -a → -u</b> is the single most useful ending in the language. Masculine changes <b>only if it's alive</b>. Neuter never changes.<br><br><b>Two things to watch:</b><br>• <b>Men whose word ends in -a</b> (tata, Luka, kolega) take <b>-u</b>, like feminine words: <em>Vidim tatu. Zovem Luku.</em> They're still men, so describing words stay masculine: <em>Tata je <b>umoran</b>.</em><br>• A few masculine words <b>drop an a</b> from inside before adding -a: pas → <b>psa</b> (not pasa) · otac → <b>oca</b> · mačak → <b>mačka</b>. Unit {u24} explains why — for now just learn these three."},
     {h:"Alive or not",
-     b:"Vidim <b>stol</b>. — I see the table (thing, no change)<br>Vidim <b>psa</b>. — I see the dog (alive, takes -a)<br>Vidim <b>Marka</b>. — I see Marko (person, takes -a)<br><br>Adjectives follow: Imam <b>velikog</b> psa. Imam <b>veliku</b> kuću."},
+     b:"Vidim <b>stol</b>. — I see the table (a thing, no change)<br>Vidim <b>psa</b>. — I see the dog (alive, takes -a)<br>Vidim <b>Marka</b>. — I see Marko (a person, takes -a)<br>Vidim <b>prijatelja</b> / <b>prijateljicu</b>. — I see my friend (a boy / a girl)<br><br><b>Describing words change too</b>, and they follow the same idea:<br>• masculine <b>alive</b> → <b>-og</b>: Imam <b>velikog</b> psa. · Imam <b>dobrog</b> prijatelja.<br>• feminine → <b>-u</b>: Imam <b>veliku</b> kuću. · Imam <b>dobru</b> prijateljicu.<br>• everything else → no change: Imam <b>velik</b> stol. · Imam <b>veliko</b> more.<br><br><b>More than one</b> (plural): masculine and feminine end in <b>-e</b>, neuter in <b>-a</b>: Vidim <b>gradove</b> · <b>žene</b> · <b>sela</b>.<br><br><b>him / her / them</b> as the object are the little words <b>ga / je / ih</b>: <em>Vidim ga. Volim je.</em> — Unit {u21} covers them properly."},
     {h:"Several ways to order the same coffee",
      b:"All of these get you a coffee. They differ in politeness, not meaning:<table><tr><th>Croatian</th><th>feel</th></tr><tr><td class='hr'>Kavu, molim.</td><td>short and fine</td></tr><tr><td class='hr'>Molim vas jednu kavu.</td><td>polite, very standard</td></tr><tr><td class='hr'>Htio bih kavu.</td><td>polite (male speaker)</td></tr><tr><td class='hr'>Htjela bih kavu.</td><td>polite (female speaker)</td></tr><tr><td class='hr'>Može jedna kava?</td><td>casual, friendly</td></tr><tr><td class='hr'>Dajte mi kavu.</td><td>blunt — avoid with strangers</td></tr><tr><td class='hr'>Hoću kavu.</td><td>demanding — avoid</td></tr></table>Pick <b>Molim vas jednu kavu</b> and you will never be wrong. <em>Može jedna kava?</em> is what you'll hear friends say.<br><br>Notice <b>kava → kavu</b> in every one of them. That change is this unit's whole subject."},
     {h:"Ordering politely",
@@ -860,7 +861,7 @@ const UNITS = [
   goal:"Show possession, use the commonest prepositions, and say something isn't there.",
   grammar:[
     {h:"The endings",
-     b:"<table><tr><th></th><th>N</th><th>G sing</th><th>G plural</th></tr><tr><td class='cs'>m</td><td class='hr'>grad</td><td class='hr'>grada</td><td class='hr'>gradova</td></tr><tr><td class='cs'>f</td><td class='hr'>kuća</td><td class='hr'>kuće</td><td class='hr'>kuća</td></tr><tr><td class='cs'>n</td><td class='hr'>more</td><td class='hr'>mora</td><td class='hr'>mora</td></tr></table>m/n take <b>-a</b>, f takes <b>-e</b>."},
+     b:"<table><tr><th></th><th>N</th><th>G — one</th><th>G — more than one</th></tr><tr><td class='cs'>m</td><td class='hr'>grad</td><td class='hr'>grada</td><td class='hr'>gradova</td></tr><tr><td class='cs'>f</td><td class='hr'>kuća</td><td class='hr'>kuće</td><td class='hr'>kuća</td></tr><tr><td class='cs'>n</td><td class='hr'>more</td><td class='hr'>mora</td><td class='hr'>mora</td></tr></table><b>One thing:</b><br>• masculine → <b>add -a</b> (exactly like the alive accusative): grad → grada · brat → brata · Ivan → Ivana · Marko → Marka<br>• feminine <b>-a → -e</b>: kuća → kuće · Ana → Ane · Hrvatska → Hrvatske. Consonant feminines → <b>-i</b>: noć → noći<br>• neuter <b>-o / -e → -a</b>: more → mora · pivo → piva<br>• men ending in -a take <b>-e</b>: tata → tate<br><br><b>More than one</b> (after 5+, puno, malo, nema…):<br>• masculine: one-syllable words <b>-ova</b> (grad → gradova), longer words <b>-a</b> (prijatelj → prijatelja)<br>• feminine: <b>-a</b> — it looks just like the basic singular: kuća → kuća, žena → žena<br>• neuter: <b>-a</b>: more → mora, selo → sela<br>• Common odd ones: <b>ljudi</b> (people), <b>sati</b> (hours), <b>djece</b> (children)<br><br>The vanishing a from the accusative happens here too: pas → <b>psa</b> · otac → <b>oca</b>."},
     {h:"Four jobs",
      b:"<b>1 · Possession</b> — English <em>of</em> or <em>'s</em>:<br>knjiga <b>profesora</b> · centar <b>grada</b> · kraj <b>filma</b><br><br><b>2 · After these prepositions:</b> <b>iz</b> from/out of, <b>od</b> from, <b>do</b> to/until, <b>bez</b> without, <b>kod</b> at someone's, <b>blizu</b> near, <b>poslije/nakon</b> after, <b>prije</b> before, <b>oko</b> around, <b>preko</b> across, <b>zbog</b> because of, <b>umjesto</b> instead of<br><br><b>3 · After quantities</b> — 5+, and <em>puno, malo, čaša, boca, kilogram</em>:<br>puno <b>ljudi</b> · čaša <b>vode</b> · kilogram <b>jabuka</b><br><br><b>4 · After nema</b>:<br><b>Nema</b> kruha. — There's no bread. · <b>Nema</b> problema."},
     {h:"Numbers use the genitive — the rule from Unit {u7}",
@@ -893,7 +894,7 @@ const UNITS = [
     {h:"Motion versus position",
      b:"The <em>same</em> preposition takes a <b>different case</b> depending on movement.<br><br><b>Going → accusative:</b> Idem <b>u Zagreb</b>.<br><b>Being → locative:</b> Ja sam <b>u Zagrebu</b>.<br><br>Idem <b>u školu</b> / Ja sam <b>u školi</b><br>Idem <b>na plažu</b> / Ja sam <b>na plaži</b><br><br>Ask: am I arriving, or already there?"},
     {h:"The endings",
-     b:"m/n take <b>-u</b>, f takes <b>-i</b>.<br>grad → u grad<b>u</b> · more → na mor<b>u</b> · škola → u škol<b>i</b><br><br>The locative <b>only ever appears after a preposition</b> — never alone. Used with <b>u</b> in, <b>na</b> on/at, <b>o</b> about, <b>po</b> around, <b>pri</b> near."},
+     b:"<b>masculine and neuter → -u</b> · <b>feminine → -i</b><br>grad → u grad<b>u</b> · Zagreb → u Zagreb<b>u</b> · more → na mor<b>u</b> · kino → u kin<b>u</b> · škola → u škol<b>i</b> · Ana → o An<b>i</b><br>Consonant feminines → -i too: noć → u noći.<br><br><b>Watch out — k, g, h before -i:</b> they turn into <b>c, z, s</b>. That's why you see:<br>banka → u ban<b>ci</b> · Amerika → u Ameri<b>ci</b> · knjiga → u knji<b>zi</b> · ruka → u ru<b>ci</b><br>Family words and names keep their letter: o baki, o Luki.<br><br><b>Countries ending in -ska / -čka / -ška</b> are really describing words, so they take <b>-oj</b>:<br>Hrvatska → u Hrvatsk<b>oj</b> · Njemačka → u Njemačk<b>oj</b> · Engleska → u Englesk<b>oj</b><br>Other places are normal: u Americi · u Italiji · u Splitu · u New Yorku<br><br><b>More than one:</b> masculine / neuter <b>-ima</b>, feminine <b>-ama</b>: u gradovima · na plažama<br><b>Describing words:</b> masculine / neuter <b>-om</b>, feminine <b>-oj</b>: u velik<b>om</b> gradu · u velik<b>oj</b> kući<br><br>The locative <b>only ever appears after a preposition</b> — never alone. Used with <b>u</b> in, <b>na</b> on/at, <b>o</b> about, <b>po</b> around, <b>pri</b> near."},
     {h:"u or na — you memorise these",
      b:"<b>u</b> — u školi, u kući, u gradu, u kinu, u dućanu, u banci, u sobi, u Hrvatskoj<br><b>na</b> — na poslu (at work), na plaži, na moru, na fakultetu, na ulici, na otoku, na kolodvoru, na tržnici, na koncertu<br><br>Rough logic: <em>na</em> for open surfaces, islands, events. But learn each place together with its preposition — that's faster than reasoning it out."},
     {h:"Three question words, three cases",
@@ -921,7 +922,7 @@ const UNITS = [
   goal:"Give, send, show — and use the verb that Croatian flips around: liking.",
   grammar:[
     {h:"The endings are the locative's",
-     b:"m/n <b>-u</b>, f <b>-i</b> — identical to the locative. The difference is that the dative works <b>without a preposition</b>.<br><br>Dajem knjigu <b>prijatelju</b>. — I'm giving the book to my friend.<br>Pišem <b>Ani</b>. — I'm writing to Ana.<br>Pomažem <b>sestri</b>. — I'm helping my sister.<br><br>Also after <b>prema</b> towards and <b>zahvaljujući</b> thanks to."},
+     b:"<b>masculine and neuter → -u</b> · <b>feminine → -i</b> — exactly the locative endings, including k/g/h → c/z/s (knjiga → knjizi). Family words and names keep their letter: baka → baki, Luka → Luki. The difference: the dative works <b>without a preposition</b>.<br><br>Dajem knjigu <b>prijatelju</b>. — I'm giving the book to my friend.<br>Pišem <b>Ani</b> / <b>Marku</b>. — I'm writing to Ana / Marko.<br>Pomažem <b>sestri</b>. — I'm helping my sister.<br>Kupujem poklon <b>tati</b>. — I'm buying Dad a present. (men ending in -a take -i too)<br><br><b>Describing words:</b> masculine / neuter <b>-om</b>, feminine <b>-oj</b>: <em>dobrom prijatelju</em> · <em>dobroj prijateljici</em><br><b>More than one:</b> <b>-ima / -ama</b>, same as the locative: <em>Pišem prijateljima.</em><br><br>Also after <b>prema</b> towards and <b>zahvaljujući</b> thanks to."},
     {h:"Short pronouns — you'll use these constantly",
      b:"<b>mi</b> to me · <b>ti</b> to you · <b>mu</b> to him/it · <b>joj</b> to her · <b>nam</b> to us · <b>vam</b> to you · <b>im</b> to them<br><br>Daj <b>mi</b> to. — Give me that.<br>Reci <b>mu</b>. — Tell him.<br>Pomozi <b>joj</b>. — Help her.<br>Kako <b>ti</b> se sviđa? — How do you like it?"},
     {h:"Liking works backwards",
@@ -952,7 +953,7 @@ const UNITS = [
   goal:"Say who you're with and how you're travelling — and learn the one distinction that matters.",
   grammar:[
     {h:"The endings",
-     b:"m/n take <b>-om</b>, f takes <b>-om</b> too.<br>grad → grad<b>om</b> · žena → žen<b>om</b> · more → mor<b>em</b><br><br>After soft consonants (č ć š ž đ j lj nj) use <b>-em</b>: prijatelj → prijatelj<b>em</b>, nož → nož<b>em</b>."},
+     b:"<b>masculine and neuter → -om</b> · <b>feminine → -om</b> too<br>grad → grad<b>om</b> · Marko → Mark<b>om</b> · žena → žen<b>om</b> · Ana → An<b>om</b> · tata → tat<b>om</b> · selo → sel<b>om</b><br><br><b>When it's -em instead:</b><br>• after soft consonants (č ć š ž đ j lj nj) and c: prijatelj → prijatelj<b>em</b> · muž → muž<b>em</b> · otac → oc<b>em</b><br>• neuter words ending in -e: more → mor<b>em</b> · polje → polj<b>em</b><br><br><b>Consonant feminines</b> (obitelj, noć, ljubav) take <b>-i</b>: <em>s obitelji</em>. You'll also see -ju (<em>s ljubavlju</em>) — both are right.<br>The vanishing a again: pas → s <b>psom</b>.<br><br><b>Describing words:</b> masculine / neuter <b>-im</b>, feminine <b>-om</b>: s velik<b>im</b> psom · s velik<b>om</b> torbom<br><b>More than one:</b> <b>-ima / -ama</b>: s prijateljima · sa ženama"},
     {h:"The whole trick: person needs s, tool doesn't",
      b:"<b>A companion → s / sa + instrumental:</b><br>Idem <b>s prijateljem</b>. — I'm going with a friend.<br>Kava <b>s mlijekom</b>. — Coffee with milk.<br>Živim <b>s obitelji</b>. — I live with my family.<br><br><b>A means → bare instrumental, no preposition:</b><br>Idem <b>autobusom</b>. — I go by bus.<br>Pišem <b>olovkom</b>. — I write with a pen.<br>Putujem <b>vlakom</b>. — I travel by train.<br><br>Say <em>idem s autobusom</em> and you've said you're travelling <em>in the company of</em> a bus."},
     {h:"s or sa?",
@@ -981,7 +982,7 @@ const UNITS = [
   goal:"Call someone by name, then see all seven cases together.",
   grammar:[
     {h:"Vocative — for calling someone",
-     b:"Used only when addressing a person directly.<br><b>m</b> → <b>-e</b>: Marko → <b>Marko</b> (names in -o don't change), Ivan → <b>Ivane</b>, prijatelj → <b>prijatelju</b><br><b>f</b> → <b>-o</b>: Ana → <b>Ano</b>, mama → <b>mama</b> (often unchanged in speech)<br><br>Bok, <b>Ivane</b>! · Hvala, <b>prijatelju</b>! · <b>Gospodine</b>! — Sir!<br><br>In everyday speech people often just use the nominative. Don't stress about it."},
+     b:"Used only when you're <b>talking to</b> someone directly.<br><b>masculine</b> → <b>-e</b>: Ivan → <b>Ivane</b> · brat → <b>brate</b> · prijatelj → <b>prijatelju</b> (soft consonants take -u)<br>&nbsp;&nbsp;names in -o and men ending in -a don't change: <b>Marko! Luka!</b><br><b>feminine</b> → <b>-o</b>: Ana → <b>Ano</b> · Maja → <b>Majo</b> · mama → <b>mama</b> (usually unchanged in speech)<br>&nbsp;&nbsp;names not ending in -a don't change: <b>Kim!</b><br><b>neuter</b> → no change: <b>dijete!</b><br><br>Bok, <b>Ivane</b>! · Hvala, <b>prijatelju</b>! · Ajde, <b>brate</b>! · <b>Gospodine</b>! — Sir!<br><br>In everyday speech people often just use the normal form, especially with names. Don't stress about it."},
     {h:"The order Croatian books use",
      b:"This course taught you the cases easiest-first: <b>N → A → G → L → D → I → V</b>.<br><br>Croatian schools, dictionaries and grammar books always <b>number</b> them in a different order. You'll see it in any table you find outside this app:<br><b>1 Nominativ</b> — tko? što? — the subject<br><b>2 Genitiv</b> — koga? čega? — of, from, without<br><b>3 Dativ</b> — kome? čemu? — to, for<br><b>4 Akuzativ</b> — koga? što? — the object<br><b>5 Vokativ</b> — calling someone<br><b>6 Lokativ</b> — o kome? o čemu? — position, about<br><b>7 Instrumental</b> — s kim? čime? — with, by<br><br>Same seven cases, same endings — just numbered differently. Inside this app everything stays in the order you learned."},
     {h:"Question words across all seven",
@@ -989,7 +990,7 @@ const UNITS = [
     {h:"The shortcut nobody tells you",
      b:"Seven cases only cost you <b>five</b> sets of endings:<br>• <b>Dative and locative are always identical.</b><br>• In the plural, <b>dative, locative and instrumental are all identical</b> (-ama / -ima).<br>• Neuter accusative always equals nominative.<br>• Masculine inanimate accusative equals nominative.<br><br>So the workload is much smaller than the table suggests."},
     {h:"Plural endings",
-     b:"<table><tr><th></th><th>žene (f)</th><th>gradovi (m)</th><th>mora (n)</th></tr><tr><td class='cs'>N</td><td class='hr'>žene</td><td class='hr'>gradovi</td><td class='hr'>mora</td></tr><tr><td class='cs'>G</td><td class='hr'>žena</td><td class='hr'>gradova</td><td class='hr'>mora</td></tr><tr><td class='cs'>D/L/I</td><td class='hr'>ženama</td><td class='hr'>gradovima</td><td class='hr'>morima</td></tr><tr><td class='cs'>A</td><td class='hr'>žene</td><td class='hr'>gradove</td><td class='hr'>mora</td></tr></table>The <b>-ama / -ima</b> ending covering three cases at once is the single biggest shortcut in Croatian grammar."}
+     b:"<table><tr><th></th><th>gradovi (m)</th><th>žene (f)</th><th>mora (n)</th></tr><tr><td class='cs'>N</td><td class='hr'>gradovi</td><td class='hr'>žene</td><td class='hr'>mora</td></tr><tr><td class='cs'>A</td><td class='hr'>gradove</td><td class='hr'>žene</td><td class='hr'>mora</td></tr><tr><td class='cs'>G</td><td class='hr'>gradova</td><td class='hr'>žena</td><td class='hr'>mora</td></tr><tr><td class='cs'>L / D / I</td><td class='hr'>gradovima</td><td class='hr'>ženama</td><td class='hr'>morima</td></tr><tr><td class='cs'>V</td><td class='hr'>gradovi</td><td class='hr'>žene</td><td class='hr'>mora</td></tr></table>The <b>-ama / -ima</b> ending covering three cases at once is the single biggest shortcut in Croatian grammar."}
   ],
   vocab:[["gospodine","sir (vocative)"],["gospođo","madam (vocative)"],["prijatelju","friend (vocative)"],
     ["ljudi","people"],["svi","everyone"],["netko","someone"],["nitko","nobody"],
@@ -2887,6 +2888,33 @@ EXTRA_STEPS.forEach(x => {
                   SQm("21 coffees =",["dvadeset jedna kava","dvadeset jedna kave"],0,"Only the last word counts: jedna."));
 })();
 
+
+/* ---- extra checks for the fuller case explanations ---- */
+(() => {
+  const add = (id, k, ...qs) => { if(STEP_Q[id] && STEP_Q[id][k]) STEP_Q[id][k].push(...qs); };
+  add(4, 0, SQm("'tata' is…",["masculine","feminine"],0,"He's a man — real gender wins."),
+            SQm("Can a person be neuter?",["Only dijete (child)","Yes — names ending in -o"],0,"Marko is masculine."),
+            SQm("'a female friend' =",["prijateljica","prijatelj"],0,"-ica for the woman."));
+  add(4, 1, SQt("Plural of 'učenik' (pupil):",["učenici"],"k → c before -i."),
+            SQm("Friends — boys and girls together:",["prijatelji","prijateljice"],0,"Mixed group → masculine."));
+  add(8, 1, SQt("Volim ___ (Ivan)",["ivana"],"Alive masculine → add -a."),
+            SQm("Vidim ___ (tata)",["tatu","tata"],0,"Men ending in -a take -u."),
+            SQt("Imam ___ (otac)",["oca"],"The a inside drops: oca."));
+  add(8, 2, SQm("Imam ___ psa (velik)",["velikog","veliku","velik"],0,"Alive masculine → -og."),
+            SQt("Say: I have a good (female) friend.",["imam dobru prijateljicu"],"Feminine → -u on both words."));
+  add(9, 0, SQt("Genitive of 'Ana':",["ane"],"-a → -e."),
+            SQt("Say: five friends",["pet prijatelja"],"Longer masculine words → -a."));
+  add(10, 1, SQm("in America =",["u Amerikai","u Americi"],1,"k → c before -i."),
+             SQm("in Croatia =",["u Hrvatski","u Hrvatskoj"],1,"-ska countries → -oj."),
+             SQt("Say: in Germany (Njemačka)",["u njemačkoj"],"-čka → -oj."));
+  add(11, 0, SQt("Pišem ___ (Marko)",["marku"],"Dative -u."),
+             SQm("Pišem ___ (baka)",["baki","baci"],0,"Family words keep their letter."));
+  add(12, 0, SQt("Say: with Dad (tata)",["s tatom"],"-a → -om."),
+             SQm("Why 's psom' and not 's pasom'?",["The a inside drops","It's a typo"],0,"Same as psa."));
+  add(13, 0, SQm("Calling your friend Luka:",["Luka!","Luke!"],0,"Men ending in -a don't change."),
+             SQt("Call your brother (brat):",["brate"],"-e."));
+})();
+
 /* Unit numbers inside the lesson text are written {uID} and filled in by position. */
 UNITS.forEach(u => u.grammar.forEach(g => { g.h = fillUnitRefs(g.h); g.b = fillUnitRefs(g.b); }));
 
@@ -3980,22 +4008,22 @@ const VERBS = [
 // [case, short, unit id, žena, grad, more, question, example, example in English]
 const CASES = {
   sg:[
-    ["Nominativ","N",0,"žena","grad","more","tko? što?","Žena je ovdje.","The woman is here."],
-    ["Akuzativ","A",8,"ženu","grad","more","koga? što?","Vidim ženu.","I see the woman."],
-    ["Genitiv","G",9,"žene","grada","mora","koga? čega?","Kuća je blizu mora.","The house is near the sea."],
-    ["Lokativ","L",10,"ženi","gradu","moru","o kome? o čemu?","Živim u gradu.","I live in the city."],
-    ["Dativ","D",11,"ženi","gradu","moru","kome? čemu?","Dajem knjigu ženi.","I'm giving the book to the woman."],
-    ["Instrumental","I",12,"ženom","gradom","morem","s kim? čime?","Idem sa ženom.","I'm going with my wife."],
-    ["Vokativ","V",13,"ženo","grade","more","(calling)","Bok, Ivane!","Hi, Ivan!"]
+    ["Nominativ","N",0,"grad","žena","more","tko? što?","Žena je ovdje.","The woman is here."],
+    ["Akuzativ","A",8,"grad","ženu","more","koga? što?","Vidim ženu.","I see the woman."],
+    ["Genitiv","G",9,"grada","žene","mora","koga? čega?","Kuća je blizu mora.","The house is near the sea."],
+    ["Lokativ","L",10,"gradu","ženi","moru","o kome? o čemu?","Živim u gradu.","I live in the city."],
+    ["Dativ","D",11,"gradu","ženi","moru","kome? čemu?","Dajem knjigu ženi.","I'm giving the book to the woman."],
+    ["Instrumental","I",12,"gradom","ženom","morem","s kim? čime?","Idem sa ženom.","I'm going with my wife."],
+    ["Vokativ","V",13,"grade","ženo","more","(calling)","Bok, Ivane!","Hi, Ivan!"]
   ],
   pl:[
-    ["Nominativ","N",0,"žene","gradovi","mora","","Žene su ovdje.","The women are here."],
-    ["Akuzativ","A",8,"žene","gradove","mora","","Vidim žene.","I see the women."],
-    ["Genitiv","G",9,"žena","gradova","mora","","pet gradova","five cities"],
-    ["Lokativ","L",10,"ženama","gradovima","morima","","Pričamo o gradovima.","We're talking about cities."],
-    ["Dativ","D",11,"ženama","gradovima","morima","","Pišem ženama.","I'm writing to the women."],
-    ["Instrumental","I",12,"ženama","gradovima","morima","","s prijateljima","with friends"],
-    ["Vokativ","V",13,"žene","gradovi","mora","","Djeco, dođite!","Kids, come here!"]
+    ["Nominativ","N",0,"gradovi","žene","mora","","Žene su ovdje.","The women are here."],
+    ["Akuzativ","A",8,"gradove","žene","mora","","Vidim žene.","I see the women."],
+    ["Genitiv","G",9,"gradova","žena","mora","","pet gradova","five cities"],
+    ["Lokativ","L",10,"gradovima","ženama","morima","","Pričamo o gradovima.","We're talking about cities."],
+    ["Dativ","D",11,"gradovima","ženama","morima","","Pišem ženama.","I'm writing to the women."],
+    ["Instrumental","I",12,"gradovima","ženama","morima","","s prijateljima","with friends"],
+    ["Vokativ","V",13,"gradovi","žene","mora","","Djeco, dođite!","Kids, come here!"]
   ]
 };
 
@@ -6717,7 +6745,7 @@ function vGrammar(){
   return vGrammarBody(path);
 }
 function vGrammarBody(path){
-  const tbl = (rows, q) => `<div class="tblwrap"><table class="casetbl"><tr><th>case</th><th>žena (f)</th><th>grad (m)</th><th>more (n)</th></tr>
+  const tbl = (rows, q) => `<div class="tblwrap"><table class="casetbl"><tr><th>case</th><th>grad (m)</th><th>žena (f)</th><th>more (n)</th></tr>
     ${rows.map(r=>`<tr><td class="cs">${r[0]}<br><span style="font-size:10.5px;opacity:.75">${r[1]} · ${r[2] ? "Unit " + unitNo(r[2]) : "basic form"}</span></td>
       <td class="hr">${r[3]}</td><td class="hr">${r[4]}</td><td class="hr">${r[5]}</td></tr>
       <tr class="exrow"><td colspan="4">${q && r[6] ? `<span style="color:var(--brass);font-size:12px">${r[6]}</span> · ` : ""}<span class="hr" style="font-size:15px">${r[7]}</span> ${spk(r[7])} <span style="color:var(--stone-dim);font-size:12.5px;font-style:italic">— ${r[8]}</span></td></tr>`).join("")}</table></div>`;
