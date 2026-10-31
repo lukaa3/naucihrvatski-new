@@ -360,7 +360,7 @@ details.card > summary::-webkit-details-marker{display:none}
 .read w:hover{color:var(--brass);background:rgba(107,166,255,.12)}
 .gloss{
   position:fixed;background:var(--deep-3);border:1px solid var(--brass);border-radius:9px;
-  padding:8px 12px;font-family:var(--body);font-size:14px;z-index:60;pointer-events:none;
+  padding:8px 12px;font-family:var(--body);font-size:14px;z-index:60;pointer-events:auto;
   box-shadow:0 8px 26px rgba(0,0,0,.5);max-width:250px;
 }
 .gloss b{font-family:var(--display);font-size:16px;color:var(--brass);display:block}
@@ -455,6 +455,8 @@ html,body{max-width:100%;overflow-x:hidden}
 .opt-en{margin:3px 0 0;font-size:12.5px}
 .qread w{cursor:pointer;border-bottom:1px dotted rgba(234,240,250,.35)}
 .gstar{font-size:17px;padding:0 4px 0 0}
+.casetbl .exrow td{padding-top:0;padding-bottom:12px;border-top:0}
+.casetbl tr:not(.exrow) td{border-bottom:0;padding-bottom:4px}
 /* build-a-sentence */
 .bline{min-height:52px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:9px;border:2px dashed var(--line);border-radius:12px;margin-top:4px}
 .bph{color:var(--stone-dim);font-size:13.5px;padding-left:4px}
@@ -523,7 +525,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.6";
+const VERSION = "10.8";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -825,7 +827,7 @@ const UNITS = [
   goal:"Say what you have, want, see, eat and buy. This is the case you'll use most.",
   grammar:[
     {h:"What cases actually do",
-     b:"English shows who-does-what by <b>word order</b>. Croatian marks it on the <b>word ending</b> instead, so the order is free.<br><em>Ana voli Marka</em> and <em>Marka voli Ana</em> both mean Ana loves Marko — the <b>-a</b> on Marko is what marks him as the one being loved.<br><br>Croatian has seven of these endings. Here's the whole map before we start, so nothing arrives unexplained:<table><tr><th>case</th><th>job</th><th>example</th></tr><tr><td class='cs'>N nominativ</td><td>the subject — who does it</td><td class='hr'>Ana pije kavu</td></tr><tr><td class='cs'>G genitiv</td><td>of, from, without</td><td class='hr'>čaša vode</td></tr><tr><td class='cs'>D dativ</td><td>to / for whom</td><td class='hr'>dajem Ani</td></tr><tr><td class='cs'>A akuzativ</td><td>the object — what it's done to</td><td class='hr'>pijem kavu</td></tr><tr><td class='cs'>V vokativ</td><td>calling someone</td><td class='hr'>Ana → Ano!</td></tr><tr><td class='cs'>L lokativ</td><td>where, about</td><td class='hr'>u Zagrebu</td></tr><tr><td class='cs'>I instrumental</td><td>with, by means of</td><td class='hr'>s Anom</td></tr></table>You'll learn one per unit, in that order. This unit is the <b>akuzativ</b> — the direct object: the thing had, wanted, seen, eaten, bought."},
+     b:"English shows who-does-what by <b>word order</b>. Croatian marks it on the <b>word ending</b> instead, so the order is free.<br><em>Ana voli Marka</em> and <em>Marka voli Ana</em> both mean Ana loves Marko — the <b>-a</b> on Marko is what marks him as the one being loved.<br><br>Croatian has seven of these endings. Here's the whole map, <b>in the order you'll learn them</b>:<table><tr><th>case</th><th>job</th><th>example</th><th>unit</th></tr><tr><td class='cs'>N nominativ</td><td>the subject — who does it</td><td class='hr'>Ana pije kavu.</td><td>you know it</td></tr><tr><td class='cs'>A akuzativ</td><td>the object — what it's done to</td><td class='hr'>Pijem kavu.</td><td>this unit</td></tr><tr><td class='cs'>G genitiv</td><td>of, from, without</td><td class='hr'>čaša vode</td><td>Unit {u9}</td></tr><tr><td class='cs'>L lokativ</td><td>where, about</td><td class='hr'>u Zagrebu</td><td>Unit {u10}</td></tr><tr><td class='cs'>D dativ</td><td>to / for whom</td><td class='hr'>Pišem Ani.</td><td>Unit {u11}</td></tr><tr><td class='cs'>I instrumental</td><td>with, by means of</td><td class='hr'>s Anom</td><td>Unit {u12}</td></tr><tr><td class='cs'>V vokativ</td><td>calling someone</td><td class='hr'>Ano!</td><td>Unit {u13}</td></tr></table>The reference tables on the Grammar page use this same order. (Croatian school books list them differently — Unit {u13} shows you that once you know all seven.)<br><br>This unit is the <b>akuzativ</b> — the direct object: the thing had, wanted, seen, eaten, bought."},
     {h:"The endings",
      b:"<table><tr><th></th><th>N</th><th>A</th></tr><tr><td class='cs'>f</td><td class='hr'>kava</td><td class='hr'>kavu</td></tr><tr><td class='cs'>n</td><td class='hr'>pivo</td><td class='hr'>pivo</td></tr><tr><td class='cs'>m thing</td><td class='hr'>stol</td><td class='hr'>stol</td></tr><tr><td class='cs'>m alive</td><td class='hr'>pas</td><td class='hr'>psa</td></tr></table><b>Feminine -a → -u.</b> The single most useful ending in the language.<br>Neuter never changes. Masculine changes <b>only if it's alive</b>."},
     {h:"Alive or not",
@@ -980,10 +982,10 @@ const UNITS = [
   grammar:[
     {h:"Vocative — for calling someone",
      b:"Used only when addressing a person directly.<br><b>m</b> → <b>-e</b>: Marko → <b>Marko</b> (names in -o don't change), Ivan → <b>Ivane</b>, prijatelj → <b>prijatelju</b><br><b>f</b> → <b>-o</b>: Ana → <b>Ano</b>, mama → <b>mama</b> (often unchanged in speech)<br><br>Bok, <b>Ivane</b>! · Hvala, <b>prijatelju</b>! · <b>Gospodine</b>! — Sir!<br><br>In everyday speech people often just use the nominative. Don't stress about it."},
-    {h:"All seven, in the order Croatians learn them",
-     b:"<b>1 Nominativ</b> — tko? što? — the subject<br><b>2 Genitiv</b> — koga? čega? — of, from, without<br><b>3 Dativ</b> — komu? čemu? — to, for<br><b>4 Akuzativ</b> — koga? što? — the object<br><b>5 Vokativ</b> — calling someone<br><b>6 Lokativ</b> — o komu? o čemu? — position, about<br><b>7 Instrumental</b> — s kim? čime? — with, by<br><br>Every textbook and dictionary uses this order. Learn the sequence and reference tables stop being confusing."},
+    {h:"The order Croatian books use",
+     b:"This course taught you the cases easiest-first: <b>N → A → G → L → D → I → V</b>.<br><br>Croatian schools, dictionaries and grammar books always <b>number</b> them in a different order. You'll see it in any table you find outside this app:<br><b>1 Nominativ</b> — tko? što? — the subject<br><b>2 Genitiv</b> — koga? čega? — of, from, without<br><b>3 Dativ</b> — kome? čemu? — to, for<br><b>4 Akuzativ</b> — koga? što? — the object<br><b>5 Vokativ</b> — calling someone<br><b>6 Lokativ</b> — o kome? o čemu? — position, about<br><b>7 Instrumental</b> — s kim? čime? — with, by<br><br>Same seven cases, same endings — just numbered differently. Inside this app everything stays in the order you learned."},
     {h:"Question words across all seven",
-     b:"Now that you know the cases, the shapes of <em>tko</em> and <em>što</em> make sense — they follow the same seven jobs as any noun:<table><tr><th>case</th><th>tko (who)</th><th>što (what)</th><th>used for</th></tr><tr><td class='cs'>N</td><td class='hr'>tko</td><td class='hr'>što</td><td>the subject</td></tr><tr><td class='cs'>G</td><td class='hr'>koga</td><td class='hr'>čega</td><td>od koga? — from whom?</td></tr><tr><td class='cs'>D</td><td class='hr'>komu / kome</td><td class='hr'>čemu</td><td>kome? — to whom?</td></tr><tr><td class='cs'>A</td><td class='hr'>koga</td><td class='hr'>što</td><td>the object</td></tr><tr><td class='cs'>L</td><td class='hr'>o kome</td><td class='hr'>o čemu</td><td>o čemu? — about what?</td></tr><tr><td class='cs'>I</td><td class='hr'>s kim</td><td class='hr'>čime</td><td>s kim? — with whom?</td></tr></table>Those fixed phrases you memorised back in Unit {u6} — <b>s kim</b>, <b>o čemu</b>, <b>od koga</b> — were these all along. The preposition decides the case: <em>s</em> takes instrumental, <em>o</em> takes locative, <em>od</em> takes genitive."},
+     b:"Now that you know the cases, the shapes of <em>tko</em> and <em>što</em> make sense — they follow the same seven jobs as any noun:<table><tr><th>case</th><th>tko (who)</th><th>što (what)</th><th>used for</th></tr><tr><td class='cs'>N</td><td class='hr'>tko</td><td class='hr'>što</td><td>Tko je to? — Who's that?</td></tr><tr><td class='cs'>A</td><td class='hr'>koga</td><td class='hr'>što</td><td>Koga vidiš? — Who do you see?</td></tr><tr><td class='cs'>G</td><td class='hr'>koga</td><td class='hr'>čega</td><td>Od koga je to? — Who's it from?</td></tr><tr><td class='cs'>L</td><td class='hr'>o kome</td><td class='hr'>o čemu</td><td>O čemu govoriš? — What are you talking about?</td></tr><tr><td class='cs'>D</td><td class='hr'>kome</td><td class='hr'>čemu</td><td>Kome pišeš? — Who are you writing to?</td></tr><tr><td class='cs'>I</td><td class='hr'>s kim</td><td class='hr'>čime</td><td>S kim ideš? — Who are you going with?</td></tr></table>Those fixed phrases you memorised back in Unit {u6} — <b>s kim</b>, <b>o čemu</b>, <b>od koga</b> — were these all along. The preposition decides the case: <em>s</em> takes instrumental, <em>o</em> takes locative, <em>od</em> takes genitive."},
     {h:"The shortcut nobody tells you",
      b:"Seven cases only cost you <b>five</b> sets of endings:<br>• <b>Dative and locative are always identical.</b><br>• In the plural, <b>dative, locative and instrumental are all identical</b> (-ama / -ima).<br>• Neuter accusative always equals nominative.<br>• Masculine inanimate accusative equals nominative.<br><br>So the workload is much smaller than the table suggests."},
     {h:"Plural endings",
@@ -1487,7 +1489,7 @@ const UNITS = [
     {h:"The second-position rule",
      b:"Unstressed words — <b>sam si je smo ste su · ću ćeš će · bih bi · me te ga je joj mu ih im · se · li</b> — cluster in <b>second position</b> in the clause.<br><br>✓ Radio <b>sam</b>. ✓ Jučer <b>sam</b> radio. ✓ U Zagrebu <b>sam</b> radio.<br>✗ <b>Sam</b> radio. ✗ Jučer radio <b>sam</b>.<br><br>Whatever you put first, the cluster follows immediately after it."},
     {h:"They come in a fixed order",
-     b:"When several stack up, this is the sequence:<br><br><b>li → ću/bih → mi/ti/mu/joj/nam → me/te/ga/je → se → je (biti)</b><br><br>Dao <b>mi ga je</b>. — He gave it to me.<br>Kako <b>ti se</b> sviđa? — How do you like it?<br>Jučer <b>sam ga</b> vidio. — I saw him yesterday.<br>Ne bih <b>ti to</b> rekao. — I wouldn't tell you that.<br><br>Read the cluster as one glued-together chunk that slots in after the first word. You can be perfect on cases and still sound foreign if these sit wrong."},
+     b:"When several stack up, this is the sequence:<br><br><b>li → sam/si/smo/ste/su · ću/ćeš… · bih/bi… → mi/ti/mu/joj/nam → me/te/ga/je → se → je (biti)</b><br><br>Dao <b>mi ga je</b>. — He gave it to me.<br>Kako <b>ti se</b> sviđa? — How do you like it?<br>Jučer <b>sam ga</b> vidio. — I saw him yesterday.<br>Ne bih <b>ti to</b> rekao. — I wouldn't tell you that.<br><br>Read the cluster as one glued-together chunk that slots in after the first word. You can be perfect on cases and still sound foreign if these sit wrong."},
     {h:"Otherwise word order is free",
      b:"Because the endings carry the grammar, you can reorder for emphasis:<br><b>Ana voli Marka.</b> — neutral<br><b>Marka voli Ana.</b> — it's Marko she loves<br><b>Voli Ana Marka.</b> — she does love him<br><br>All grammatical, all meaning the same basic thing. The last position tends to carry the new information."},
     {h:"The je exception",
@@ -3974,39 +3976,41 @@ const VERBS = [
 ];
 
 /* ---------- grammar reference ---------- */
+// In the order the course teaches them: N, A, G, L, D, I, V.
+// [case, short, unit id, žena, grad, more, question, example, example in English]
 const CASES = {
-  head:["padež","žena (f)","grad (m)","more (n)","pitanje"],
   sg:[
-    ["Nominativ","žena","grad","more","tko? što?"],
-    ["Genitiv","žene","grada","mora","koga? čega?"],
-    ["Dativ","ženi","gradu","moru","komu? čemu?"],
-    ["Akuzativ","ženu","grad","more","koga? što?"],
-    ["Vokativ","ženo","grade","more","(oslovljavanje)"],
-    ["Lokativ","ženi","gradu","moru","o komu? o čemu?"],
-    ["Instrumental","ženom","gradom","morem","s kim? čime?"]
+    ["Nominativ","N",0,"žena","grad","more","tko? što?","Žena je ovdje.","The woman is here."],
+    ["Akuzativ","A",8,"ženu","grad","more","koga? što?","Vidim ženu.","I see the woman."],
+    ["Genitiv","G",9,"žene","grada","mora","koga? čega?","Kuća je blizu mora.","The house is near the sea."],
+    ["Lokativ","L",10,"ženi","gradu","moru","o kome? o čemu?","Živim u gradu.","I live in the city."],
+    ["Dativ","D",11,"ženi","gradu","moru","kome? čemu?","Dajem knjigu ženi.","I'm giving the book to the woman."],
+    ["Instrumental","I",12,"ženom","gradom","morem","s kim? čime?","Idem sa ženom.","I'm going with my wife."],
+    ["Vokativ","V",13,"ženo","grade","more","(calling)","Bok, Ivane!","Hi, Ivan!"]
   ],
   pl:[
-    ["Nominativ","žene","gradovi","mora",""],
-    ["Genitiv","žena","gradova","mora",""],
-    ["Dativ","ženama","gradovima","morima",""],
-    ["Akuzativ","žene","gradove","mora",""],
-    ["Vokativ","žene","gradovi","mora",""],
-    ["Lokativ","ženama","gradovima","morima",""],
-    ["Instrumental","ženama","gradovima","morima",""]
+    ["Nominativ","N",0,"žene","gradovi","mora","","Žene su ovdje.","The women are here."],
+    ["Akuzativ","A",8,"žene","gradove","mora","","Vidim žene.","I see the women."],
+    ["Genitiv","G",9,"žena","gradova","mora","","pet gradova","five cities"],
+    ["Lokativ","L",10,"ženama","gradovima","morima","","Pričamo o gradovima.","We're talking about cities."],
+    ["Dativ","D",11,"ženama","gradovima","morima","","Pišem ženama.","I'm writing to the women."],
+    ["Instrumental","I",12,"ženama","gradovima","morima","","s prijateljima","with friends"],
+    ["Vokativ","V",13,"žene","gradovi","mora","","Djeco, dođite!","Kids, come here!"]
   ]
 };
 
+
 const VERBTABLES = [
-  {n:"biti — to be", r:[["ja","sam / jesam"],["ti","si / jesi"],["on, ona","je / jest"],["mi","smo / jesmo"],["vi","ste / jeste"],["oni","su / jesu"]], neg:"nisam · nisi · nije · nismo · niste · nisu"},
-  {n:"imati — to have", r:[["ja","imam"],["ti","imaš"],["on, ona","ima"],["mi","imamo"],["vi","imate"],["oni","imaju"]], neg:"nemam · nemaš · nema · nemamo · nemate · nemaju"},
-  {n:"raditi — to work, to do", r:[["ja","radim"],["ti","radiš"],["on, ona","radi"],["mi","radimo"],["vi","radite"],["oni","rade"]], neg:"ne radim …"},
-  {n:"pisati — to write", r:[["ja","pišem"],["ti","pišeš"],["on, ona","piše"],["mi","pišemo"],["vi","pišete"],["oni","pišu"]], neg:"ne pišem …"},
-  {n:"ići — to go", r:[["ja","idem"],["ti","ideš"],["on, ona","ide"],["mi","idemo"],["vi","idete"],["oni","idu"]], neg:"ne idem …"},
-  {n:"moći — can, to be able", r:[["ja","mogu"],["ti","možeš"],["on, ona","može"],["mi","možemo"],["vi","možete"],["oni","mogu"]], neg:"ne mogu …"},
-  {n:"htjeti — to want", r:[["ja","hoću (ću)"],["ti","hoćeš (ćeš)"],["on, ona","hoće (će)"],["mi","hoćemo (ćemo)"],["vi","hoćete (ćete)"],["oni","hoće (će)"]], neg:"neću · nećeš · neće · nećemo · nećete · neće"},
-  {n:"jesti — to eat", r:[["ja","jedem"],["ti","jedeš"],["on, ona","jede"],["mi","jedemo"],["vi","jedete"],["oni","jedu"]], neg:"ne jedem …"},
-  {n:"piti — to drink", r:[["ja","pijem"],["ti","piješ"],["on, ona","pije"],["mi","pijemo"],["vi","pijete"],["oni","piju"]], neg:"ne pijem …"},
-  {n:"govoriti — to speak", r:[["ja","govorim"],["ti","govoriš"],["on, ona","govori"],["mi","govorimo"],["vi","govorite"],["oni","govore"]], neg:"ne govorim …"}
+  {n:"biti — to be", ex:["Umoran sam.","I'm tired."], r:[["ja","sam / jesam"],["ti","si / jesi"],["on, ona","je / jest"],["mi","smo / jesmo"],["vi","ste / jeste"],["oni","su / jesu"]], neg:"nisam · nisi · nije · nismo · niste · nisu"},
+  {n:"imati — to have", ex:["Imam brata.","I have a brother."], r:[["ja","imam"],["ti","imaš"],["on, ona","ima"],["mi","imamo"],["vi","imate"],["oni","imaju"]], neg:"nemam · nemaš · nema · nemamo · nemate · nemaju"},
+  {n:"raditi — to work, to do", ex:["Radim u Zagrebu.","I work in Zagreb."], r:[["ja","radim"],["ti","radiš"],["on, ona","radi"],["mi","radimo"],["vi","radite"],["oni","rade"]], neg:"ne radim …"},
+  {n:"pisati — to write", ex:["Što pišeš?","What are you writing?"], r:[["ja","pišem"],["ti","pišeš"],["on, ona","piše"],["mi","pišemo"],["vi","pišete"],["oni","pišu"]], neg:"ne pišem …"},
+  {n:"ići — to go", ex:["Idem kući.","I'm going home."], r:[["ja","idem"],["ti","ideš"],["on, ona","ide"],["mi","idemo"],["vi","idete"],["oni","idu"]], neg:"ne idem …"},
+  {n:"moći — can, to be able", ex:["Možeš li mi pomoći?","Can you help me?"], r:[["ja","mogu"],["ti","možeš"],["on, ona","može"],["mi","možemo"],["vi","možete"],["oni","mogu"]], neg:"ne mogu …"},
+  {n:"htjeti — to want", ex:["Hoćeš li doći?","Will you come?"], r:[["ja","hoću (ću)"],["ti","hoćeš (ćeš)"],["on, ona","hoće (će)"],["mi","hoćemo (ćemo)"],["vi","hoćete (ćete)"],["oni","hoće (će)"]], neg:"neću · nećeš · neće · nećemo · nećete · neće"},
+  {n:"jesti — to eat", ex:["Jedem kruh.","I'm eating bread."], r:[["ja","jedem"],["ti","jedeš"],["on, ona","jede"],["mi","jedemo"],["vi","jedete"],["oni","jedu"]], neg:"ne jedem …"},
+  {n:"piti — to drink", ex:["Pijem vodu.","I'm drinking water."], r:[["ja","pijem"],["ti","piješ"],["on, ona","pije"],["mi","pijemo"],["vi","pijete"],["oni","piju"]], neg:"ne pijem …"},
+  {n:"govoriti — to speak", ex:["Govorim malo hrvatski.","I speak a little Croatian."], r:[["ja","govorim"],["ti","govoriš"],["on, ona","govori"],["mi","govorimo"],["vi","govorite"],["oni","govore"]], neg:"ne govorim …"}
 ];
 
 const ALPHABET = [
@@ -4103,7 +4107,12 @@ function blankState(){
 }
 // Progress lives in your account only. This is just the in-memory copy.
 let S = blankState();
-const fromCloud = o => { const s = Object.assign(blankState(), o || {}); delete s._v; return s; };
+const fromCloud = o => {
+  const s = Object.assign(blankState(), o || {}); delete s._v;
+  // one-time: speaking lessons start fresh under the "at most 1 mistake" rule
+  if(!s.skillsReset){ s.skills = {}; s.skillsReset = Date.now(); s._resave = true; }
+  return s;
+};
 
 async function loadState(){ /* progress comes from your account once you're signed in */ }
 
@@ -6708,8 +6717,10 @@ function vGrammar(){
   return vGrammarBody(path);
 }
 function vGrammarBody(path){
-  const tbl = rows => `<div class="tblwrap"><table><tr>${CASES.head.map(h=>`<th>${h}</th>`).join("")}</tr>
-    ${rows.map(r=>`<tr><td class="cs">${r[0]}</td><td class="hr">${r[1]}</td><td class="hr">${r[2]}</td><td class="hr">${r[3]}</td><td style="color:var(--stone-dim);font-size:13px">${r[4]||""}</td></tr>`).join("")}</table></div>`;
+  const tbl = (rows, q) => `<div class="tblwrap"><table class="casetbl"><tr><th>case</th><th>žena (f)</th><th>grad (m)</th><th>more (n)</th></tr>
+    ${rows.map(r=>`<tr><td class="cs">${r[0]}<br><span style="font-size:10.5px;opacity:.75">${r[1]} · ${r[2] ? "Unit " + unitNo(r[2]) : "basic form"}</span></td>
+      <td class="hr">${r[3]}</td><td class="hr">${r[4]}</td><td class="hr">${r[5]}</td></tr>
+      <tr class="exrow"><td colspan="4">${q && r[6] ? `<span style="color:var(--brass);font-size:12px">${r[6]}</span> · ` : ""}<span class="hr" style="font-size:15px">${r[7]}</span> ${spk(r[7])} <span style="color:var(--stone-dim);font-size:12.5px;font-style:italic">— ${r[8]}</span></td></tr>`).join("")}</table></div>`;
   const total = UNITS.filter(u => unitState(u) === "done").length;
   shell("grammar · gramatika", "The <i>rules</i>",
     `${total} of ${UNITS.length} units done. Each unit is a few <b>short steps</b> — one small idea, then a couple of quick questions. Finish the steps, pass the <b>big quiz</b> with at most one mistake, and the next unit opens. Reference tables are underneath and always available.`,
@@ -6720,8 +6731,8 @@ function vGrammarBody(path){
       <div><h3>Reference tables</h3><div class="sub">Tablice</div></div></div>
     <div class="card" style="margin-top:8px">
       <div class="kicker">cases — singular · jednina</div>
-      <div class="note" style="margin-top:0"><b>Reading the shorthand:</b> N = nominativ (subject) · G = genitiv (of, from) · D = dativ (to whom) · A = akuzativ (object) · V = vokativ (calling someone) · L = lokativ (about, in) · I = instrumental (with). Croatian schools drill them in exactly that order, and every dictionary uses it.</div>${tbl(CASES.sg)}
-      <div class="kicker" style="margin-top:22px">cases — plural · množina</div>${tbl(CASES.pl)}
+      <div class="note" style="margin-top:0"><b>In the order you learn them:</b> N = nominativ (the subject) · A = akuzativ (the object) · G = genitiv (of, from, without) · L = lokativ (where, about) · D = dativ (to whom) · I = instrumental (with) · V = vokativ (calling someone). Croatian school books number them N G D A V L I instead — same cases, different order.</div>${tbl(CASES.sg, true)}
+      <div class="kicker" style="margin-top:22px">cases — plural · množina</div>${tbl(CASES.pl, false)}
       <div class="note"><b>Shortcut:</b> dativ and lokativ are always identical. In the plural, dativ, lokativ and instrumental are all identical too. That means seven cases really only cost you five sets of endings.</div>
     </div>
 
@@ -6730,7 +6741,8 @@ function vGrammarBody(path){
       <div class="grid g2" style="margin-top:8px">${VERBTABLES.map(v=>
         `<div><h3 style="font-size:17px;margin-bottom:6px">${esc(v.n)}</h3>
           <table>${v.r.map(r=>`<tr><td class="cs">${r[0]}</td><td class="hr">${r[1]}</td></tr>`).join("")}</table>
-          <div style="font-size:12.5px;color:var(--stone-dim);margin-top:5px">negative: ${esc(v.neg)}</div></div>`).join("")}</div>
+          <div style="font-size:12.5px;color:var(--stone-dim);margin-top:5px">negative: ${esc(v.neg)}</div>
+          ${v.ex ? `<div style="margin-top:5px;font-size:13.5px"><span class="hr" style="font-family:var(--display);font-size:15px">${esc(v.ex[0])}</span> ${spk(v.ex[0])} <span style="color:var(--stone-dim);font-style:italic">— ${esc(v.ex[1])}</span></div>` : ""}</div>`).join("")}</div>
     </div>
 
     <div class="card" style="margin-top:14px">
@@ -6742,7 +6754,8 @@ function vGrammarBody(path){
         <tr><td class="cs">futur I</td><td class="hr">radit ću</td><td class="hr">radit ću</td><td class="hr">neću raditi</td></tr>
         <tr><td class="cs">kondicional</td><td class="hr">radio bih</td><td class="hr">radila bih</td><td class="hr">ne bih radio/radila</td></tr>
       </table></div>
-      <div class="note">Only the past and the conditional change with the speaker's gender. Present and future don't care who you are.</div>
+      <div class="note">Only the past and the conditional change with the speaker's gender. Present and future don't care who you are.<br><br>
+        <b>Radim</b> danas. — I'm working today. · <b>Radio sam</b> jučer. — I worked yesterday. · <b>Radit ću</b> sutra. — I'll work tomorrow. · <b>Radio bih</b>, ali nemam vremena. — I'd work, but I don't have time.</div>
     </div>
 
     <div class="card" style="margin-top:14px">
@@ -6754,7 +6767,7 @@ function vGrammarBody(path){
     <div class="card" style="margin-top:14px">
       <div class="kicker">word order · the second-position rule</div>
       <p style="font-size:15px">The little unstressed words — <b>sam, si, je, smo, ste, su · ću, ćeš, će · bih, bi · me, te, ga, joj, mu, se · li</b> — cluster in <b>second position</b> in the clause, and they go in this order:</p>
-      <p style="font-family:var(--display);font-size:19px;color:var(--brass)">li → ću/bih → mi/ti/mu/joj → me/te/ga/je → se → je (biti)</p>
+      <p style="font-family:var(--display);font-size:19px;color:var(--brass)">li → sam/ću/bih (not je) → mi/ti/mu/joj → me/te/ga/je → se → je (biti)</p>
       <p style="font-size:15px">Dao <b>mi ga je</b>. — He gave it to me.<br>Kako <b>ti se</b> sviđa? — How do you like it?<br>Jučer <b>sam ga</b> vidio. — I saw him yesterday.</p>
       <div class="note">This is the single thing that most separates a learner's Croatian from a native's. You can be perfect on cases and still sound foreign if the clitics sit in the wrong place. Read them as one glued-together chunk that slots in after the first word.</div>
     </div>`);
@@ -6800,8 +6813,15 @@ function mergeState(a, b){
   out.lastRead = ((a.lastRead || {}).at || 0) >= ((b.lastRead || {}).at || 0) ? a.lastRead : b.lastRead;
   if(!out.lastRead) delete out.lastRead;
 
+  // lessons: a copy from before the lesson reset doesn't bring old ticks back
+  const ra = a.skillsReset || 0, rb = b.skillsReset || 0, R = Math.max(ra, rb);
   out.skills = {};
-  keys("skills").forEach(k => out.skills[k] = Math.max((a.skills || {})[k] || 0, (b.skills || {})[k] || 0));
+  keys("skills").forEach(k => {
+    const v = Math.max(ra === R ? (a.skills || {})[k] || 0 : 0, rb === R ? (b.skills || {})[k] || 0 : 0);
+    if(v) out.skills[k] = v;
+  });
+  if(R) out.skillsReset = R;
+  delete out._resave;
 
   out.removed = {};
   keys("removed").forEach(k => out.removed[k] = Math.max((a.removed || {})[k] || 0, (b.removed || {})[k] || 0));
@@ -6951,6 +6971,7 @@ const CLOUD = {
         this.version = now;
       }
       this.loaded = true; this.loadedFor = uid; this.dirty = false; this.failCount = 0;
+      if(S._resave){ delete S._resave; setTimeout(() => save(), 50); }   // store the one-time lesson reset
       this.lastSync = Date.now();
       paintStats(); paintCloud(); go(CUR);
       this.snapshot("daily");
