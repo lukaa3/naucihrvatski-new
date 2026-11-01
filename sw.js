@@ -11,7 +11,7 @@ self.addEventListener("install", e => {
 
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== "nauci-link").map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 
@@ -69,11 +69,17 @@ self.addEventListener("notificationclick", e => {
   e.notification.close();
   const url = new URL((e.notification.data && e.notification.data.url) || "/", self.location.origin).href;
   e.waitUntil((async () => {
+    // Leave the link where the app will find it, however it ends up opening
+    // (iPhone often resumes the app without passing anything along).
+    try{
+      const c = await caches.open("nauci-link");
+      await c.put("/__pending-link", new Response(JSON.stringify({ url, at: Date.now() }), { headers: { "Content-Type": "application/json" } }));
+    }catch(err){}
     const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     const w = wins.find(c => new URL(c.url).origin === self.location.origin);
     if(w){
-      w.postMessage({ type: "open", url });
       try{ await w.focus(); }catch(err){}
+      w.postMessage({ type: "open", url });
       return;
     }
     await self.clients.openWindow(url);
