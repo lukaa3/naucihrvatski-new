@@ -349,6 +349,14 @@ details.card > summary::-webkit-details-marker{display:none}
   padding:12px 16px;border-radius:11px;font-size:18px;font-family:var(--display);
 }
 .verdict{margin-top:13px;padding:12px 14px;border-radius:10px;font-size:14.5px}
+.review .rv{padding:11px 0;border-top:1px solid var(--line)}
+.review[data-only="no"] .rv-ok{display:none}
+.review .rv-q{font-size:15px;display:flex;gap:7px;align-items:baseline}
+.review .rv-mark{font-weight:700;flex:none}
+.review .rv-ok .rv-mark{color:var(--olive)} .review .rv-no .rv-mark{color:var(--madder)}
+.review .rv-a{font-size:14.5px;margin:4px 0 0 22px}
+.review .rv-a s{color:var(--madder)} .review .rv-a b{font-family:var(--display);font-size:16.5px;color:var(--brass);font-weight:600}
+.review .rv-sub{font-size:13px;color:var(--stone-dim);margin:3px 0 0 22px}
 .verdict.ok{background:rgba(63,185,138,.14);border:1px solid rgba(63,185,138,.42)}
 .verdict.no{background:rgba(224,54,47,.13);border:1px solid rgba(224,54,47,.42)}
 .progressline{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-bottom:20px}
@@ -530,7 +538,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.15";
+const VERSION = "10.17";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -5614,6 +5622,38 @@ function checkBuild(q){
   return ok;
 }
 
+/* ---------- review after every quiz: what you got right and wrong ---------- */
+function logAnswer(log, q, ok, yours, right){
+  log.push({ q: q.q, qEn: q.qEn || "", ok: !!ok, yours: String(yours || ""), right: String(right || ""), e: q.e || "" });
+}
+const rvPlain = t => String(t).toLowerCase().replace(/[^\p{L}\s]/gu, "").replace(/\s+/g, " ").trim();
+function reviewHTML(log){
+  if(!log || !log.length) return "";
+  const wrong = log.filter(x => !x.ok).length;
+  return `<div class="card review" style="margin-top:14px" data-only="all">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+      <div class="kicker" style="margin:0">review · pregled</div>
+      <div class="chips" style="margin:0">
+        <button class="chip" aria-pressed="true" onclick="reviewFilter(this,'all')">All · ${log.length}</button>
+        <button class="chip" aria-pressed="false" onclick="reviewFilter(this,'no')"${wrong ? "" : " disabled"}>Wrong · ${wrong}</button>
+      </div>
+    </div>
+    ${log.map((x, n) => `<div class="rv ${x.ok ? "rv-ok" : "rv-no"}">
+        <div class="rv-q"><span class="rv-mark">${x.ok ? "✓" : "✗"}</span><span>${n + 1}. ${esc(x.q)}</span></div>
+        ${x.qEn ? `<div class="rv-sub">${esc(x.qEn)}</div>` : ""}
+        <div class="rv-a">${x.ok
+          ? `You: <b>${esc(x.yours)}</b>${!x.right || rvPlain(x.right) === rvPlain(x.yours) ? "" : norm(x.right) === norm(x.yours) ? ` <span style="color:var(--stone-dim)">· with the accents: ${esc(x.right)}</span>` : ` <span style="color:var(--stone-dim)">· also right: ${esc(x.right)}</span>`}`
+          : `You: <s>${esc(x.yours || "—")}</s> → <b>${esc(x.right)}</b>`}</div>
+        ${x.e ? `<div class="rv-sub">${esc(x.e)}</div>` : ""}
+      </div>`).join("")}
+  </div>`;
+}
+function reviewFilter(btn, k){
+  const card = btn.closest(".review"); if(!card) return;
+  card.dataset.only = k;
+  card.querySelectorAll(".chips .chip").forEach(c => c.setAttribute("aria-pressed", String(c === btn)));
+}
+
 let SQ = null;   // the step being done right now
 function vStep(arg){
   const [uid, k] = String(arg).split(":").map(Number);
@@ -5638,7 +5678,7 @@ function vStep(arg){
   }
 
   const g = u.grammar[k];
-  SQ = { u:uid, k, q: shuffle((STEP_Q[uid] || [])[k] || []).map(shuffleOpts), i:0, again:new Set() };
+  SQ = { u:uid, k, q: shuffle((STEP_Q[uid] || [])[k] || []).map(shuffleOpts), i:0, again:new Set(), log:[] };
   shell(`unit ${unitNo(uid)} · step ${k + 1} of ${n}`, g.h, esc(u.title),
     `${top}<div class="card"><div style="font-size:15px">${fillUnitRefs(g.b)}</div></div>${phrasesHTML(uid, k)}
     <div class="card stepcheck" style="margin-top:14px">
@@ -5681,6 +5721,7 @@ function pickSQ(i){
     inp.disabled = true; inp.style.borderWidth = "2px";
     inp.style.borderColor = ok ? "var(--olive)" : "var(--madder)";
   }
+  logAnswer(SQ.log, q, ok, q.t === "mc" ? q.o[i] : q.t === "build" ? buildAnswer() : $("#sqa").value, q.t === "mc" ? q.o[q.a] : (typo || q.a[0]));
   const key = q.q;
   const retry = !ok && !SQ.again.has(key);
   if(retry){ SQ.again.add(key); SQ.q.push(shuffleOpts(q)); }   // a missed one comes back once at the end
@@ -5704,6 +5745,7 @@ function finishStep(uid, k){
   const first = !rec.st[k];
   rec.st[k] = 1;
   if(first) addXP(10); else save();
+  const log = SQ && SQ.u === uid && SQ.k === k ? SQ.log : null;
   SQ = null;
   const n = stepCount(u), nextK = k + 1;
   const last = nextK >= n;
@@ -5718,7 +5760,7 @@ function finishStep(uid, k){
         <button class="btn ghost sm" onclick="go('unit',${uid})">${dual("Stop here for now","Dosta za danas")}</button>
         ${last ? `<button class="btn sm" onclick="startFinal(${uid})">${dual("Take the big quiz","Veliki kviz")} →</button>`
                : `<button class="btn sm" onclick="go('step','${uid}:${nextK}')">${dual("Next step","Sljedeći korak")} →</button>`}
-      </div></div>`);
+      </div></div>${reviewHTML(log)}`);
 }
 
 /* Big quiz: the unit's own drills plus one question from each step. */
@@ -5825,6 +5867,8 @@ function pick(i){
     $("#ans").style.borderWidth = "2px";
   }
   if(ok){ D.score++; addXP(5); }
+  logAnswer(D.log = D.log || [], q, ok, q.t === "mc" ? q.o[i] : q.t === "build" ? buildAnswer() : TYPED, q.t === "mc" ? q.o[q.a] : (TYPO || q.a[0]));
+  D.ans = D.i;                                   // this question is answered — never score it twice
 
   const yours = (q.t === "type" && TYPED)
     ? `<div style="margin-top:9px;font-size:14px">
@@ -5852,6 +5896,7 @@ function pick(i){
   $("#nx").onclick = ()=>{ D.i++; paintDrill(); };
 }
 function endDrill(){
+  if(D === QZ) QZ = null;
   const pct = Math.round(D.score/D.q.length*100);
   const wrong = D.q.length - D.score;
   const passed = quizPassed(D.score, D.q.length);
@@ -5895,7 +5940,7 @@ function endDrill(){
       <div class="chips" style="justify-content:center;margin-top:16px">
         <button class="btn ghost sm" onclick="${again}">${dual("Again","Opet")}</button>
         ${back}${fwd}
-      </div></div>`);
+      </div></div>${reviewHTML(D.log)}`);
 }
 
 /* ============================================================
@@ -6301,8 +6346,9 @@ function formForm(w, c){
   if(c[0] === "p") return w.p ? w.p[{pN:0, pA:1, pG:2, pL:3}[c]] : null;
   return w[c];
 }
-const caseOpen = k => { const u = UNITS.find(x => x.id === FCASE[k].unit); return !!u && unitState(u) !== "locked"; };
-const pluralOpen = () => { const u = UNITS.find(x => x.id === 13); return !!u && unitState(u) !== "locked"; };
+// a case opens for practice once its unit's big quiz is passed
+const caseOpen = k => unitPassed((S.done || {})[FCASE[k].unit]);
+const pluralOpen = () => unitPassed((S.done || {})[13]);
 
 // Plain-English reason, built from the kind of word, plus any note for that exact word.
 function formReason(w, c){
@@ -6347,40 +6393,62 @@ function buildFQ(cases, plural){
 let FD = null;
 function vForms(){
   const open = Object.keys(FCASE).filter(caseOpen);
-  FD = FD || { pick: "mix", plural: false, right: 0, done: 0, streak: 0 };
-  if(FD.pick !== "mix" && !open.includes(FD.pick)) FD.pick = "mix";
+  FD = FD || { pick: "mix", plural: false, right: 0, done: 0, streak: 0, len: 20, miss: [] };
+  if(FD.len === undefined){ FD.len = 20; FD.miss = []; }
+  if(FD.pick !== "mix" && !open.includes(FD.pick)){ FD.pick = "mix"; FD.q = null; }
   const plOk = pluralOpen();
   if(!plOk) FD.plural = false;
+  // a question from a case that's no longer allowed is thrown away
+  if(FD.q && !(FD.q.c[0] === "p" ? FD.plural : (FD.pick === "mix" ? open : [FD.pick]).includes(FD.q.c))) FD.q = null;
+  const lens = [[10,"10"],[20,"20"],[30,"30"],[0,"∞"]];
   shell("practise · vježbaj", "Practise the <i>forms</i>",
-    "Fill in the right ending. It never runs out — stop whenever you like. Only the cases you've reached in Grammar are here.",
+    "Fill in the right ending. A case opens here once you've passed the big quiz of its Grammar unit.",
     `<div class="card">
       <div class="kicker">case · padež</div>
       <div class="chips">
-        <button class="chip" aria-pressed="${FD.pick === "mix"}" onclick="FD.pick='mix';vForms()">${dual("Mix","Sve")}</button>
+        <button class="chip" aria-pressed="${FD.pick === "mix"}" onclick="FD.pick='mix';FD.q=null;vForms()">${dual("Mix","Sve")}</button>
         ${Object.keys(FCASE).map(k => open.includes(k)
-          ? `<button class="chip" aria-pressed="${FD.pick === k}" onclick="FD.pick='${k}';vForms()">${dual(FCASE[k].name, FCASE[k].hr)}</button>`
-          : `<button class="chip" disabled title="Opens in Unit ${unitNo(FCASE[k].unit)}">&#128274; ${FCASE[k].name}</button>`).join("")}
+          ? `<button class="chip" aria-pressed="${FD.pick === k}" onclick="FD.pick='${k}';FD.q=null;vForms()">${dual(FCASE[k].name, FCASE[k].hr)}</button>`
+          : `<button class="chip" disabled title="Pass the big quiz of Unit ${unitNo(FCASE[k].unit)} to open">${dual("&#128274; " + FCASE[k].name, "pass Unit " + unitNo(FCASE[k].unit))}</button>`).join("")}
       </div>
       <div class="chips" style="margin-top:10px">
-        <button class="chip" aria-pressed="${!FD.plural}" onclick="FD.plural=false;vForms()">${dual("One (singular)","Jednina")}</button>
-        ${plOk ? `<button class="chip" aria-pressed="${FD.plural}" onclick="FD.plural=true;vForms()">${dual("+ More than one (plural)","+ Množina")}</button>`
-               : `<button class="chip" disabled>&#128274; Plural — opens in Unit ${unitNo(13)}</button>`}
+        <button class="chip" aria-pressed="${!FD.plural}" onclick="FD.plural=false;FD.q=null;vForms()">${dual("One (singular)","Jednina")}</button>
+        ${plOk ? `<button class="chip" aria-pressed="${FD.plural}" onclick="FD.plural=true;FD.q=null;vForms()">${dual("+ More than one (plural)","+ Množina")}</button>`
+               : `<button class="chip" disabled>&#128274; Plural — pass Unit ${unitNo(13)} first</button>`}
       </div>
-      ${open.length ? "" : `<p class="note" style="margin-top:12px">Reach the accusative unit (Unit ${unitNo(8)}) in Grammar and this opens up.</p>`}
+      <div class="kicker" style="margin-top:14px">questions per round · pitanja</div>
+      <div class="chips">${lens.map(([n, t]) => `<button class="chip" aria-pressed="${FD.len === n}" onclick="setFormLen(${n})">${t}</button>`).join("")}</div>
+      ${open.length ? "" : `<p class="note" style="margin-top:12px">Pass the big quiz of the accusative unit (Unit ${unitNo(8)}) in Grammar and this opens up.</p>`}
     </div>
     <div class="card" style="margin-top:14px" id="fd-card"></div>`);
-  if(open.length) nextForm();
+  if(!open.length) return;
+  if(FD.over) paintFormResults();
+  else if(FD.q) paintForm();
+  else nextForm();
 }
+function setFormLen(n){
+  FD.len = n;
+  if(n && FD.done >= n && !FD.over && !(FD.q && FD.q.ans === undefined)) FD.over = true;
+  vForms();
+}
+function newFormRound(){ Object.assign(FD, { right: 0, done: 0, streak: 0, miss: [], log: [], q: null, over: false }); vForms(); }
 function nextForm(){
+  if(FD.len && FD.done >= FD.len){ FD.over = true; return paintFormResults(); }
   const open = Object.keys(FCASE).filter(caseOpen);
   const cases = FD.pick === "mix" ? open : [FD.pick];
   const q = buildFQ(cases, FD.plural);
   const card = $("#fd-card"); if(!card) return;
   if(!q){ card.innerHTML = `<p>Nothing to practise in this selection yet.</p>`; return; }
   FD.q = q;
+  paintForm();
+}
+function paintForm(){
+  const q = FD.q, card = $("#fd-card"); if(!q || !card) return;
   const label = q.c[0] === "p" ? "plural" : FCASE[q.c].name.toLowerCase();
-  card.innerHTML = `<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--stone-dim);margin-bottom:10px">
-      <span>${FD.right} / ${FD.done} right${FD.streak > 2 ? ` · 🔥 ${FD.streak} in a row` : ""}</span><span>${esc(label)}</span></div>
+  const num = FD.done + (q.ans === undefined ? 1 : 0);
+  card.innerHTML = `${FD.len ? `<div class="progressline" style="margin:0 0 12px"><i style="width:${Math.min(100, FD.done / FD.len * 100)}%"></i></div>` : ""}
+    <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--stone-dim);margin-bottom:10px">
+      <span>${FD.len ? `Question ${num} / ${FD.len} · ` : ""}${FD.right} right${FD.streak > 2 ? ` · 🔥 ${FD.streak} in a row` : ""}</span><span>${esc(label)}</span></div>
     <div class="q" style="font-size:24px">${esc(q.shown).replace("___", `<span class="fgap">___</span>`)}</div>
     <div style="color:var(--stone-dim);font-size:14px;margin:-4px 0 10px">${esc(q.fr.en(q.w))}</div>
     <div style="font-size:14px;margin-bottom:10px">Word: <b class="hr" style="font-family:var(--display);font-size:18px">${esc(q.w.b)}</b>
@@ -6391,7 +6459,11 @@ function nextForm(){
       <button class="btn ghost sm" onclick="formHint()">${dual("Hint","Pomoć")}</button>
     </div>
     <div id="fd-v"></div>`;
-  const a = $("#fd-a"); a.focus(); a.addEventListener("keydown", e => { if(e.key === "Enter") checkForm(); });
+  const a = $("#fd-a");
+  if(q.ans !== undefined){ a.value = q.ans; showFormVerdict(); return; }
+  if(q.typed) a.value = q.typed;
+  a.addEventListener("input", () => { q.typed = a.value; });
+  a.focus(); a.addEventListener("keydown", e => { if(e.key === "Enter") checkForm(); });
 }
 function formHint(){
   const q = FD.q, v = $("#fd-v"); if(!q || !v) return;
@@ -6399,21 +6471,50 @@ function formHint(){
   v.innerHTML = `<div class="verdict" style="border:1px dashed var(--line)">${c ? `<b>${c.name}:</b> ${esc(c.role)}.<br>` : ""}${esc(formReason(q.w, q.c).replace(/→.*$/, "→ …"))}</div>`;
 }
 function checkForm(){
-  const q = FD.q, inp = $("#fd-a"); if(!q || !inp || inp.disabled) return;
+  const q = FD.q, inp = $("#fd-a"); if(!q || !inp || q.ans !== undefined) return;
   if(!norm(inp.value)) return;
   const r = checkTyped(inp.value, q.accept);
-  inp.disabled = true; inp.style.borderWidth = "2px"; inp.style.borderColor = r.ok ? "var(--olive)" : "var(--madder)";
-  FD.done++; if(r.ok){ FD.right++; FD.streak++; addXP(1); } else FD.streak = 0;
-  $("#fd-v").innerHTML = `<div class="verdict ${r.ok ? "ok" : "no"}">
-      <b style="color:${r.ok ? "var(--olive)" : "var(--madder)"}">${r.ok ? "Correct ✓" : "Not quite ✗"}</b>
+  q.ans = inp.value; q.ok = r.ok;
+  FD.done++;
+  if(r.ok){ FD.right++; FD.streak++; addXP(1); }
+  else FD.streak = 0;
+  (FD.log = FD.log || []).push({ q: q.shown + "  (" + q.w.b + ")", qEn: q.fr.en(q.w), ok: r.ok, yours: inp.value, right: q.full, e: formReason(q.w, q.c) });
+  showFormVerdict();
+  const top = $("#fd-card span"); if(top) top.innerHTML = `${FD.len ? `Question ${FD.done} / ${FD.len} · ` : ""}${FD.right} right${FD.streak > 2 ? ` · 🔥 ${FD.streak} in a row` : ""}`;
+  const bar = $("#fd-card .progressline i"); if(bar) bar.style.width = Math.min(100, FD.done / FD.len * 100) + "%";
+}
+function showFormVerdict(){
+  const q = FD.q, inp = $("#fd-a"), v = $("#fd-v"); if(!q || !inp || !v) return;
+  inp.disabled = true; inp.style.borderWidth = "2px"; inp.style.borderColor = q.ok ? "var(--olive)" : "var(--madder)";
+  const last = FD.len && FD.done >= FD.len;
+  v.innerHTML = `<div class="verdict ${q.ok ? "ok" : "no"}">
+      <b style="color:${q.ok ? "var(--olive)" : "var(--madder)"}">${q.ok ? "Correct ✓" : "Not quite ✗"}</b>
       <span style="font-family:var(--display);font-size:18px;margin-left:6px">${esc(q.full)}</span> ${spk(q.full)}<br>
       <span style="font-size:14px">${esc(formReason(q.w, q.c))}</span>
     </div>
     <div style="margin-top:12px;display:flex;gap:9px">
-      <button class="btn" id="fd-next" onclick="nextForm()">${dual("Next","Dalje")} →</button>
-      <button class="btn ghost sm" onclick="go('provjera')">${dual("Stop","Kraj")}</button>
+      <button class="btn" id="fd-next" onclick="nextForm()">${last ? dual("See results","Rezultat") : dual("Next","Dalje") + " →"}</button>
+      ${last ? "" : `<button class="btn ghost sm" onclick="endFormRound()">${dual("End round","Kraj")}</button>`}
     </div>`;
   const nb = $("#fd-next"); if(nb) nb.focus();
+}
+function endFormRound(){
+  if(!FD.done){ FD.q = null; return go("provjera"); }
+  FD.over = true; paintFormResults();
+}
+function paintFormResults(){
+  const card = $("#fd-card"); if(!card) return;
+  const n = FD.done, r = FD.right, pct = n ? Math.round(r / n * 100) : 0;
+  const msg = pct === 100 ? "Perfect — every one right." : pct >= 85 ? "Very good." : pct >= 60 ? "Getting there — look over the ones you missed." : "Have another look at those units, then try again.";
+  card.innerHTML = `<div class="kicker">round done · gotovo</div>
+    <div style="font-family:var(--display);font-size:40px;margin:4px 0">${r} / ${n}</div>
+    <p style="margin:0 0 12px">${msg}</p>
+    <div style="margin-top:14px;display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn" onclick="newFormRound()">${dual("Another round","Još jednom")}</button>
+      <button class="btn ghost sm" onclick="newFormRound();go('provjera')">${dual("Back to Quiz","Natrag")}</button>
+    </div>`;
+  const old = card.nextElementSibling; if(old && old.classList.contains("review")) old.remove();
+  card.insertAdjacentHTML("afterend", reviewHTML(FD.log));
 }
 
 /* ---------- 2. write a sentence (AI-checked) ---------- */
@@ -6422,6 +6523,7 @@ function vWrite(){
   const open = Object.keys(FCASE).filter(caseOpen);
   FWR = FWR || { pick: "mix", task: null, own: "" };
   if(FWR.pick !== "mix" && !open.includes(FWR.pick)) FWR.pick = "mix";
+  if(FWR.task && !open.includes(FWR.task.k)) FWR.task = null;
   shell("practise · vježbaj", "Write a <i>sentence</i>",
     "You get a word and a job for it. Write any sentence you like — the AI checks it and explains in plain words. Or pick your own word.",
     `<div class="card">
@@ -6430,13 +6532,13 @@ function vWrite(){
         <button class="chip" aria-pressed="${FWR.pick === "mix"}" onclick="FWR.pick='mix';newWriteTask()">${dual("Surprise me","Iznenadi me")}</button>
         ${Object.keys(FCASE).map(k => open.includes(k)
           ? `<button class="chip" aria-pressed="${FWR.pick === k}" onclick="FWR.pick='${k}';newWriteTask()">${dual(FCASE[k].name, FCASE[k].hr)}</button>`
-          : `<button class="chip" disabled>&#128274; ${FCASE[k].name}</button>`).join("")}
+          : `<button class="chip" disabled title="Pass the big quiz of Unit ${unitNo(FCASE[k].unit)} to open">${dual("&#128274; " + FCASE[k].name, "pass Unit " + unitNo(FCASE[k].unit))}</button>`).join("")}
       </div>
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
         <input class="field" id="fw-own" placeholder="…or type your own word (e.g. prijatelj)" value="${esc(FWR.own)}" autocomplete="off" spellcheck="false" style="flex:1;min-width:180px">
         <button class="btn ghost sm" onclick="FWR.own=$('#fw-own').value.trim();newWriteTask()">${dual("Use my word","Moja riječ")}</button>
       </div>
-      ${open.length ? "" : `<p class="note" style="margin-top:12px">Reach the accusative unit (Unit ${unitNo(8)}) in Grammar and this opens up.</p>`}
+      ${open.length ? "" : `<p class="note" style="margin-top:12px">Pass the big quiz of the accusative unit (Unit ${unitNo(8)}) in Grammar and this opens up.</p>`}
     </div>
     <div class="card" style="margin-top:14px" id="fw-card"></div>`);
   if(open.length){ if(!FWR.task) newWriteTask(); else paintWriteTask(); }
@@ -6465,7 +6567,11 @@ function paintWriteTask(){
       <button class="btn ghost sm" onclick="FWR.own='';newWriteTask()">${dual("New word","Nova riječ")}</button>
     </div>
     <div id="fw-v"></div>`;
-  const a = $("#fw-a"); a.focus(); a.addEventListener("keydown", e => { if(e.key === "Enter") checkWrite(); });
+  const a = $("#fw-a");
+  if(t.typed) a.value = t.typed;
+  a.addEventListener("input", () => { t.typed = a.value; });
+  if(t.vHTML){ $("#fw-v").innerHTML = t.vHTML; return; }
+  a.focus(); a.addEventListener("keydown", e => { if(e.key === "Enter") checkWrite(); });
 }
 async function checkWrite(){
   const t = FWR.task, inp = $("#fw-a"), out = $("#fw-v"); if(!t || !inp || !out) return;
@@ -6492,21 +6598,31 @@ Return ONLY JSON, no markdown: {"ok":true or false,"caseOk":true or false,"fixed
       </div>
       <div style="margin-top:12px;display:flex;gap:9px;flex-wrap:wrap">
         <button class="btn" onclick="FWR.own='';newWriteTask()">${dual("Next word","Sljedeća")} →</button>
-        <button class="btn ghost sm" onclick="paintWriteTask()">${dual("Try again","Opet")}</button>
+        <button class="btn ghost sm" onclick="FWR.task.vHTML='';paintWriteTask()">${dual("Try again","Opet")}</button>
       </div>`;
+    if(FWR.task === t){ t.vHTML = out.innerHTML; t.typed = s; }
   }catch(e){
     out.innerHTML = apiError(e) + `<div style="margin-top:8px"><button class="btn ghost sm" onclick="checkWrite()">↻ ${dual("Retry","Opet")}</button></div>`;
   }
 }
 
+let QZ = null;                                    // a Quiz-tab quiz you're in the middle of
+function resumeQuiz(){ if(!QZ) return; D = QZ; if(D.ans === D.i) D.i++; paintDrill(); }
 function vQuiz(){
+  const resume = QZ && QZ.i < QZ.q.length ? `<div class="card" style="margin-bottom:14px;border-color:var(--brass)">
+      <div class="kicker">unfinished · nedovršeno</div>
+      <p style="margin:2px 0 12px">You're in the middle of <b>${esc(QZ.title)}</b>: question ${Math.min(QZ.q.length, QZ.i + 1 + (QZ.ans === QZ.i ? 1 : 0))} of ${QZ.q.length}, ${QZ.score} right so far.</p>
+      <div style="display:flex;gap:9px;flex-wrap:wrap">
+        <button class="btn" onclick="resumeQuiz()">${dual("Continue","Nastavi")} →</button>
+        <button class="btn ghost sm" onclick="QZ=null;vQuiz()">${dual("Throw it away","Odbaci")}</button>
+      </div></div>` : "";
   shell("provjera · test yourself", "Koliko <i>znaš</i>?",
     "Two ways to test: a mixed round pulled straight from the course, or a fresh set written for you on the spot. The generated ones never repeat, so you can't pass by remembering the answer order.",
-    `<div class="card practise">
+    `${resume}<div class="card practise">
       <div class="kicker">practise the forms · vježbaj padeže</div>
-      <p style="font-size:14.5px;color:var(--stone-dim);margin:2px 0 12px">Reps for the endings — accusative, genitive and the rest, only the ones you've reached.</p>
+      <p style="font-size:14.5px;color:var(--stone-dim);margin:2px 0 12px">Reps for the endings. A case opens here once you've passed its unit's big quiz.</p>
       <div style="display:flex;gap:9px;flex-wrap:wrap">
-        <button class="btn" onclick="go('forms')">✍️ ${dual("Endings drill — never runs out","Vježbaj nastavke")}</button>
+        <button class="btn" onclick="go('forms')">✍️ ${dual(FD && (FD.done || FD.q) && !FD.over ? `Endings drill — continue (${FD.done}${FD.len ? " / " + FD.len : ""})` : "Endings drill","Vježbaj nastavke")}</button>
         <button class="btn ghost" onclick="go('fwrite')">💬 ${dual("Write a sentence (AI checks it)","Napiši rečenicu")}</button>
       </div>
     </div>
@@ -6533,7 +6649,7 @@ function localQuiz(){
   if(QSEL.type==="mc" || QSEL.type==="type") pool = pool.filter(q=>q.t===QSEL.type);
   if(!pool.length){ $("#qout").innerHTML = `<div class="err">No questions of that type in this selection. Try Mješovito.</div>`; return; }
   D = {unit:null, title:"Quick quiz", q:shuffle(pool).slice(0,10), i:0, score:0};
-  paintDrill();
+  QZ = D; paintDrill();
 }
 async function genQuiz(){
   const out = $("#qout");
@@ -6556,7 +6672,7 @@ Return ONLY a JSON array of 8 objects. No markdown, no commentary.`}], 1600);
     const arr = parseJSON(txt).filter(q=>q && q.q && (q.t==="mc" ? Array.isArray(q.o) : Array.isArray(q.a)));
     if(!arr.length) throw new Error("empty");
     D = {unit:null, title:"Quiz", q:arr, i:0, score:0};
-    paintDrill();
+    QZ = D; paintDrill();
   }catch(e){ out.innerHTML = apiError(e); }
 }
 
