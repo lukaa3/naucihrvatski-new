@@ -538,7 +538,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.21";
+const VERSION = "10.22";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -5133,7 +5133,8 @@ const CHECK_RULES = `How to judge:
 - Missing or wrong accents (c/č/ć, s/š, z/ž, d/đ) NEVER make a sentence wrong. Treat "isli" as "išli", "secera" as "šećera". Don't mention accents in the note; just write "fixed" with the proper accents.
 - Small slips are fine if the sentence is understandable.
 - Never mark a sentence wrong for grammar from a unit the learner hasn't reached yet. If they used later grammar, accept it; if it's slightly off, set ok to true, put the correct version in "fixed" and mention the unit in a few words.
-- Set ok to false only for a real mistake in what's being practised, or a sentence that doesn't make sense.`;
+- Set ok to false only for a real mistake in what's being practised, or a sentence that doesn't make sense.
+- Write "note" and "en" in ENGLISH only, never in Croatian — the learner is a beginner. Croatian words appear only as the examples you're explaining.`;
 function courseContext(){
   const cur = unitNo(firstOpen());
   return `The learner is currently on Unit ${cur} of a ${UNITS.length}-unit grammar course. The units, in order:
@@ -6592,53 +6593,84 @@ function paintWriteTask(){
   if(t.typed) a.value = t.typed;
   a.addEventListener("input", () => { t.typed = a.value; });
   if(t.vHTML){ $("#fw-v").innerHTML = t.vHTML; return; }
+  if(t.sent){ paintWriteResult(t, t.form ? tokens(t.sent).includes(norm(t.form)) : null, t.failed ? { failed: true } : { busy: "Getting feedback on the rest…" }); return; }
   a.focus(); a.addEventListener("keydown", e => { if(e.key === "Enter") checkWrite(); });
 }
-async function checkWrite(){
-  const t = FWR.task, inp = $("#fw-a"), out = $("#fw-v"); if(!t || !inp || !out) return;
-  const s = inp.value.trim();
-  if(tokens(s).length < 2){ out.innerHTML = `<div class="verdict no">Write a full sentence — at least two words.</div>`; return; }
-  const c = FCASE[t.k];
-  // Instant part: for the course's own words the app already knows the right form.
+/* Works like the daily-sentence check: the part the app can judge by itself shows at
+   once, you can move on straight away, and the AI's feedback drops in when it's ready
+   (with one quiet retry if the AI is busy). */
+async function checkWrite(retry){
+  const t = FWR.task, out = $("#fw-v"); if(!t || !out) return;
+  if(!retry){
+    const inp = $("#fw-a"); if(!inp) return;
+    const s0 = inp.value.trim();
+    if(tokens(s0).length < 2){ out.innerHTML = `<div class="verdict no">Write a full sentence — at least two words.</div>`; return; }
+    t.sent = s0; t.ai = null; t.vHTML = ""; t.typed = s0; t.failed = false;
+  }
+  const s = t.sent, c = FCASE[t.k];
   const formUsed = t.form ? tokens(s).includes(norm(t.form)) : null;
-  out.innerHTML = formUsed
-    ? `<div class="verdict ok"><b style="color:var(--olive)">Right ending ✓</b> <span class="hr" style="font-family:var(--display);font-size:17px">${esc(t.form)}</span>
-         <div style="font-size:13px;color:var(--stone-dim);margin-top:4px"><span class="spin"></span> Checking the rest of your sentence…</div></div>`
-    : `<div style="margin-top:12px"><span class="spin"></span> Checking…</div>`;
-  const btn = $("#fw-check"); if(btn) btn.disabled = true;
+  paintWriteResult(t, formUsed, { busy: retry === 2 ? "The AI is busy — trying again…" : "Getting feedback on the rest…" });
   try{
-    const txt = await ask(STYLE_RULES + "You are a friendly Croatian teacher checking one learner sentence. Be encouraging and brief.",
+    const txt = await ask(STYLE_RULES + "You are a friendly Croatian teacher checking one learner sentence. Be encouraging and brief. Write all explanations in English.",
       [{role:"user", content:`Task: write a sentence using "${t.word}" in the ${c.name} case (${c.role}).
 The learner wrote: "${s}"
 What's being practised is the ending on "${t.word}". Is it the right ${c.name} form? Then glance at the rest.
 ${CHECK_RULES}
 ${courseContext()}
-Return ONLY JSON, no markdown: {"ok":true or false,"caseOk":true or false,"fixed":"<the sentence with any real fix, written WITH proper diacritics; identical apart from accents if nothing else is wrong>","en":"<English translation>","form":"<the ${c.name} form of ${t.word}>","note":"<one short sentence in plain English>"}`}], 450);
+Return ONLY JSON, no markdown: {"ok":true or false,"caseOk":true or false,"fixed":"<the sentence with any real fix, written WITH proper diacritics; identical apart from accents if nothing else is wrong>","en":"<English translation>","form":"<the ${c.name} form of ${t.word}>","note":"<one short sentence in plain English>"}`}], 1000);
     const j = parseJSON(txt);
-    const fixed = String(j.fixed || s);
-    const onlyAccents = norm(fixed) === norm(s);              // the same sentence once accents are ignored
-    const caseOk = formUsed === true || j.caseOk !== false;
-    const good = caseOk && (!!j.ok || onlyAccents);
-    if(good) addXP(4);
-    const showFix = rvPlain(fixed) !== rvPlain(s);                 // full stops and capitals don't count
-    out.innerHTML = `<div class="verdict ${good ? "ok" : "no"}">
-        <b style="color:${good ? "var(--olive)" : "var(--madder)"}">${good ? "Nice — that's right ✓" : "Almost ✗"}</b>
-        ${showFix ? `<div style="margin-top:6px"><span style="color:var(--stone-dim)">${!good ? "Better:" : onlyAccents ? "With the accents:" : "Polished:"}</span>
-          <span style="font-family:var(--display);font-size:18px">${esc(fixed)}</span> ${spk(fixed)}</div>` : ""}
-        ${j.en ? `<div style="font-size:13px;color:var(--stone-dim);font-style:italic;margin-top:3px">${esc(j.en)}</div>` : ""}
-        ${(t.form || j.form) ? `<div style="font-size:14px;margin-top:5px">${esc(c.name)} of <b>${esc(t.word)}</b>: <b class="hr" style="font-family:var(--display);font-size:16px">${esc(t.form || j.form)}</b></div>` : ""}
-        ${j.note && !(good && onlyAccents) ? `<div style="font-size:14px;margin-top:4px">${esc(j.note)}</div>` : ""}
-      </div>
-      <div style="margin-top:12px;display:flex;gap:9px;flex-wrap:wrap">
-        <button class="btn" onclick="FWR.own='';newWriteTask()">${dual("Next word","Sljedeća")} →</button>
-        <button class="btn ghost sm" onclick="FWR.task.vHTML='';paintWriteTask()">${dual("Try again","Opet")}</button>
-      </div>`;
-    if(FWR.task === t){ t.vHTML = out.innerHTML; t.typed = s; }
+    if(FWR.task !== t) return;                               // you've moved on
+    t.ai = j;
+    paintWriteResult(t, formUsed, {});
   }catch(e){
-    out.innerHTML = (formUsed ? `<div class="verdict ok"><b style="color:var(--olive)">Right ending ✓</b> ${esc(t.form)} — the AI couldn't check the rest just now.</div>` : apiError(e))
-      + `<div style="margin-top:8px"><button class="btn ghost sm" onclick="checkWrite()">↻ ${dual("Retry","Opet")}</button></div>`;
+    if(FWR.task !== t) return;
+    if(!retry){ paintWriteResult(t, formUsed, { busy: "The AI is busy — trying again…" }); return setTimeout(() => { if(FWR.task === t) checkWrite(2); }, 3000); }
+    t.failed = true;
+    paintWriteResult(t, formUsed, { failed: true });
   }
-  const b2 = $("#fw-check"); if(b2) b2.disabled = false;
+}
+// Plain-English check on the AI's note: if it slipped into Croatian, leave it out.
+const looksEnglish = s => /\b(the|is|a|an|you|your|it|to|and|of|here|with|for|this|that|use)\b/i.test(String(s || ""));
+function paintWriteResult(t, formUsed, st){
+  const out = $("#fw-v"); if(!out || FWR.task !== t) return;
+  const c = FCASE[t.k], s = t.sent, j = t.ai;
+  let head, body = "";
+  if(j){
+    const fixed = String(j.fixed || s);
+    const onlyAccents = norm(fixed) === norm(s);
+    const caseOk = formUsed === true || (formUsed !== false && j.caseOk !== false) || (formUsed === false && j.caseOk === true && !!j.ok);
+    const clean = caseOk && (!!j.ok || onlyAccents);
+    const level = clean ? "ok" : caseOk ? "fix" : "no";
+    if(caseOk && !t.xp){ t.xp = true; addXP(4); }
+    head = level === "ok" ? `<b style="color:var(--olive)">Nice — that's right ✓</b>`
+         : level === "fix" ? `<b style="color:var(--olive)">Right ending ✓</b> <span style="color:var(--brass)">— one small fix elsewhere</span>`
+         : `<b style="color:var(--madder)">Almost ✗</b>`;
+    const showFix = rvPlain(fixed) !== rvPlain(s);
+    body = `${showFix ? `<div style="margin-top:6px"><span style="color:var(--stone-dim)">${level === "no" ? "Better:" : onlyAccents ? "With the accents:" : "Fixed:"}</span>
+          <span style="font-family:var(--display);font-size:18px">${esc(fixed)}</span> ${spk(fixed)}</div>` : ""}
+        ${j.en && looksEnglish(j.en) ? `<div style="font-size:13px;color:var(--stone-dim);font-style:italic;margin-top:3px">${esc(j.en)}</div>` : ""}
+        ${(t.form || j.form) ? `<div style="font-size:14px;margin-top:5px">${esc(c.name)} of <b>${esc(t.word)}</b>: <b class="hr" style="font-family:var(--display);font-size:16px">${esc(t.form || j.form)}</b></div>` : ""}
+        ${j.note && looksEnglish(j.note) && !(level === "ok" && onlyAccents) ? `<div style="font-size:14px;margin-top:4px">${esc(j.note)}</div>` : ""}`;
+    out.innerHTML = `<div class="verdict ${level === "no" ? "no" : "ok"}">${head}${body}</div>${writeButtons()}`;
+    t.vHTML = out.innerHTML;
+    return;
+  }
+  // No AI answer yet: show what the app knows by itself, and let you move on.
+  head = formUsed === true ? `<b style="color:var(--olive)">Right ending ✓</b> <span class="hr" style="font-family:var(--display);font-size:17px">${esc(t.form)}</span>`
+       : formUsed === false ? `<b style="color:var(--madder)">Check the ending</b> — the ${esc(c.name.toLowerCase())} of <b>${esc(t.word)}</b> is <b class="hr" style="font-family:var(--display);font-size:17px">${esc(t.form)}</b>`
+       : "";
+  const tail = st.failed
+    ? `<div style="font-size:13px;color:var(--stone-dim);margin-top:6px">Couldn't get AI feedback right now${formUsed === true ? " — the ending is right, so it counts" : ""}.
+         <button class="btn ghost sm" style="margin-left:6px" onclick="checkWrite(1)">↻ ${dual("Retry","Opet")}</button></div>`
+    : `<div style="font-size:13px;color:var(--stone-dim);margin-top:6px"><span class="spin"></span> ${esc(st.busy || "Checking…")}</div>`;
+  if(formUsed === true && !t.xp){ t.xp = true; addXP(4); }
+  out.innerHTML = `<div class="verdict ${formUsed === false ? "no" : formUsed ? "ok" : ""}" ${formUsed == null ? `style="border:1px dashed var(--line)"` : ""}>${head}${tail}</div>${writeButtons()}`;
+}
+function writeButtons(){
+  return `<div style="margin-top:12px;display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn" onclick="FWR.own='';newWriteTask()">${dual("Next word","Sljedeća")} →</button>
+      <button class="btn ghost sm" onclick="FWR.task.vHTML='';FWR.task.ai=null;FWR.task.sent='';paintWriteTask()">${dual("Try again","Opet")}</button>
+    </div>`;
 }
 
 let QZ = null;                                    // a Quiz-tab quiz you're in the middle of
