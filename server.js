@@ -1,7 +1,8 @@
 /* ============================================================
    Nauči hrvatski — Cloudflare Worker
    Serves the site, proxies /api/chat to Gemini, and sends
-   reminder notifications (/api/push/*, plus an hourly cron).
+   reminder notifications (/api/push/*, plus an hourly cron), and
+   reads Croatian aloud with a natural voice (/api/tts).
    Works both as a Pages advanced-mode _worker.js and as a
    Worker with static assets.
    The API key lives in the GEMINI_API_KEY environment variable
@@ -346,6 +347,74 @@ async function handlePost(request, env){
 }
 
 /* ============================================================
+   NATURAL VOICE — /api/tts
+   Gemini's speech models read Croatian with a natural voice. Every clip is
+   kept in Cloudflare's cache, so the same sentence is only ever made once.
+   ============================================================ */
+const TTS_MODELS = ["gemini-3.1-flash-tts-preview", "gemini-2.5-flash-preview-tts"];
+const TTS_VOICE  = "Kore";
+const TTS_MAX    = 1800;
+
+function wavFromPcm(pcm, rate){
+  const h = new DataView(new ArrayBuffer(44));
+  const str = (o, t) => { for(let i = 0; i < t.length; i++) h.setUint8(o + i, t.charCodeAt(i)); };
+  str(0, "RIFF"); h.setUint32(4, 36 + pcm.length, true); str(8, "WAVE");
+  str(12, "fmt "); h.setUint32(16, 16, true); h.setUint16(20, 1, true); h.setUint16(22, 1, true);
+  h.setUint32(24, rate, true); h.setUint32(28, rate * 2, true); h.setUint16(32, 2, true); h.setUint16(34, 16, true);
+  str(36, "data"); h.setUint32(40, pcm.length, true);
+  const out = new Uint8Array(44 + pcm.length); out.set(new Uint8Array(h.buffer), 0); out.set(pcm, 44);
+  return out;
+}
+
+async function handleTts(request, env, ctx){
+  if(request.method !== "POST") return json(405, { error:"Method not allowed" });
+  if(!originOk(request, env)) return json(403, { error:"Forbidden" });
+  if(!env.GEMINI_API_KEY) return json(500, { error:"NOKEY" });
+  let body; try{ body = await request.json(); }catch(e){ return json(400, { error:"Bad JSON" }); }
+  const text = String(body.text || "").replace(/\s+/g, " ").trim();
+  if(!text) return json(400, { error:"No text" });
+  if(text.length > TTS_MAX) return json(413, { error:"Too long" });
+
+  // already made? (shared cache, keyed by the exact text)
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(TTS_VOICE + "|" + text));
+  const key = new Request("https://tts.cache/" + [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join(""));
+  const cache = caches.default;
+  const hit = await cache.match(key);
+  if(hit) return hit;
+
+  const ip = request.headers.get("cf-connecting-ip") || "unknown";
+  const limited = rateLimit(ip);
+  if(limited) return json(429, { error: limited });
+
+  const prompt = "Read this aloud in standard Croatian, in a warm, natural, clear voice at a relaxed pace, like a friendly Croatian teacher:\n" + text;
+  let last = null;
+  for(const model of TTS_MODELS){
+    try{
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+        body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }],
+          generationConfig:{ responseModalities:["AUDIO"],
+            speechConfig:{ voiceConfig:{ prebuiltVoiceConfig:{ voiceName: TTS_VOICE } } } } })
+      });
+      if(!r.ok){ last = r.status + " " + (await r.text().catch(() => "")).slice(0, 200); console.warn("tts", model, last); continue; }
+      const j = await r.json();
+      const part = (((((j.candidates || [])[0] || {}).content || {}).parts) || []).find(p => p.inlineData && p.inlineData.data);
+      if(!part){ last = "no audio"; continue; }
+      const rate = +((/rate=(\d+)/.exec(part.inlineData.mimeType || "") || [])[1] || 24000);
+      const bin = atob(part.inlineData.data), pcm = new Uint8Array(bin.length);
+      for(let i = 0; i < bin.length; i++) pcm[i] = bin.charCodeAt(i);
+      const res = new Response(wavFromPcm(pcm, rate), { headers:{
+        "Content-Type":"audio/wav", "Cache-Control":"public, max-age=31536000, immutable", "X-Model-Used": model } });
+      if(ctx && ctx.waitUntil) ctx.waitUntil(cache.put(key, res.clone()));
+      return res;
+    }catch(e){ last = String(e && e.message); }
+  }
+  return json(502, { error: "TTS_FAILED: " + (last || "") });
+}
+
+
+/* ============================================================
    NOTIFICATIONS (Web Push)
    Needs a KV namespace bound as PUSH and an hourly Cron Trigger.
    The signing keys are made by the worker itself the first time
@@ -565,8 +634,14 @@ async function runSchedule(env, t){
    static file straight from the site.
    ============================================================ */
 export default {
-  async fetch(request, env){
+  async fetch(request, env, ctx){
     const url = new URL(request.url);
+
+    if(url.pathname === "/api/tts"){
+      if(request.method === "OPTIONS") return new Response(null, { status: 204 });
+      try{ return await handleTts(request, env, ctx); }
+      catch(e){ console.error("tts route:", e && e.message); return json(500, { error:"TTS error" }); }
+    }
 
     if(url.pathname === "/api/chat"){
       if(request.method === "POST")    return handlePost(request, env);
