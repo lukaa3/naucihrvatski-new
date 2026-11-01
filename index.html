@@ -538,7 +538,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.19";
+const VERSION = "10.20";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -4833,7 +4833,7 @@ function paintNav(){
 function go(v, arg){
   CUR = v; paintNav(); paintSlow();
   window.scrollTo({top:0, behavior:"instant"});
-  ({home:vHome, lekcije:vSkills, skill:vSkill, unit:vUnit, step:vStep, unitall:vUnitFull, forms:vForms, fwrite:vWrite, razgovor:vTalk, provjera:vQuiz,
+  ({home:vHome, lekcije:vSkills, skill:vSkill, unit:vUnit, step:vStep, unitall:vUnitFull, forms:vForms, fwrite:vWrite, qq:vQQ, razgovor:vTalk, provjera:vQuiz,
     citanje:vRead, rjecnik:vPacks, kartice:vCards, gramatika:vGrammar, napredak:vSave}[v] || vHome)(arg);
 }
 function saveBanner(){
@@ -5357,6 +5357,7 @@ function vHome(){
     </div>
     <div class="grid g2" style="margin-top:14px">${wordCardHTML()}${verbCardHTML()}</div>
     <div style="margin-top:14px">${streakCardHTML()}</div>
+    ${qqCardHTML()}
 
     <div class="grid g3" style="margin-top:14px">
       <div class="card"><div class="kicker">grammar · gramatika</div><div style="font-family:var(--mono);font-size:30px;color:var(--brass)">${doneCount}<span style="font-size:16px;color:var(--stone-dim)">/${UNITS.length}</span></div><div style="font-size:13px;color:var(--stone-dim)">grammar units completed</div></div>
@@ -7458,6 +7459,7 @@ function mergeState(a, b){
     if(y.word && !x.word){ ["wordHr","wordEn","wordS","wordF"].forEach(f => { if(y[f] !== undefined) m[f] = y[f]; }); }
     if(y.verb && !x.verb){ ["verbI","verbEn","verbS","verbF"].forEach(f => { if(y[f] !== undefined) m[f] = y[f]; }); }
     ["wordNote","verbNote","wordF","verbF"].forEach(f => { if(!m[f] && (x[f] || y[f])) m[f] = x[f] || y[f]; });
+    if(y.qqA && !x.qqA){ m.qqQ = y.qqQ; m.qqA = y.qqA; }        // an answered quick question stays answered
     out.daily[k] = m;
   });
 
@@ -7650,7 +7652,7 @@ const CLOUD = {
     if(this.dirty || this.saving) return;
     S = fromCloud(data.state); this.version = data.updated_at;
     paintStats(); paintCloud();
-    if(["home","kartice","napredak","gramatika","lekcije","rjecnik"].includes(CUR)) go(CUR);
+    if(["home","kartice","napredak","gramatika","lekcije","rjecnik","qq"].includes(CUR)) go(CUR);
     this.snapshot("daily");
   },
 
@@ -8277,7 +8279,7 @@ const MASTER_MILESTONES = [10, 25, 50, 100, 150, 200, 300, 400, 500, 750, 1000];
 
 /* ---- opening the app from a notification ---- */
 let LINK = null;
-const LINK_ROUTES = ["home", "kartice", "napredak", "provjera", "gramatika", "lekcije", "rjecnik", "citanje"];
+const LINK_ROUTES = ["home", "kartice", "napredak", "provjera", "gramatika", "lekcije", "rjecnik", "citanje", "qq"];
 function readLink(u){
   try{
     const p = new URL(u, location.origin).searchParams, l = {};
@@ -8294,9 +8296,9 @@ function runLink(){
       const valid = q && typeof q.q === "string" &&
         ((q.t === "mc" && Array.isArray(q.o) && typeof q.a === "number") || (q.t === "type" && Array.isArray(q.a)));
       if(valid){
-        CUR = "provjera"; paintNav();
-        D = { unit:null, title:"Quick question", q:[q], i:0, score:0 };
-        return paintDrill();
+        const r = todayRec();
+        if(!r.qqA && JSON.stringify(r.qqQ) !== JSON.stringify(q)){ r.qqQ = q; save(); }   // the one from the notification
+        return go("qq");
       }
     }catch(e){}
   }
@@ -8305,10 +8307,107 @@ function runLink(){
 if("serviceWorker" in navigator){
   navigator.serviceWorker.addEventListener("message", e => {
     if(!e.data || e.data.type !== "open") return;
-    LINK = readLink(e.data.url);
-    if(!CLOUD.user || CLOUD.loaded) runLink();
+    checkPendingLink(e.data.url);
   });
 }
+
+/* ---- today's quick question: the same one the 5 pm notification sends ---- */
+function todayQQ(){
+  const r = (S.daily || {})[todayKey()] || {};
+  if(r.qqQ) return r.qqQ;
+  const pool = quickPool(); if(!pool.length) return null;
+  return pool[dayIndex(todayKey()) % pool.length];
+}
+function qqCardHTML(){
+  const q = todayQQ(); if(!q) return "";
+  const a = ((S.daily || {})[todayKey()] || {}).qqA;
+  return `<div class="card" style="margin-top:14px;cursor:pointer" onclick="go('qq')">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div class="kicker" style="margin:0">quick question · brzo pitanje</div>
+      <span style="font-size:13px;color:${a ? (a.ok ? "var(--olive)" : "var(--madder)") : "var(--brass)"}">${a ? (a.ok ? "✓ answered" : "✗ answered") : "new today"}</span>
+    </div>
+    <div style="font-size:17px;margin:8px 0 12px">${esc(q.q)}</div>
+    <button class="btn sm" onclick="event.stopPropagation();go('qq')">${a ? dual("See it","Pogledaj") : dual("Answer it","Odgovori") + " →"}</button>
+  </div>`;
+}
+function vQQ(){
+  const q = todayQQ();
+  if(!q){
+    shell("quick question · brzo pitanje", "Quick <i>question</i>",
+      "One question a day from the units you've passed. Pass a unit's big quiz and they start showing up here.",
+      `<button class="btn" onclick="go('home')">${dual("Home","Početna")}</button>`);
+    return;
+  }
+  const r = todayRec(); if(!r.qqQ){ r.qqQ = q; save(); }
+  shell("quick question · brzo pitanje", "Quick <i>question</i>",
+    "One question a day from units you've passed — the same one the 5 pm notification sends. A new one comes every morning at 7.",
+    `<div class="card"><div class="q">${esc(q.q)}</div>
+      ${q.t === "mc"
+        ? `<div class="opts">${q.o.map((o, i) => `<button class="opt" onclick="answerQQ(${i})">${esc(o)}</button>`).join("")}</div>`
+        : `<input class="answer" id="qqa" placeholder="Type it in Croatian…" autocomplete="off" autocapitalize="off" spellcheck="false">
+           <div style="margin-top:12px" id="qqcheck"><button class="btn" onclick="answerQQ(-1)">${dual("Check","Provjeri")}</button></div>`}
+      <div id="qqv"></div></div>`);
+  if(r.qqA) return showQQ();
+  const inp = $("#qqa");
+  if(inp){ inp.focus(); inp.addEventListener("keydown", e => { if(e.key === "Enter") answerQQ(-1); }); }
+}
+function answerQQ(i){
+  const r = todayRec(), q = r.qqQ; if(!q || r.qqA) return;
+  let yours, ok;
+  if(q.t === "mc"){ yours = q.o[i]; ok = i === q.a; }
+  else {
+    yours = (($("#qqa") || {}).value || "").trim(); if(!norm(yours)) return;
+    const c = checkTyped(yours, q.a); ok = c.ok;
+  }
+  r.qqA = { yours, ok, i };
+  if(ok) addXP(3); else save();
+  showQQ();
+}
+function showQQ(){
+  const r = todayRec(), q = r.qqQ, a = r.qqA; if(!q || !a) return;
+  if(q.t === "mc"){
+    $$(".opt").forEach((b, j) => { b.disabled = true; if(j === q.a) b.classList.add("right"); else if(j === a.i) b.classList.add("wrong"); });
+  } else {
+    const inp = $("#qqa");
+    if(inp){ inp.value = a.yours; inp.disabled = true; inp.style.borderWidth = "2px"; inp.style.borderColor = a.ok ? "var(--olive)" : "var(--madder)"; }
+    const c = $("#qqcheck"); if(c) c.style.display = "none";
+  }
+  const right = q.t === "mc" ? q.o[q.a] : q.a[0];
+  $("#qqv").innerHTML = `<div class="verdict ${a.ok ? "ok" : "no"}">
+      <b style="color:${a.ok ? "var(--olive)" : "var(--madder)"}">${a.ok ? "Correct ✓" : "Not quite ✗"}</b> ${esc(q.e || "")}
+      ${q.t !== "mc" && (!a.ok || rvPlain(right) !== rvPlain(a.yours)) ? `<div style="margin-top:5px"><span style="color:var(--stone-dim)">${a.ok ? "Also right:" : "Answer:"}</span>
+        <span style="font-family:var(--display);font-size:17px;color:var(--brass)">${esc(right)}</span> ${spk(right)}</div>` : ""}
+    </div>
+    <p style="font-size:13.5px;color:var(--stone-dim);margin:12px 0 0">Next question tomorrow after 7 am.</p>
+    <div style="margin-top:12px;display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn" onclick="go('home')">${dual("Home","Početna")}</button>
+      <button class="btn ghost sm" onclick="go('forms')">${dual("Practise the endings","Vježbaj")} →</button>
+    </div>`;
+}
+
+/* A tapped notification leaves its link here (see sw.js), so the app can pick it up
+   however it was opened — fresh, or brought back from the background. */
+async function takePendingLink(){
+  try{
+    if(!("caches" in window)) return null;
+    const c = await caches.open("nauci-link");
+    const r = await c.match("/__pending-link"); if(!r) return null;
+    await c.delete("/__pending-link");
+    const j = await r.json();
+    if(!j || !j.url || Date.now() - (j.at || 0) > 15 * 60 * 1000) return null;   // ignore old taps
+    return readLink(j.url);
+  }catch(e){ return null; }
+}
+async function checkPendingLink(fallbackUrl){
+  const l = (await takePendingLink()) || (fallbackUrl ? readLink(fallbackUrl) : null);
+  if(!l) return;
+  LINK = l;
+  if(!CLOUD.user || CLOUD.loaded) runLink();
+}
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState !== "visible") return;
+  checkPendingLink(); setTimeout(checkPendingLink, 800); setTimeout(checkPendingLink, 2500);
+});
 
 /* ---- the card on the Account page ---- */
 const NS = { sub:null, checked:false, busy:false, msg:"", err:false };
@@ -8418,6 +8517,7 @@ window.addEventListener("pagehide", () => { if(CLOUD.dirty) CLOUD.write(); });
   paintGear();
   LINK = readLink(location.href);
   if(LINK) history.replaceState(null, "", location.pathname);
+  { const pend = await takePendingLink(); LINK = LINK || pend; }
   if(LINK && LINK.go && LINK_ROUTES.includes(LINK.go)) CUR = LINK.go;
   go(CUR);
   CLOUD.init();
