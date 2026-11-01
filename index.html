@@ -460,6 +460,8 @@ html,body{max-width:100%;overflow-x:hidden}
 .exl{display:block;font-style:normal;font-family:var(--display);font-size:15.5px;color:var(--stone);margin-top:3px}
 .glance{margin-top:16px;padding-top:12px;border-top:1px dashed var(--line)}
 .glance-h{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--brass);margin-bottom:6px}
+.fgap{color:var(--brass);border-bottom:2px solid var(--brass);padding:0 6px}
+.card.practise{border-color:rgba(107,166,255,.45)}
 /* build-a-sentence */
 .bline{min-height:52px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:9px;border:2px dashed var(--line);border-radius:12px;margin-top:4px}
 .bph{color:var(--stone-dim);font-size:13.5px;padding-left:4px}
@@ -528,7 +530,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.12";
+const VERSION = "10.15";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -867,7 +869,7 @@ const UNITS = [
     {h:"Four jobs",
      b:"<b>1 · Possession</b> — English <em>of</em> or <em>'s</em>:<br>knjiga <b>profesora</b> · centar <b>grada</b> · kraj <b>filma</b><br><br><b>2 · After these prepositions:</b> <b>iz</b> from/out of, <b>od</b> from, <b>do</b> to/until, <b>bez</b> without, <b>kod</b> at someone's, <b>blizu</b> near, <b>poslije/nakon</b> after, <b>prije</b> before, <b>oko</b> around, <b>preko</b> across, <b>zbog</b> because of, <b>umjesto</b> instead of<br><br><b>3 · After quantities</b> — 5+, and <em>puno, malo, čaša, boca, kilogram</em>:<br>puno <b>ljudi</b> · čaša <b>vode</b> · kilogram <b>jabuka</b><br><br><b>4 · After nema</b>:<br><b>Nema</b> kruha. — There's no bread. · <b>Nema</b> problema."},
     {h:"Numbers use the genitive — the rule from Unit {u7}",
-     b:"Back in Unit {u7} you learned the <em>1 / a few / many</em> pattern — jedna kava · dvije kave · pet kava. Here's what's behind it: the genitive.<table><tr><th>after…</th><th>what the noun takes</th><th>example</th></tr><tr><td class='cs'>1</td><td>nothing special, it just agrees</td><td class='hr'>jedan stol · jedna kava</td></tr><tr><td class='cs'>2, 3, 4</td><td>genitive <b>singular</b></td><td class='hr'>dva stola · tri kave</td></tr><tr><td class='cs'>5 and up</td><td>genitive <b>plural</b></td><td class='hr'>pet stolova · šest kava</td></tr></table>That's it — the same genitive endings you just learned, triggered by a number instead of a preposition.<br><br>Two extra details:<br>• <b>dva</b> for masculine and neuter, <b>dvije</b> for feminine — <em>dva piva</em>, <em>dvije kave</em><br>• Anything <em>ending</em> in 2, 3 or 4 follows the middle row: <em>dvadeset dva stola</em> (22 tables). Anything ending 5–0 follows the bottom row: <em>dvadeset pet stolova</em>.<br><br>Now say the Unit {u7} phrases again and you'll hear the pattern: <b>jedna kava · dvije kave · pet kava</b>."},
+     b:"Back in Unit {u7} you learned the <em>1 / a few / many</em> pattern — jedna kava · dvije kave · pet kava. Here's what's behind it: the genitive.<table><tr><th>after…</th><th>what the noun takes</th><th>example</th></tr><tr><td class='cs'>1</td><td>nothing special, it just agrees</td><td class='hr'>jedan stol · jedna kava</td></tr><tr><td class='cs'>2, 3, 4</td><td>genitive <b>singular</b></td><td class='hr'>dva stola · tri kave</td></tr><tr><td class='cs'>5 and up</td><td>genitive <b>plural</b></td><td class='hr'>pet stolova · šest kava</td></tr></table>That's it — the same genitive endings you just learned, triggered by a number instead of a preposition.<br><br>Two extra details:<br>• <b>dva</b> for masculine and neuter, <b>dvije</b> for feminine — <em>dva piva</em>, <em>dvije kave</em><br>• Anything <em>ending</em> in 2, 3 or 4 follows the middle row: <em>dvadeset dva stola</em> (22 tables). Anything ending 5–0 follows the bottom row: <em>dvadeset pet stolova</em>.<br>• <b>11–19 always take the bottom row</b>, even 12, 13, 14: <em>dvanaest stolova</em> · <em>četrnaest kava</em>.<br>• <b>The number decides, not the verb.</b> Želim <b>kavu</b> (one, normal accusative) · Želim dvije <b>kave</b> · Želim pet <b>kava</b> · Pet <b>kava</b> je na stolu. No 'want' in the last one, and it's still <em>kava</em>.<br><br>Now say the Unit {u7} phrases again and you'll hear the pattern: <b>jedna kava · dvije kave · pet kava</b>."},
     {h:"ima and nema",
      b:"<b>Ima</b> + noun = there is / there are.<br><b>Nema</b> + <b>genitive</b> = there isn't.<br>Ima li kruha? — Is there bread?<br>Nema mlijeka. — There's no milk.<br>Ima li ovdje zahod? — Is there a toilet here?"}
   ],
@@ -2858,6 +2860,67 @@ const EXTRA_STEPS = [
   p:[["Sve što znam.","Everything I know."],["Ono što kažeš je točno.","What you're saying is right."]],
   f:[SQb("Make: Thanks for everything.",["hvala","za","sve"],["Hvala za sve."],"Hvala za sve.")]}
 ];
+EXTRA_STEPS.unshift(
+ {u:8, g:{h:"The odd ones",
+   b:"Most words follow the endings table. These are the ones that catch people out.<br><br><b>1 · The disappearing a</b> (alive words):<table><tr><th>basic</th><th>accusative</th></tr><tr><td class='hr'>pas (dog)</td><td class='hr'>psa</td></tr><tr><td class='hr'>otac (father)</td><td class='hr'>oca</td></tr><tr><td class='hr'>mačak (tomcat)</td><td class='hr'>mačka</td></tr></table><b>2 · Men's words ending in -a → -u</b>, like feminine words: tata → <b>tatu</b> · Luka → <b>Luku</b> · kolega → <b>kolegu</b><br><br><b>3 · Masculine words ending in -o / -e:</b> alive → <b>-a</b>: Marko → <b>Marka</b> · Hrvoje → <b>Hrvoja</b>. A thing → no change: auto → <b>auto</b>. (kino, pivo, selo are neuter, so no change either.)<br><br><b>4 · Never change in the accusative:</b> feminine words ending in a consonant (noć, obitelj, stvar, ljubav) · girls' names not ending in -a (Kim) · every neuter word, even dijete, ime, vrijeme.<br><br><b>5 · Two special ones:</b> čovjek (person) → <b>čovjeka</b> (normal alive -a) · kći (daughter) → <b>kćer</b>: <em>Imam kćer.</em><br><br><b>In the plural:</b> ljudi (people) → <b>ljude</b>: <em>Vidim ljude.</em> · djeca (children) acts like a feminine -a word → <b>djecu</b>: <em>Volim djecu.</em>"},
+  q:[SQm("Accusative of 'mačak' (tomcat):",["mačaka","mačka","mačak"],1,"The a drops: mačka."),
+     SQm("'Imam ___.' (auto)",["auto","auta"],0,"A thing → no change."),
+     SQm("'Vidim ___.' (Hrvoje)",["Hrvoje","Hrvoja","Hrvoju"],1,"Alive masculine → -a."),
+     SQt("Say: I have a daughter.",["imam kćer"],"kći → kćer."),
+     SQm("'I love children' =",["Volim djeca.","Volim djecu.","Volim djece."],1,"djeca acts like a feminine -a word → djecu.")],
+  p:[["Imam kćer.","I have a daughter."],["Volim djecu.","I love children."],["Vidim ljude.","I see people."]],
+  f:[SQm("Accusative of 'noć':",["noću","noć","noći"],1,"Feminine consonant words don't change in the accusative."),
+     SQt("Say: I see the people.",["vidim ljude"],"ljudi → ljude.")]},
+ {u:10, g:{h:"The odd ones",
+   b:"<b>1 · k, g, h → c, z, s</b>, but only in feminine -a words:<table><tr><th>basic</th><th>locative</th></tr><tr><td class='hr'>ruka (hand)</td><td class='hr'>u ruci</td></tr><tr><td class='hr'>noga (leg)</td><td class='hr'>na nozi</td></tr><tr><td class='hr'>knjiga (book)</td><td class='hr'>u knjizi</td></tr></table>Masculine words keep their letter: u <b>parku</b> · o <b>Marku</b> · na <b>otoku</b>. Family words and names keep it too: o <b>baki</b> · o <b>Luki</b>.<br><br><b>2 · The disappearing a:</b> pas → o <b>psu</b> · otac → o <b>ocu</b> · posao → na <b>poslu</b><br><br><b>3 · Words that grow:</b> dijete → o <b>djetetu</b> · ime → o <b>imenu</b> · vrijeme → o <b>vremenu</b> (about the weather)<br><br><b>4 · Men's words ending in -a → -i:</b> tata → o <b>tati</b> · Luka → o <b>Luki</b><br><br><b>5 · Feminine consonant words → -i:</b> o <b>obitelji</b> · o <b>ljubavi</b> · kći → o <b>kćeri</b>. Girls' names not ending in -a don't change: o <b>Kim</b>.<br><br><b>6 · Countries in -ska / -čka / -ška → -oj:</b> u <b>Hrvatskoj</b> · u <b>Njemačkoj</b><br><br><b>7 · radio adds a j:</b> na <b>radiju</b><br><br><b>In the plural:</b> ljudi → o <b>ljudima</b> · djeca → o <b>djeci</b> (djeca acts like a feminine -a word)."},
+  q:[SQm("'in the hand' =",["u ruki","u ruci","u ruku"],1,"k → c before -i."),
+     SQm("'in the park' =",["u parci","u parku"],1,"Masculine keeps its k: -u."),
+     SQt("Say: We're talking about the dog.",["pričamo o psu"],"The a drops: psu."),
+     SQm("'about the child' =",["o dijetu","o djetetu"],1,"dijete grows: djetetu."),
+     SQm("'about dad' =",["o tatu","o tati"],1,"Men's -a words → -i.")],
+  p:[["o vremenu","about the weather"],["u parku","in the park"],["na radiju","on the radio"]],
+  f:[SQm("'on the leg' (noga) =",["na nogi","na nozi"],1,"g → z before -i."),
+     SQm("'about the weather' =",["o vrijemu","o vremenu"],1,"vrijeme grows: vremenu.")]},
+ {u:11, g:{h:"The odd ones",
+   b:"The dative has the <b>same odd ones as the locative</b>, because the endings are the same:<table><tr><th>basic</th><th>dative</th></tr><tr><td class='hr'>knjiga</td><td class='hr'>knjizi</td></tr><tr><td class='hr'>pas</td><td class='hr'>psu</td></tr><tr><td class='hr'>otac</td><td class='hr'>ocu</td></tr><tr><td class='hr'>dijete</td><td class='hr'>djetetu</td></tr><tr><td class='hr'>tata</td><td class='hr'>tati</td></tr><tr><td class='hr'>kći</td><td class='hr'>kćeri</td></tr></table>• k, g, h → c, z, s only in feminine -a words. Family words and names keep their letter: <b>baki</b> · <b>Luki</b><br>• Masculine names in -o / -e take the normal -u: <b>Marku</b> · <b>Hrvoju</b><br>• Girls' names not ending in -a don't change: <em>Pišem Kim.</em><br><br><b>In the plural:</b> ljudi → <b>ljudima</b> · djeca → <b>djeci</b>: <em>Kupujem poklon djeci.</em> — I'm buying the children a present."},
+  q:[SQm("'I'm writing to my father' =",["Pišem otacu.","Pišem ocu."],1,"The a drops: ocu."),
+     SQt("Say: I'm helping the child.",["pomažem djetetu"],"dijete grows: djetetu."),
+     SQm("'to the children' =",["djecama","djeci","djecu"],1,"djeca → djeci."),
+     SQm("'Pišem ___.' (kći)",["kći","kćeri","kćer"],1,"kći → kćeri."),
+     SQm("'Pomažem ___.' (Kim)",["Kim","Kimi"],0,"Girls' names not ending in -a never change.")],
+  p:[["Kupujem poklon djeci.","I\'m buying the children a present."],["Pomažem ocu.","I\'m helping my father."]],
+  f:[SQm("'to grandma' =",["baci","baki"],1,"Family words keep their k.")]},
+ {u:12, g:{h:"The odd ones",
+   b:"<b>1 · -em instead of -om</b> after soft consonants and c:<table><tr><th>basic</th><th>instrumental</th></tr><tr><td class='hr'>prijatelj</td><td class='hr'>s prijateljem</td></tr><tr><td class='hr'>muž (husband)</td><td class='hr'>s mužem</td></tr><tr><td class='hr'>otac</td><td class='hr'>s ocem</td></tr></table>(otac also drops its a.)<br><br><b>2 · The disappearing a:</b> pas → s <b>psom</b> · mačak → s <b>mačkom</b><br><br><b>3 · Words that grow:</b> dijete → s <b>djetetom</b> · ime → s <b>imenom</b> · vrijeme → s <b>vremenom</b> (over time)<br><br><b>4 · Feminine consonant words → -i</b> (or -ju): s <b>obitelji</b> · s <b>ljubavlju</b> · kći → s <b>kćeri</b><br><br><b>5 · Men's words ending in -a → -om</b>, like feminine words: s <b>tatom</b> · s <b>Lukom</b><br><br><b>6 · Girls' names not ending in -a don't change:</b> s <b>Kim</b><br><br><b>In the plural:</b> ljudi → s <b>ljudima</b> · djeca → s <b>djecom</b>: <em>Idem s djecom.</em>"},
+  q:[SQm("'with my father' =",["s ocom","s ocem","s otacem"],1,"The a drops, and after c it's -em."),
+     SQm("'with the child' =",["s dijetom","s djetetom"],1,"dijete grows: djetetom."),
+     SQt("Say: I'm going with the children.",["idem s djecom"],"djeca → djecom."),
+     SQm("'with my daughter' =",["s kćeri","s kćom"],0,"kći → kćeri."),
+     SQm("'with her husband' (muž) =",["s mužom","s mužem"],1,"ž is soft → -em.")],
+  p:[["Idem s djecom.","I\'m going with the children."],["s ljubavlju","with love"]],
+  f:[SQm("'with the tomcat' (mačak) =",["s mačakom","s mačkom"],1,"The a drops: mačkom.")]},
+ {u:13, g:{h:"The odd ones",
+   b:"When a word gets <b>-e</b>, the letter before it can change: <b>k → č · g → ž · c → č</b>.<table><tr><th>basic</th><th>calling</th></tr><tr><td class='hr'>otac</td><td class='hr'>Oče!</td></tr><tr><td class='hr'>Bog (God)</td><td class='hr'>Bože!</td></tr><tr><td class='hr'>čovjek (man)</td><td class='hr'>Čovječe!</td></tr><tr><td class='hr'>prijateljica</td><td class='hr'>Prijateljice!</td></tr><tr><td class='hr'>konobar</td><td class='hr'>Konobaru!</td></tr><tr><td class='hr'>gospodin (sir)</td><td class='hr'>Gospodine!</td></tr><tr><td class='hr'>gospođa (madam)</td><td class='hr'>Gospođo!</td></tr></table>• Words ending in <b>-ica</b> take <b>-e</b>, not -o: prijateljice · učiteljice<br>• Words ending in <b>-ar</b> take <b>-u</b>: konobaru<br><br><b>These don't change at all:</b> Marko · Luka · tata · mama (usually) · Kim · every neuter word (dijete!)<br><br><b>Bože moj!</b> (Oh my God!) and <b>Čovječe!</b> (Man!) are everyday phrases. You'll hear them constantly."},
+  q:[SQm("'Oh my God!' =",["Bog moj!","Bože moj!"],1,"Bog → Bože."),
+     SQm("Calling a waiter:",["Konobare!","Konobaru!"],1,"-ar → -u."),
+     SQm("Calling a friend (girl):",["Prijateljico!","Prijateljice!"],1,"-ica → -e."),
+     SQt("Say: Man! (čovjek)",["čovječe"],"k → č, then -e."),
+     SQm("Calling Marko:",["Marko!","Marka!","Marke!"],0,"Names in -o don't change.")],
+  p:[["Bože moj!","Oh my God!"],["Čovječe!","Man! / Dude!"],["Gospodine!","Sir!"]],
+  f:[SQm("'Gospođo!' is calling…",["a gentleman","a lady"],1,"gospođa → gospođo.")]},
+ {u:9, g:{h:"The odd ones",
+   b:"There are only a few groups. Learn new words in pairs, basic form + genitive (<em>pas, psa</em>). Dictionaries list them that way.<br><br><b>1 · Feminine words ending in a consonant → -i</b><table><tr><th>basic</th><th>genitive</th></tr><tr><td class='hr'>obitelj (family)</td><td class='hr'>obitelji</td></tr><tr><td class='hr'>noć (night)</td><td class='hr'>noći</td></tr><tr><td class='hr'>stvar (thing)</td><td class='hr'>stvari</td></tr><tr><td class='hr'>riječ (word)</td><td class='hr'>riječi</td></tr><tr><td class='hr'>ljubav (love)</td><td class='hr'>ljubavi</td></tr><tr><td class='hr'>sol (salt)</td><td class='hr'>soli</td></tr></table>Shortcut: <b>every word ending in -ost is feminine</b> and works the same way: radost (joy) → <b>radosti</b> · mogućnost (possibility) → <b>mogućnosti</b>.<br><br><b>2 · The disappearing a</b>, gone in every form except the basic one: pas → <b>psa</b> · otac → <b>oca</b> · posao → <b>posla</b><br><br><b>3 · Neuter words that grow a syllable:</b> dijete → <b>djeteta</b> · ime (name) → <b>imena</b> · vrijeme (time, weather) → <b>vremena</b><br><br><b>4 · Men's words ending in -a</b> go like feminine words: tata → <b>tate</b> · Luka → <b>Luke</b><br><br><b>5 · Girls' names not ending in -a never change:</b> Nema <b>Kim</b>.<br><br><b>In the plural</b> (after 5+): feminine consonant words keep <b>-i</b>: pet <b>stvari</b> · pet <b>noći</b>. When a word ends in two consonants, <b>an a slips in</b>: student → pet <b>studenata</b> · sestra → pet <b>sestara</b> · pismo → pet <b>pisama</b>. And the disappearing a comes back: pet <b>pasa</b>."},
+  q:[SQm("Genitive of 'obitelj':",["obitelje","obitelji","obitelja"],1,"Feminine ending in a consonant → -i."),
+     SQt("Say: coffee without salt",["kava bez soli"],"sol is feminine → soli."),
+     SQm("'radost' (joy) is…",["masculine","feminine"],1,"Every -ost word is feminine: radosti."),
+     SQm("Genitive of 'posao':",["posaoa","posla","posala"],1,"The a drops: posla."),
+     SQt("Genitive of 'ime' (name):",["imena"],"ime grows: imena."),
+     SQm("'five students' =",["pet studenta","pet studenata","pet studentova"],1,"An a slips in: studenata.")],
+  p:[["Nema vremena.","There's no time."],["Nema soli.","There's no salt."],["bez obitelji","without family"]],
+  f:[SQm("Genitive of 'vrijeme':",["vrijema","vremena","vrijemea"],1,"vrijeme grows: vremena."),
+     SQt("Say: without love",["bez ljubavi"],"ljubav → ljubavi."),
+     SQm("'twelve coffees' =",["dvanaest kave","dvanaest kava"],1,"11–19 always take the 5+ form.")]}
+);
 EXTRA_STEPS.forEach(x => {
   const u = UNITS.find(v => v.id === x.u); if(!u) return;
   u.grammar.push(x.g);
@@ -4762,7 +4825,7 @@ function paintNav(){
 function go(v, arg){
   CUR = v; paintNav(); paintSlow();
   window.scrollTo({top:0, behavior:"instant"});
-  ({home:vHome, lekcije:vSkills, skill:vSkill, unit:vUnit, step:vStep, unitall:vUnitFull, razgovor:vTalk, provjera:vQuiz,
+  ({home:vHome, lekcije:vSkills, skill:vSkill, unit:vUnit, step:vStep, unitall:vUnitFull, forms:vForms, fwrite:vWrite, razgovor:vTalk, provjera:vQuiz,
     citanje:vRead, rjecnik:vPacks, kartice:vCards, gramatika:vGrammar, napredak:vSave}[v] || vHome)(arg);
 }
 function saveBanner(){
@@ -6098,10 +6161,356 @@ async function sendMsg(){
    PROVJERA — quiz builder
    ============================================================ */
 let QSEL = {unit:"mix", type:"mixed"};
+
+/* ============================================================
+   PRACTISE THE FORMS — endless endings drill + AI-checked
+   "write a sentence". Only cases you've reached are offered.
+   Every form below is written out by hand (not generated).
+   ============================================================ */
+// b basic · en English · g gender · al alive · na no "the" in English
+// t tags: thing food drink place(u|na) city country person animal vehicle name family
+// A G L I V (D = L) singular · p: [basic, object, of/5+, L·D·I] plural, or null
+// n: extra notes by case
+const FW = [
+  {b:"stol",en:"table",g:"m",t:["thing"],A:"stol",G:"stola",L:"stolu",I:"stolom",p:["stolovi","stolove","stolova","stolovima"]},
+  {b:"grad",en:"city",g:"m",t:["place","u"],A:"grad",G:"grada",L:"gradu",I:"gradom",p:["gradovi","gradove","gradova","gradovima"]},
+  {b:"auto",en:"car",g:"m",t:["thing","vehicle"],A:"auto",G:"auta",L:"autu",I:"autom",p:["auti","aute","auta","autima"]},
+  {b:"autobus",en:"bus",g:"m",t:["thing","vehicle"],A:"autobus",G:"autobusa",L:"autobusu",I:"autobusom",p:["autobusi","autobuse","autobusa","autobusima"]},
+  {b:"vlak",en:"train",g:"m",t:["thing","vehicle"],A:"vlak",G:"vlaka",L:"vlaku",I:"vlakom",p:["vlakovi","vlakove","vlakova","vlakovima"]},
+  {b:"dućan",en:"shop",g:"m",t:["place","u"],A:"dućan",G:"dućana",L:"dućanu",I:"dućanom",p:["dućani","dućane","dućana","dućanima"]},
+  {b:"kruh",en:"bread",g:"m",na:1,t:["food"],A:"kruh",G:"kruha",L:"kruhu",I:"kruhom",p:null},
+  {b:"sok",en:"juice",g:"m",na:1,t:["drink"],A:"sok",G:"soka",L:"soku",I:"sokom",p:["sokovi","sokove","sokova","sokovima"]},
+  {b:"posao",en:"work",g:"m",na:1,t:["place","na","abstract"],A:"posao",G:"posla",L:"poslu",I:"poslom",p:["poslovi","poslove","poslova","poslovima"],
+    n:{G:"The a inside drops: posao → posla.",L:"The a inside drops: posao → poslu.",I:"The a inside drops: posao → poslom."}},
+  {b:"mobitel",en:"phone",g:"m",t:["thing"],A:"mobitel",G:"mobitela",L:"mobitelu",I:"mobitelom",p:["mobiteli","mobitele","mobitela","mobitelima"]},
+  {b:"Zagreb",en:"Zagreb",g:"m",na:1,t:["place","u","city","name"],A:"Zagreb",G:"Zagreba",L:"Zagrebu",I:"Zagrebom",p:null},
+  {b:"Split",en:"Split",g:"m",na:1,t:["place","u","city","name"],A:"Split",G:"Splita",L:"Splitu",I:"Splitom",p:null},
+  {b:"brat",en:"brother",g:"m",al:1,t:["person","family"],A:"brata",G:"brata",L:"bratu",I:"bratom",V:"brate",p:null},
+  {b:"prijatelj",en:"friend (m)",g:"m",al:1,t:["person"],A:"prijatelja",G:"prijatelja",L:"prijatelju",I:"prijateljem",V:"prijatelju",p:["prijatelji","prijatelje","prijatelja","prijateljima"]},
+  {b:"pas",en:"dog",g:"m",al:1,t:["animal"],A:"psa",G:"psa",L:"psu",I:"psom",V:"pse",p:["psi","pse","pasa","psima"],
+    n:{A:"The a inside drops: pas → psa (not pasa).",G:"The a inside drops: pas → psa.",L:"The a inside drops: pas → psu.",I:"The a inside drops: pas → psom.",V:"The a inside drops: pas → pse.",pG:"Here the a comes back: pet pasa."}},
+  {b:"otac",en:"father",g:"m",al:1,t:["person","family"],A:"oca",G:"oca",L:"ocu",I:"ocem",V:"oče",p:null,
+    n:{A:"The a inside drops: otac → oca.",G:"The a inside drops: otac → oca.",L:"The a inside drops: otac → ocu.",I:"The a drops, and after c it's -em: ocem.",V:"Vocative: oče! (c → č)"}},
+  {b:"Ivan",en:"Ivan",g:"m",al:1,na:1,t:["person","name"],A:"Ivana",G:"Ivana",L:"Ivanu",I:"Ivanom",V:"Ivane",p:null},
+  {b:"Marko",en:"Marko",g:"m",al:1,na:1,t:["person","name"],A:"Marka",G:"Marka",L:"Marku",I:"Markom",V:"Marko",p:null},
+  {b:"konobar",en:"waiter",g:"m",al:1,t:["person"],A:"konobara",G:"konobara",L:"konobaru",I:"konobarom",V:"konobaru",p:["konobari","konobare","konobara","konobarima"],
+    n:{V:"Words ending in -ar take -u when calling: konobaru!"}},
+  {b:"učitelj",en:"teacher (m)",g:"m",al:1,t:["person"],A:"učitelja",G:"učitelja",L:"učitelju",I:"učiteljem",V:"učitelju",p:["učitelji","učitelje","učitelja","učiteljima"]},
+  {b:"susjed",en:"neighbour (m)",g:"m",al:1,t:["person"],A:"susjeda",G:"susjeda",L:"susjedu",I:"susjedom",V:"susjede",p:["susjedi","susjede","susjeda","susjedima"]},
+  {b:"student",en:"student (m)",g:"m",al:1,t:["person"],A:"studenta",G:"studenta",L:"studentu",I:"studentom",V:"studente",p:["studenti","studente","studenata","studentima"],
+    n:{pG:"An a slips in: pet studenata."}},
+  {b:"tata",en:"dad",g:"m",al:1,na:1,t:["person","family"],A:"tatu",G:"tate",L:"tati",I:"tatom",V:"tata",p:null},
+  {b:"Luka",en:"Luka",g:"m",al:1,na:1,t:["person","name"],A:"Luku",G:"Luke",L:"Luki",I:"Lukom",V:"Luka",p:null,
+    n:{L:"Names keep their k: Luki (not Luci)."}},
+  {b:"kava",en:"coffee",g:"f",na:1,t:["drink"],A:"kavu",G:"kave",L:"kavi",I:"kavom",p:["kave","kave","kava","kavama"]},
+  {b:"voda",en:"water",g:"f",na:1,t:["drink"],A:"vodu",G:"vode",L:"vodi",I:"vodom",p:null},
+  {b:"kuća",en:"house",g:"f",t:["place","u"],A:"kuću",G:"kuće",L:"kući",I:"kućom",p:["kuće","kuće","kuća","kućama"]},
+  {b:"škola",en:"school",g:"f",t:["place","u"],A:"školu",G:"škole",L:"školi",I:"školom",p:["škole","škole","škola","školama"]},
+  {b:"plaža",en:"beach",g:"f",t:["place","na"],A:"plažu",G:"plaže",L:"plaži",I:"plažom",p:["plaže","plaže","plaža","plažama"]},
+  {b:"knjiga",en:"book",g:"f",t:["thing"],A:"knjigu",G:"knjige",L:"knjizi",I:"knjigom",p:["knjige","knjige","knjiga","knjigama"],
+    n:{L:"g turns into z before -i: knjiga → knjizi."}},
+  {b:"banka",en:"bank",g:"f",t:["place","u"],A:"banku",G:"banke",L:"banci",I:"bankom",p:["banke","banke","banaka","bankama"],
+    n:{L:"k turns into c before -i: banka → banci.",pG:"An a slips in: pet banaka."}},
+  {b:"Amerika",en:"America",g:"f",na:1,t:["place","u","country","name"],A:"Ameriku",G:"Amerike",L:"Americi",I:"Amerikom",p:null,
+    n:{L:"k turns into c before -i: Amerika → Americi."}},
+  {b:"Hrvatska",en:"Croatia",g:"f",na:1,t:["place","u","country","name"],A:"Hrvatsku",G:"Hrvatske",L:"Hrvatskoj",I:"Hrvatskom",p:null,
+    n:{L:"Countries ending in -ska are really describing words, so they take -oj: u Hrvatskoj."}},
+  {b:"Ana",en:"Ana",g:"f",al:1,na:1,t:["person","name"],A:"Anu",G:"Ane",L:"Ani",I:"Anom",V:"Ano",p:null},
+  {b:"Maja",en:"Maja",g:"f",al:1,na:1,t:["person","name"],A:"Maju",G:"Maje",L:"Maji",I:"Majom",V:"Majo",p:null},
+  {b:"mama",en:"mom",g:"f",al:1,na:1,t:["person","family"],A:"mamu",G:"mame",L:"mami",I:"mamom",V:"mama",p:null,
+    n:{V:"mama usually stays mama when you call her."}},
+  {b:"sestra",en:"sister",g:"f",al:1,t:["person","family"],A:"sestru",G:"sestre",L:"sestri",I:"sestrom",V:"sestro",p:["sestre","sestre","sestara","sestrama"],
+    n:{pG:"An a slips in: pet sestara."}},
+  {b:"prijateljica",en:"friend (f)",g:"f",al:1,t:["person"],A:"prijateljicu",G:"prijateljice",L:"prijateljici",I:"prijateljicom",V:"prijateljice",p:["prijateljice","prijateljice","prijateljica","prijateljicama"],
+    n:{V:"Words ending in -ica take -e when calling: prijateljice!"}},
+  {b:"baka",en:"grandma",g:"f",al:1,na:1,t:["person","family"],A:"baku",G:"bake",L:"baki",I:"bakom",V:"bako",p:null,
+    n:{L:"Family words keep their k: baki (not baci)."}},
+  {b:"obitelj",en:"family",g:"f",t:["person"],A:"obitelj",G:"obitelji",L:"obitelji",I:"obitelji",p:null,
+    n:{I:"Feminine words ending in a consonant take -i: s obitelji."}},
+  {b:"Kim",en:"Kim",g:"f",al:1,na:1,t:["person","name"],A:"Kim",G:"Kim",L:"Kim",I:"Kim",V:"Kim",p:null,
+    n:{A:"Girls' names that don't end in -a never change.",G:"Girls' names that don't end in -a never change.",L:"Girls' names that don't end in -a never change.",I:"Girls' names that don't end in -a never change.",V:"Girls' names that don't end in -a never change."}},
+  {b:"pivo",en:"beer",g:"n",na:1,t:["drink"],A:"pivo",G:"piva",L:"pivu",I:"pivom",p:["piva","piva","piva","pivima"]},
+  {b:"more",en:"sea",g:"n",t:["place","na"],A:"more",G:"mora",L:"moru",I:"morem",p:null},
+  {b:"selo",en:"village",g:"n",t:["place","u"],A:"selo",G:"sela",L:"selu",I:"selom",p:["sela","sela","sela","selima"]},
+  {b:"kino",en:"cinema",g:"n",t:["place","u"],A:"kino",G:"kina",L:"kinu",I:"kinom",p:["kina","kina","kina","kinima"]},
+  {b:"mlijeko",en:"milk",g:"n",na:1,t:["drink"],A:"mlijeko",G:"mlijeka",L:"mlijeku",I:"mlijekom",p:null},
+  {b:"pismo",en:"letter",g:"n",t:["thing"],A:"pismo",G:"pisma",L:"pismu",I:"pismom",p:["pisma","pisma","pisama","pismima"],
+    n:{pG:"An a slips in: pet pisama."}},
+  {b:"dijete",en:"child",g:"n",al:1,t:["person"],A:"dijete",G:"djeteta",L:"djetetu",I:"djetetom",V:"dijete",p:null,
+    n:{G:"dijete grows a syllable: djeteta.",L:"dijete grows a syllable: djetetu.",I:"dijete grows a syllable: djetetom.",A:"Neuter never changes — not even dijete."}}
+];
+const FW_HAS = (w, t) => w.t.includes(t);
+const FW_THE = w => w.na ? w.en : FW_HAS(w, "family") ? "my " + w.en : "the " + w.en;
+const FW_EP = {table:"tables",city:"cities",car:"cars",bus:"buses",train:"trains",shop:"shops",juice:"juices",work:"jobs",phone:"phones",
+  "friend (m)":"friends","friend (f)":"friends (girls)",dog:"dogs",father:"fathers",waiter:"waiters","teacher (m)":"teachers","neighbour (m)":"neighbours",
+  "student (m)":"students",coffee:"coffees",house:"houses",school:"schools",beach:"beaches",book:"books",bank:"banks",sister:"sisters",
+  beer:"beers",sea:"seas",village:"villages",cinema:"cinemas",letter:"letters"};
+const FW_PL = w => FW_EP[w.en] || w.en + "s";
+const FW_NAME = w => w.en.replace(/ \((m|f)\)$/, "");
+const FW_SA = f => /^(s|š|z|ž)/i.test(f) || /^mn/i.test(f) ? "sa" : "s";
+
+// Sentence frames. c = case key (A G L D I V, or pN pA pG pL for plural).
+// ok(w) = which words fit; q(form, w) = Croatian with the gap filled; en(w) = English.
+const FF = [
+  {c:"A", ok:w=>!FW_HAS(w,"abstract"), q:"Vidim ___.", en:w=>`I see ${FW_THE(w)}.`},
+  {c:"A", ok:w=>!FW_HAS(w,"place")||FW_HAS(w,"city"), q:"Volim ___.", en:w=>`I love ${FW_THE(w)}.`},
+  {c:"A", ok:w=>FW_HAS(w,"thing")||FW_HAS(w,"food")||FW_HAS(w,"animal")||FW_HAS(w,"abstract")||(FW_HAS(w,"family")&&w.b!=="tata"&&w.b!=="mama"), q:"Imam ___.", en:w=>`I have ${w.b==="posao"?"a job":((w.na&&!FW_HAS(w,"family"))?"":"a ")+FW_NAME(w)}.`},
+  {c:"A", ok:w=>FW_HAS(w,"drink"), q:"Pijem ___.", en:w=>`I'm drinking ${w.en}.`},
+  {c:"A", ok:w=>FW_HAS(w,"person")&&w.b!=="obitelj"||FW_HAS(w,"vehicle"), q:"Čekam ___.", en:w=>`I'm waiting for ${FW_THE(w)}.`},
+  {c:"A", ok:w=>FW_HAS(w,"place")&&FW_HAS(w,"u")&&w.b!=="kuća", q:"Idem u ___.", pre:"u", en:w=>`I'm going to ${FW_THE(w)}.`},
+  {c:"A", ok:w=>FW_HAS(w,"place")&&FW_HAS(w,"na"), q:"Idem na ___.", pre:"na", en:w=>`I'm going to ${FW_THE(w)}.`},
+  {c:"G", ok:w=>!FW_HAS(w,"place")||w.b==="banka", q:"Nema ___.", en:w=>`There's no ${w.en}.`},
+  {c:"G", ok:w=>FW_HAS(w,"drink")||FW_HAS(w,"food")||(FW_HAS(w,"person")&&w.b!=="dijete")||w.b==="mobitel", q:"Ne mogu bez ___.", pre:"bez", en:w=>`I can't do without ${FW_THE(w)}.`},
+  {c:"G", ok:w=>FW_HAS(w,"place")&&FW_HAS(w,"u")&&w.b!=="kuća", q:"Dolazim iz ___.", pre:"iz", en:w=>`I'm coming from ${FW_THE(w)}.`},
+  {c:"G", ok:w=>FW_HAS(w,"place")&&FW_HAS(w,"na"), q:"Vraćam se s ___.", pre:"s", en:w=>`I'm coming back from ${FW_THE(w)}.`},
+  {c:"G", ok:w=>FW_HAS(w,"person")&&w.b!=="obitelj", q:"Ja sam kod ___.", pre:"kod", en:w=>{const t=FW_THE(w), m=t.match(/ \((m|f)\)$/); return `I'm at ${t.replace(/ \((m|f)\)$/,"")}'s place${m?m[0]:""}.`;}},
+  {c:"G", ok:w=>FW_HAS(w,"place")&&!FW_HAS(w,"country"), q:"Živim blizu ___.", pre:"blizu", en:w=>`I live near ${FW_THE(w)}.`},
+  {c:"L", ok:w=>FW_HAS(w,"place")&&FW_HAS(w,"u"), q:"Ja sam u ___.", pre:"u", en:w=>`I'm in ${FW_THE(w)}.`},
+  {c:"L", ok:w=>FW_HAS(w,"place")&&FW_HAS(w,"na"), q:"Ja sam na ___.", pre:"na", en:w=>`I'm at ${FW_THE(w)}.`},
+  {c:"L", ok:w=>FW_HAS(w,"city")||FW_HAS(w,"country")||w.b==="selo", q:"Živim u ___.", pre:"u", en:w=>`I live in ${FW_THE(w)}.`},
+  {c:"L", ok:w=>!FW_HAS(w,"place")||FW_HAS(w,"name"), q:"Pričamo o ___.", pre:"o", en:w=>`We're talking about ${FW_THE(w)}.`},
+  {c:"D", ok:w=>FW_HAS(w,"person")&&w.b!=="obitelj", q:"Pišem ___.", en:w=>`I'm writing to ${FW_THE(w)}.`},
+  {c:"D", ok:w=>FW_HAS(w,"person")&&w.b!=="obitelj", q:"Pomažem ___.", en:w=>`I'm helping ${FW_THE(w)}.`},
+  {c:"D", ok:w=>FW_HAS(w,"person"), q:"Kupujem poklon ___.", en:w=>`I'm buying a present for ${FW_THE(w)}.`},
+  {c:"D", ok:w=>FW_HAS(w,"person")&&w.b!=="obitelj", q:"Dajem knjigu ___.", en:w=>`I'm giving the book to ${FW_THE(w)}.`},
+  {c:"I", ok:w=>FW_HAS(w,"person")||FW_HAS(w,"animal"), q:"Idem ___ ___.", sprep:1, en:w=>`I'm going with ${FW_THE(w)}.`},
+  {c:"I", ok:w=>FW_HAS(w,"person")&&w.b!=="obitelj", q:"Pričam ___ ___.", sprep:1, en:w=>`I'm talking with ${FW_THE(w)}.`},
+  {c:"I", ok:w=>w.b==="mlijeko", q:"Kava ___ ___.", sprep:1, en:w=>`Coffee with ${w.en}.`},
+  {c:"I", ok:w=>FW_HAS(w,"vehicle"), q:"Putujem ___.", en:w=>`I'm travelling by ${w.en}.`},
+  {c:"V", ok:w=>!!w.V&&w.b!=="pas", q:"Bok, ___!", en:w=>`Hi, ${FW_NAME(w)}!`},
+  {c:"V", ok:w=>!!w.V&&w.b!=="pas", q:"Hvala, ___!", en:w=>`Thanks, ${FW_NAME(w)}!`},
+  // plural
+  {c:"pN", ok:w=>!!w.p&&!FW_HAS(w,"abstract"), q:"Ovdje su ___.", en:w=>`The ${FW_PL(w)} are here.`},
+  {c:"pA", ok:w=>!!w.p&&!FW_HAS(w,"abstract"), q:"Vidim ___.", en:w=>`I see the ${FW_PL(w)}.`},
+  {c:"pG", ok:w=>!!w.p&&!FW_HAS(w,"place"), q:"Imam pet ___.", en:w=>`I have five ${FW_PL(w)}.`},
+  {c:"pG", ok:w=>!!w.p&&!FW_HAS(w,"place"), q:"Nema ___.", en:w=>`There are no ${FW_PL(w)}.`},
+  {c:"pL", ok:w=>!!w.p&&!FW_HAS(w,"abstract"), q:"Pričamo o ___.", pre:"o", en:w=>`We're talking about the ${FW_PL(w)}.`},
+  {c:"pL", ok:w=>!!w.p&&FW_HAS(w,"person"), q:"Pišem ___.", en:w=>`I'm writing to the ${FW_PL(w)}.`},
+  {c:"pL", ok:w=>!!w.p&&(FW_HAS(w,"person")||FW_HAS(w,"animal")), q:"Idem ___ ___.", sprep:1, en:w=>`I'm going with the ${FW_PL(w)}.`}
+];
+const FCASE = {   // which unit opens each one
+  A:{unit:8,  name:"Accusative", hr:"Akuzativ", role:"the thing or person being seen, had, wanted or loved"},
+  G:{unit:9,  name:"Genitive",   hr:"Genitiv",  role:"after nema, bez, iz, od, kod, blizu, or a number 5+"},
+  L:{unit:10, name:"Locative",   hr:"Lokativ",  role:"where something is (after u / na), or what you talk about (after o)"},
+  D:{unit:11, name:"Dative",     hr:"Dativ",    role:"the person you give, write, say or help something to"},
+  I:{unit:12, name:"Instrumental",hr:"Instrumental", role:"who you're with (after s / sa), or how you travel"},
+  V:{unit:13, name:"Vocative",   hr:"Vokativ",  role:"calling or greeting someone directly"}
+};
+function formForm(w, c){
+  if(c === "D") return w.L;
+  if(c[0] === "p") return w.p ? w.p[{pN:0, pA:1, pG:2, pL:3}[c]] : null;
+  return w[c];
+}
+const caseOpen = k => { const u = UNITS.find(x => x.id === FCASE[k].unit); return !!u && unitState(u) !== "locked"; };
+const pluralOpen = () => { const u = UNITS.find(x => x.id === 13); return !!u && unitState(u) !== "locked"; };
+
+// Plain-English reason, built from the kind of word, plus any note for that exact word.
+function formReason(w, c){
+  const f = formForm(w, c) || "", b = w.b, endA = /a$/.test(b), mA = w.g === "m" && w.al && endA;
+  const kind = w.g === "f" ? (endA ? "fA" : "fC") : w.g === "n" ? "n" : (mA ? "mA" : w.al ? "mAl" : "mT");
+  let r = "";
+  if(c === "A") r = {mT:"A masculine thing → no change.", mAl:/[oe]$/.test(b) ? "Alive and masculine: -o / -e → -a." : "Alive and masculine → add -a.",
+    mA:"A man whose word ends in -a → -u (like feminine words).", fA:"Feminine -a → -u.", fC:"Feminine, not ending in -a → no change.", n:"Neuter never changes."}[kind];
+  if(c === "G") r = {mT:"Masculine → add -a.", mAl:"Masculine → add -a.", mA:"Ends in -a → -e (like feminine words).", fA:"Feminine -a → -e.", fC:"Feminine ending in a consonant → -i.", n:"Neuter -o / -e → -a."}[kind];
+  if(c === "L" || c === "D") r = (kind === "mT" || kind === "mAl" || kind === "n") ? "Masculine and neuter → -u." : kind === "fC" ? "Feminine ending in a consonant → -i." : "-a → -i.";
+  if(c === "I") r = kind === "fC" ? "Feminine ending in a consonant → -i." : (kind === "fA" || kind === "mA") ? "-a → -om." :
+    /em$/.test(f) ? (w.g === "n" ? "Neuter ending in -e → -em." : "After a soft consonant (č ć š ž đ j lj nj, c) it's -em.") : "Masculine and neuter → -om.";
+  if(c === "V") r = f === b ? "This one doesn't change when you call someone." : (kind === "fA") ? "Feminine -a → -o." : /u$/.test(f) ? "After a soft consonant → -u." : "Masculine → -e.";
+  if(c === "pN") r = w.g === "m" ? "Masculine plural → add -i (short words: -ovi)." : w.g === "f" ? (endA ? "Feminine -a → -e." : "Feminine ending in a consonant → -i.") : "Neuter plural → -a.";
+  if(c === "pA") r = w.g === "n" ? "Neuter plural object → -a." : w.g === "f" && !endA ? "→ -i." : "Masculine and feminine plural object → -e.";
+  if(c === "pG") r = w.g === "m" ? (/ova$/.test(f) ? "Short masculine words → -ova." : "Masculine → -a.") : w.g === "f" ? (endA ? "Feminine → -a (looks like the basic form)." : "→ -i.") : "Neuter → -a.";
+  if(c === "pL") r = w.g === "f" && endA ? "Feminine plural L · D · I → -ama." : "Plural L · D · I → -ima.";
+  const note = (w.n || {})[c === "D" ? "L" : c];
+  if(note && /never change|doesn't change|usually stays|take -|it's -em/.test(note)) return note;
+  return (note ? note + " " : "") + r;
+}
+function buildFQ(cases, plural){
+  const pool = [];
+  FF.forEach(fr => {
+    const isPl = fr.c[0] === "p";
+    if(isPl ? !plural : !cases.includes(fr.c)) return;
+    if(isPl && fr.c === "pG" && !cases.includes("G")) return;
+    FW.forEach(w => { if(fr.ok(w) && formForm(w, fr.c)) pool.push([fr, w]); });
+  });
+  if(!pool.length) return null;
+  const [fr, w] = pool[Math.floor(Math.random() * pool.length)];
+  const form = formForm(w, fr.c);
+  const sp = fr.sprep ? FW_SA(form) : "";
+  const shown = fr.sprep ? fr.q.replace("___ ___", sp + " ___") : fr.q;
+  const accept = [form];
+  if(fr.pre) accept.push(fr.pre + " " + form);
+  if(fr.sprep) accept.push(sp + " " + form);
+  return { fr, w, form, shown, full: shown.replace("___", form), accept, c: fr.c };
+}
+
+/* ---------- 1. endings drill ---------- */
+let FD = null;
+function vForms(){
+  const open = Object.keys(FCASE).filter(caseOpen);
+  FD = FD || { pick: "mix", plural: false, right: 0, done: 0, streak: 0 };
+  if(FD.pick !== "mix" && !open.includes(FD.pick)) FD.pick = "mix";
+  const plOk = pluralOpen();
+  if(!plOk) FD.plural = false;
+  shell("practise · vježbaj", "Practise the <i>forms</i>",
+    "Fill in the right ending. It never runs out — stop whenever you like. Only the cases you've reached in Grammar are here.",
+    `<div class="card">
+      <div class="kicker">case · padež</div>
+      <div class="chips">
+        <button class="chip" aria-pressed="${FD.pick === "mix"}" onclick="FD.pick='mix';vForms()">${dual("Mix","Sve")}</button>
+        ${Object.keys(FCASE).map(k => open.includes(k)
+          ? `<button class="chip" aria-pressed="${FD.pick === k}" onclick="FD.pick='${k}';vForms()">${dual(FCASE[k].name, FCASE[k].hr)}</button>`
+          : `<button class="chip" disabled title="Opens in Unit ${unitNo(FCASE[k].unit)}">&#128274; ${FCASE[k].name}</button>`).join("")}
+      </div>
+      <div class="chips" style="margin-top:10px">
+        <button class="chip" aria-pressed="${!FD.plural}" onclick="FD.plural=false;vForms()">${dual("One (singular)","Jednina")}</button>
+        ${plOk ? `<button class="chip" aria-pressed="${FD.plural}" onclick="FD.plural=true;vForms()">${dual("+ More than one (plural)","+ Množina")}</button>`
+               : `<button class="chip" disabled>&#128274; Plural — opens in Unit ${unitNo(13)}</button>`}
+      </div>
+      ${open.length ? "" : `<p class="note" style="margin-top:12px">Reach the accusative unit (Unit ${unitNo(8)}) in Grammar and this opens up.</p>`}
+    </div>
+    <div class="card" style="margin-top:14px" id="fd-card"></div>`);
+  if(open.length) nextForm();
+}
+function nextForm(){
+  const open = Object.keys(FCASE).filter(caseOpen);
+  const cases = FD.pick === "mix" ? open : [FD.pick];
+  const q = buildFQ(cases, FD.plural);
+  const card = $("#fd-card"); if(!card) return;
+  if(!q){ card.innerHTML = `<p>Nothing to practise in this selection yet.</p>`; return; }
+  FD.q = q;
+  const label = q.c[0] === "p" ? "plural" : FCASE[q.c].name.toLowerCase();
+  card.innerHTML = `<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--stone-dim);margin-bottom:10px">
+      <span>${FD.right} / ${FD.done} right${FD.streak > 2 ? ` · 🔥 ${FD.streak} in a row` : ""}</span><span>${esc(label)}</span></div>
+    <div class="q" style="font-size:24px">${esc(q.shown).replace("___", `<span class="fgap">___</span>`)}</div>
+    <div style="color:var(--stone-dim);font-size:14px;margin:-4px 0 10px">${esc(q.fr.en(q.w))}</div>
+    <div style="font-size:14px;margin-bottom:10px">Word: <b class="hr" style="font-family:var(--display);font-size:18px">${esc(q.w.b)}</b>
+      <span style="color:var(--stone-dim)">· ${{m:"masculine",f:"feminine",n:"neuter"}[q.w.g]}${q.w.al ? " · alive" : ""}</span></div>
+    <input class="answer" id="fd-a" placeholder="Type the missing word…" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div style="margin-top:12px;display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn" onclick="checkForm()">${dual("Check","Provjeri")}</button>
+      <button class="btn ghost sm" onclick="formHint()">${dual("Hint","Pomoć")}</button>
+    </div>
+    <div id="fd-v"></div>`;
+  const a = $("#fd-a"); a.focus(); a.addEventListener("keydown", e => { if(e.key === "Enter") checkForm(); });
+}
+function formHint(){
+  const q = FD.q, v = $("#fd-v"); if(!q || !v) return;
+  const c = q.c[0] === "p" ? null : FCASE[q.c];
+  v.innerHTML = `<div class="verdict" style="border:1px dashed var(--line)">${c ? `<b>${c.name}:</b> ${esc(c.role)}.<br>` : ""}${esc(formReason(q.w, q.c).replace(/→.*$/, "→ …"))}</div>`;
+}
+function checkForm(){
+  const q = FD.q, inp = $("#fd-a"); if(!q || !inp || inp.disabled) return;
+  if(!norm(inp.value)) return;
+  const r = checkTyped(inp.value, q.accept);
+  inp.disabled = true; inp.style.borderWidth = "2px"; inp.style.borderColor = r.ok ? "var(--olive)" : "var(--madder)";
+  FD.done++; if(r.ok){ FD.right++; FD.streak++; addXP(1); } else FD.streak = 0;
+  $("#fd-v").innerHTML = `<div class="verdict ${r.ok ? "ok" : "no"}">
+      <b style="color:${r.ok ? "var(--olive)" : "var(--madder)"}">${r.ok ? "Correct ✓" : "Not quite ✗"}</b>
+      <span style="font-family:var(--display);font-size:18px;margin-left:6px">${esc(q.full)}</span> ${spk(q.full)}<br>
+      <span style="font-size:14px">${esc(formReason(q.w, q.c))}</span>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:9px">
+      <button class="btn" id="fd-next" onclick="nextForm()">${dual("Next","Dalje")} →</button>
+      <button class="btn ghost sm" onclick="go('provjera')">${dual("Stop","Kraj")}</button>
+    </div>`;
+  const nb = $("#fd-next"); if(nb) nb.focus();
+}
+
+/* ---------- 2. write a sentence (AI-checked) ---------- */
+let FWR = null;
+function vWrite(){
+  const open = Object.keys(FCASE).filter(caseOpen);
+  FWR = FWR || { pick: "mix", task: null, own: "" };
+  if(FWR.pick !== "mix" && !open.includes(FWR.pick)) FWR.pick = "mix";
+  shell("practise · vježbaj", "Write a <i>sentence</i>",
+    "You get a word and a job for it. Write any sentence you like — the AI checks it and explains in plain words. Or pick your own word.",
+    `<div class="card">
+      <div class="kicker">case · padež</div>
+      <div class="chips">
+        <button class="chip" aria-pressed="${FWR.pick === "mix"}" onclick="FWR.pick='mix';newWriteTask()">${dual("Surprise me","Iznenadi me")}</button>
+        ${Object.keys(FCASE).map(k => open.includes(k)
+          ? `<button class="chip" aria-pressed="${FWR.pick === k}" onclick="FWR.pick='${k}';newWriteTask()">${dual(FCASE[k].name, FCASE[k].hr)}</button>`
+          : `<button class="chip" disabled>&#128274; ${FCASE[k].name}</button>`).join("")}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <input class="field" id="fw-own" placeholder="…or type your own word (e.g. prijatelj)" value="${esc(FWR.own)}" autocomplete="off" spellcheck="false" style="flex:1;min-width:180px">
+        <button class="btn ghost sm" onclick="FWR.own=$('#fw-own').value.trim();newWriteTask()">${dual("Use my word","Moja riječ")}</button>
+      </div>
+      ${open.length ? "" : `<p class="note" style="margin-top:12px">Reach the accusative unit (Unit ${unitNo(8)}) in Grammar and this opens up.</p>`}
+    </div>
+    <div class="card" style="margin-top:14px" id="fw-card"></div>`);
+  if(open.length){ if(!FWR.task) newWriteTask(); else paintWriteTask(); }
+}
+function newWriteTask(){
+  const open = Object.keys(FCASE).filter(caseOpen);
+  if(!open.length) return;
+  const k = FWR.pick === "mix" ? open[Math.floor(Math.random() * open.length)] : FWR.pick;
+  let word, en = "";
+  if(FWR.own){ word = FWR.own; }
+  else {
+    const fits = FW.filter(w => FF.some(fr => fr.c === k && fr.ok(w)));
+    const w = fits[Math.floor(Math.random() * fits.length)]; word = w.b; en = w.en;
+  }
+  FWR.task = { k, word, en, done: null };
+  if(CUR === "fwrite" && $("#fw-card")) paintWriteTask(); else vWrite();
+}
+function paintWriteTask(){
+  const t = FWR.task, card = $("#fw-card"); if(!t || !card) return;
+  const c = FCASE[t.k];
+  card.innerHTML = `<div class="kicker">${esc(c.name)} · ${esc(c.hr)}</div>
+    <p style="font-size:16px;margin:4px 0 12px">Write a sentence with <b class="hr" style="font-family:var(--display);font-size:20px">${esc(t.word)}</b>${t.en ? ` <span style="color:var(--stone-dim)">(${esc(t.en)})</span>` : ""} as <b>${esc(c.role)}</b>.</p>
+    <input class="answer" id="fw-a" placeholder="Napiši rečenicu…" autocomplete="off" spellcheck="false">
+    <div style="margin-top:12px;display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn" id="fw-check" onclick="checkWrite()">${dual("Check my sentence","Provjeri")}</button>
+      <button class="btn ghost sm" onclick="FWR.own='';newWriteTask()">${dual("New word","Nova riječ")}</button>
+    </div>
+    <div id="fw-v"></div>`;
+  const a = $("#fw-a"); a.focus(); a.addEventListener("keydown", e => { if(e.key === "Enter") checkWrite(); });
+}
+async function checkWrite(){
+  const t = FWR.task, inp = $("#fw-a"), out = $("#fw-v"); if(!t || !inp || !out) return;
+  const s = inp.value.trim();
+  if(tokens(s).length < 2){ out.innerHTML = `<div class="verdict no">Write a full sentence — at least two words.</div>`; return; }
+  out.innerHTML = `<div style="margin-top:12px"><span class="spin"></span> Checking…</div>`;
+  const c = FCASE[t.k];
+  try{
+    const txt = await ask(STYLE_RULES + "You are a friendly Croatian teacher checking one learner sentence. Be encouraging and brief.",
+      [{role:"user", content:`Task: write a sentence using "${t.word}" in the ${c.name} case (${c.role}).
+The learner wrote: "${s}"
+Check two things: (1) is the sentence correct standard Croatian, and (2) is "${t.word}" actually used in the ${c.name} with the right ending? Ignore missing diacritics.
+${courseContext()}
+Return ONLY JSON, no markdown: {"ok":true or false,"caseOk":true or false,"fixed":"<corrected sentence, or identical if fine>","en":"<English translation>","form":"<the form of ${t.word} that belongs in this sentence>","note":"<1–2 short sentences in plain English: what's right or what changed and why>"}`}], 700);
+    const j = parseJSON(txt);
+    const good = !!j.ok && j.caseOk !== false;
+    if(good) addXP(4);
+    out.innerHTML = `<div class="verdict ${good ? "ok" : "no"}">
+        <b style="color:${good ? "var(--olive)" : "var(--madder)"}">${good ? "Nice — that's right ✓" : "Almost ✗"}</b>
+        ${!good && j.fixed ? `<div style="margin-top:6px"><span style="color:var(--stone-dim)">Better:</span> <span style="font-family:var(--display);font-size:18px">${esc(j.fixed)}</span> ${spk(j.fixed)}</div>` : ""}
+        ${j.en ? `<div style="font-size:13px;color:var(--stone-dim);font-style:italic;margin-top:3px">${esc(j.en)}</div>` : ""}
+        ${j.form ? `<div style="font-size:14px;margin-top:5px">${esc(c.name)} of <b>${esc(t.word)}</b>: <b class="hr" style="font-family:var(--display);font-size:16px">${esc(j.form)}</b></div>` : ""}
+        ${j.note ? `<div style="font-size:14px;margin-top:4px">${esc(j.note)}</div>` : ""}
+      </div>
+      <div style="margin-top:12px;display:flex;gap:9px;flex-wrap:wrap">
+        <button class="btn" onclick="FWR.own='';newWriteTask()">${dual("Next word","Sljedeća")} →</button>
+        <button class="btn ghost sm" onclick="paintWriteTask()">${dual("Try again","Opet")}</button>
+      </div>`;
+  }catch(e){
+    out.innerHTML = apiError(e) + `<div style="margin-top:8px"><button class="btn ghost sm" onclick="checkWrite()">↻ ${dual("Retry","Opet")}</button></div>`;
+  }
+}
+
 function vQuiz(){
   shell("provjera · test yourself", "Koliko <i>znaš</i>?",
     "Two ways to test: a mixed round pulled straight from the course, or a fresh set written for you on the spot. The generated ones never repeat, so you can't pass by remembering the answer order.",
-    `<div class="card">
+    `<div class="card practise">
+      <div class="kicker">practise the forms · vježbaj padeže</div>
+      <p style="font-size:14.5px;color:var(--stone-dim);margin:2px 0 12px">Reps for the endings — accusative, genitive and the rest, only the ones you've reached.</p>
+      <div style="display:flex;gap:9px;flex-wrap:wrap">
+        <button class="btn" onclick="go('forms')">✍️ ${dual("Endings drill — never runs out","Vježbaj nastavke")}</button>
+        <button class="btn ghost" onclick="go('fwrite')">💬 ${dual("Write a sentence (AI checks it)","Napiši rečenicu")}</button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
       <div class="kicker">material · gradivo</div>
       <div class="chips" style="margin-bottom:14px;max-height:120px;overflow-y:auto">
         <button class="chip" aria-pressed="${QSEL.unit==='mix'}" onclick="QSEL.unit='mix';vQuiz()">${dual('All units','Sve cjeline')}</button>
