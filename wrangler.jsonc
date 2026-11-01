@@ -1,0 +1,18 @@
+{
+  "name": "naucihrvatski-new",
+  "compatibility_date": "2026-08-31",
+  "main": "server.js",
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS"
+  },
+  // Storage for notification settings (the "nauci-push" KV namespace)
+  "kv_namespaces": [
+    { "binding": "PUSH", "id": "5a7598bfb8f74877b367e91d6616a0e8" }
+  ],
+  // Runs server.js every hour, on the hour, to send whatever reminders are due
+  "triggers": {
+    "crons": ["0 * * * *"]
+  }
+}
