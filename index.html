@@ -538,7 +538,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.17";
+const VERSION = "10.18";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -4269,7 +4269,7 @@ async function save(){
     PUSH_T = setTimeout(() => CLOUD.write(), 1500);
   }
 }
-function addXP(n){ S.xp = (S.xp||0) + n; save(); }
+function addXP(n){ S.xp = (S.xp||0) + n; const a = actRec(); a.xp = (a.xp || 0) + n; save(); }
 
 function paintStats(){
   const total = UNITS.length*2;
@@ -5105,7 +5105,13 @@ function unlockDaily(kind){
     return;
   }
   const r = todayRec();
+  const wasDone = dayDone(todayKey());
   r[kind] = true; r[kind + "S"] = s;
+  if(!wasDone && dayDone(todayKey())){
+    const n = dailyStreak();
+    if(STREAK_MILESTONES.includes(n)) pushEvent(`🔥 ${n}-day streak!`, `${n} days in a row of Croatian. Svaka čast!`);
+    setTimeout(() => pushSync(true), 2000);                  // stop today's streak reminders
+  }
   // learning it once = it goes into your flashcards automatically (unstar any time)
   const w = todayWord(), v = todayVerb();
   if(kind === "word"){ r.wordHr = w[0]; r.wordEn = w[1]; }
@@ -5746,6 +5752,7 @@ function finishStep(uid, k){
   rec.st[k] = 1;
   if(first) addXP(10); else save();
   const log = SQ && SQ.u === uid && SQ.k === k ? SQ.log : null;
+  if(log && log.length) countQuiz();
   SQ = null;
   const n = stepCount(u), nextK = k + 1;
   const last = nextK >= n;
@@ -5897,6 +5904,7 @@ function pick(i){
 }
 function endDrill(){
   if(D === QZ) QZ = null;
+  countQuiz();
   const pct = Math.round(D.score/D.q.length*100);
   const wrong = D.q.length - D.score;
   const passed = quizPassed(D.score, D.q.length);
@@ -5912,11 +5920,13 @@ function endDrill(){
     rec.drill = Math.max(rec.drill || 0, pct);
     if(D.final){ rec.pass = before || passed; rec.v = 2; }
     if(D.final && passed && !before) unlocked = unitAfter(D.unit);
+    if(unlocked) pushEvent(`🔓 Unit ${unitNo(unlocked)} unlocked`, `You passed “${D.title.replace(/ — big quiz$/, "")}”. Next up: ${unlocked.title}.`);
     save();
   }
   if(D.skill && passed){
     S.skills = S.skills || {};
-    if(!S.skills[D.skill]){ const si = SKILLS.findIndex(x => x.id === D.skill); unlocked = SKILLS[si + 1] || null; }
+    if(!S.skills[D.skill]){ const si = SKILLS.findIndex(x => x.id === D.skill); unlocked = SKILLS[si + 1] || null;
+      if(unlocked) pushEvent("🗣️ New speaking lesson", `${unlocked.title} is open.`); }
     S.skills[D.skill] = Math.max(S.skills[D.skill] || 0, pct); save();
   }
   const nextUnit = D.unit ? unitAfter(D.unit) : null;
@@ -6428,12 +6438,12 @@ function vForms(){
 }
 function setFormLen(n){
   FD.len = n;
-  if(n && FD.done >= n && !FD.over && !(FD.q && FD.q.ans === undefined)) FD.over = true;
+  if(n && FD.done >= n && !FD.over && !(FD.q && FD.q.ans === undefined)){ countQuiz(); FD.over = true; }
   vForms();
 }
 function newFormRound(){ Object.assign(FD, { right: 0, done: 0, streak: 0, miss: [], log: [], q: null, over: false }); vForms(); }
 function nextForm(){
-  if(FD.len && FD.done >= FD.len){ FD.over = true; return paintFormResults(); }
+  if(FD.len && FD.done >= FD.len){ if(!FD.over) countQuiz(); FD.over = true; return paintFormResults(); }
   const open = Object.keys(FCASE).filter(caseOpen);
   const cases = FD.pick === "mix" ? open : [FD.pick];
   const q = buildFQ(cases, FD.plural);
@@ -6478,6 +6488,7 @@ function checkForm(){
   FD.done++;
   if(r.ok){ FD.right++; FD.streak++; addXP(1); }
   else FD.streak = 0;
+  { const a = actRec(); a.fc = a.fc || {}; const t = a.fc[q.c] || [0, 0]; a.fc[q.c] = [t[0] + (r.ok ? 1 : 0), t[1] + 1]; }
   (FD.log = FD.log || []).push({ q: q.shown + "  (" + q.w.b + ")", qEn: q.fr.en(q.w), ok: r.ok, yours: inp.value, right: q.full, e: formReason(q.w, q.c) });
   showFormVerdict();
   const top = $("#fd-card span"); if(top) top.innerHTML = `${FD.len ? `Question ${FD.done} / ${FD.len} · ` : ""}${FD.right} right${FD.streak > 2 ? ` · 🔥 ${FD.streak} in a row` : ""}`;
@@ -6500,6 +6511,7 @@ function showFormVerdict(){
 }
 function endFormRound(){
   if(!FD.done){ FD.q = null; return go("provjera"); }
+  if(!FD.over) countQuiz();
   FD.over = true; paintFormResults();
 }
 function paintFormResults(){
@@ -7278,7 +7290,11 @@ function gradeCard(ok){
   c.last = Date.now();
   c.box = ok ? Math.min(5, was + 1) : Math.max(1, was - 2);
   delete c.sw;
-  if(ok && was < 5 && c.box >= 5) FC.graduated.push(k);
+  if(ok && was < 5 && c.box >= 5){
+    FC.graduated.push(k);
+    const m = Object.values(S.cards).filter(x => (x.box || 1) >= 5).length;
+    if(MASTER_MILESTONES.includes(m)) pushEvent(`🏆 ${m} words mastered`, "Those words are yours now. Bravo!");
+  }
   if(ok){ FC.right++; addXP(2); } else save();
   FC.i++; FC.flipped = false; paintCard();
 }
@@ -7455,6 +7471,18 @@ function mergeState(a, b){
   });
   out.chatId = (a.chatId && out.chats[a.chatId]) ? a.chatId : ((b.chatId && out.chats[b.chatId]) ? b.chatId : null);
 
+  out.act = {};
+  keys("act").forEach(k => {
+    const x = (a.act || {})[k] || {}, y = (b.act || {})[k] || {};
+    const m = { xp: Math.max(x.xp || 0, y.xp || 0), q: Math.max(x.q || 0, y.q || 0) };
+    const fc = {};
+    new Set([...Object.keys(x.fc || {}), ...Object.keys(y.fc || {})]).forEach(c => {
+      const p = (x.fc || {})[c] || [0, 0], r = (y.fc || {})[c] || [0, 0]; fc[c] = p[1] >= r[1] ? p : r; });
+    if(Object.keys(fc).length) m.fc = fc;
+    out.act[k] = m;
+  });
+  out.notifOn = !!(a.notifOn || b.notifOn);
+
   out.updatedAt = Date.now();
   return out;
 }
@@ -7470,7 +7498,7 @@ const CLOUD = {
   lastSync:0, lastErr:"", pendingKind:"",
 
   async init(){
-    if(!SB_READY()){ this.ready = true; this.lastErr = "NOCONFIG"; paintCloud(); return; }
+    if(!SB_READY()){ this.ready = true; this.lastErr = "NOCONFIG"; paintCloud(); runLink(); return; }
 
     // The Supabase library loads as a separate module script. Waiting on an
     // event is unreliable — it may already have fired — so poll for it.
@@ -7480,11 +7508,12 @@ const CLOUD = {
     if(!window.__sbCreate){
       this.ready = true; this.lastErr = "NOLIB"; paintCloud();
       if(CUR === "napredak") vSave();
+      runLink();
       return;
     }
     try{
       SB = window.__sbCreate(SUPABASE_URL, SUPABASE_ANON_KEY);
-    }catch(e){ this.ready = true; this.lastErr = "NOCONFIG"; paintCloud(); return; }
+    }catch(e){ this.ready = true; this.lastErr = "NOCONFIG"; paintCloud(); runLink(); return; }
 
     // A password-reset link lands back here with tokens in the URL hash.
     if((window.location.hash || "").indexOf("type=recovery") > -1) this.pendingKind = "recovery";
@@ -7503,7 +7532,7 @@ const CLOUD = {
     if(data && data.session){ this.user = data.session.user; this.email = this.user.email; }
     this.ready = true;
     paintCloud();
-    if(this.user) this.load(); else go(CUR);
+    if(this.user) this.load(); else { go(CUR); runLink(); }
   },
 
   async signIn(email, password){
@@ -7570,7 +7599,9 @@ const CLOUD = {
       if(S._resave){ delete S._resave; setTimeout(() => save(), 50); }   // store the one-time lesson reset
       this.lastSync = Date.now();
       paintStats(); paintCloud(); go(CUR);
+      runLink();
       this.snapshot("daily");
+      pushSync();
     }catch(e){
       this.loadErr = String(e.message || e); paintCloud();
       if(CUR === "napredak") vSave();
@@ -7598,6 +7629,7 @@ const CLOUD = {
         if(["home","kartice","napredak","gramatika","lekcije","rjecnik"].includes(CUR)) go(CUR);
       }else{
         this.version = data[0].updated_at; this.lastSync = now; this.failCount = 0; this.loadErr = "";
+        pushSync();
       }
     }catch(e){
       this.dirty = true; this.failCount++;
@@ -7897,6 +7929,8 @@ function vSave(){
       </div>
     </div>
 
+    <div class="card" style="margin-top:14px" id="notif-card"></div>
+
     <div class="card" style="margin-top:14px">
       <div class="kicker">backups · sigurnosne kopije</div>
       <p style="font-size:14px;color:var(--stone-dim);margin:0 0 12px">A backup is made automatically every day, and the newest 14 are kept. Restoring backs up what you have now first, so a restore can always be undone too.</p>
@@ -7918,7 +7952,7 @@ function vSave(){
       <p style="font-size:14px;color:var(--stone-dim)">Erases everything in your account. It's backed up first, so you could still restore it from the list above.</p>
       <button class="btn ghost" id="wipe" onclick="wipe()">${dual("Erase all progress","Obriši sve")}</button>
     </div>` : ""}`);
-  if(signedIn) loadBackupsUI();
+  if(signedIn){ loadBackupsUI(); paintNotif(); notifCheck(); }
 }
 
 function toast(msg){
@@ -8133,8 +8167,244 @@ async function testKey(){
 /* ============================================================
    INIT
    ============================================================ */
+/* ============================================================
+   NOTIFICATIONS — reminders sent by the server (see _worker.js)
+   ============================================================ */
+const NOTIF_TYPES = [
+  ["streak",    "🔥 Streak warning",     "2 pm, 8 pm and 10 pm — only while today's word and verb aren't done"],
+  ["phrase",    "💬 Phrase of the day",  "9 am"],
+  ["qq",        "❓ Quick question",      "5 pm — from units you've passed. Tap it to answer."],
+  ["cards",     "🃏 Flashcards waiting",  "7 pm — only if you haven't studied cards that day"],
+  ["milestone", "🏆 Milestones",          "streaks, unlocked units and lessons, mastered words"],
+  ["weekly",    "📊 Weekly recap",        "Sundays at 6 pm"]
+];
+function notifPrefs(){ const n = S.notif || {}, o = {}; NOTIF_TYPES.forEach(([k]) => o[k] = n[k] !== false); return o; }
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const isStandalone = () => (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+const pushSupported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+function b64uBytes(s){
+  s = String(s).replace(/-/g, "+").replace(/_/g, "/"); while(s.length % 4) s += "=";
+  const bin = atob(s), out = new Uint8Array(bin.length); for(let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out;
+}
+async function sbToken(){
+  if(!SB) return null;
+  const { data } = await SB.auth.getSession();
+  return data && data.session ? data.session.access_token : null;
+}
+async function pushApi(path, body, keepalive){
+  const tok = await sbToken(); if(!tok) throw new Error("SIGNIN");
+  const r = await fetch("/api/push/" + path, { method:"POST", keepalive: !!keepalive,
+    headers:{ "Content-Type":"application/json", "Authorization":"Bearer " + tok }, body: JSON.stringify(body || {}) });
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok) throw new Error(j.error || ("HTTP " + r.status));
+  return j;
+}
+
+/* ---- what the server needs to know to time the reminders ---- */
+function actRec(){
+  S.act = S.act || {};
+  const k = todayKey();
+  if(!S.act[k]){
+    const cut = dayIndex(k) - 35;                                   // keep about a month
+    Object.keys(S.act).forEach(d => { if(dayIndex(d) < cut) delete S.act[d]; });
+    S.act[k] = {};
+  }
+  return S.act[k];
+}
+function countQuiz(){ const a = actRec(); a.q = (a.q || 0) + 1; }
+function quickPool(){
+  const out = [], seen = new Set();
+  UNITS.forEach(u => {
+    if(!unitPassed((S.done || {})[u.id])) return;
+    [].concat(...(STEP_Q[u.id] || []), FINAL_Q[u.id] || [], u.drills || []).forEach(q => {
+      if(!q || typeof q.q !== "string" || q.q.length > 140 || seen.has(q.q)) return;
+      if(q.t === "mc" && Array.isArray(q.o) && q.o.length <= 4 && q.o.every(o => String(o).length <= 40) && typeof q.a === "number"){
+        seen.add(q.q); out.push({ t:"mc", q:q.q, o:q.o.slice(), a:q.a, e:q.e || "" });
+      } else if(q.t === "type" && Array.isArray(q.a) && q.a.length){
+        seen.add(q.q); out.push({ t:"type", q:q.q, a:q.a.slice(0, 6), e:q.e || "" });
+      }
+    });
+  });
+  const h = s => { let x = 7; for(let i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) | 0; return x; };
+  return out.sort((x, y) => h(x.q) - h(y.q)).slice(0, 40);
+}
+function pushData(){
+  const day = todayKey(), di = dayIndex(day);
+  const done = [], phr = {}, act = {};
+  for(let i = 0; i < 8; i++){ const k = keyOfIndex(di - i); if(dayDone(k)) done.push(k); }
+  for(let i = 0; i < 10; i++){
+    const k = keyOfIndex(di + i), r = (S.daily || {})[k];
+    const p = (r && r.phr) || ALLP2[(dayIndex(k) * 31337) % ALLP2.length];
+    phr[k] = [p[0], p[1]];
+  }
+  const cards = Object.values(S.cards || {});
+  for(let i = 0; i < 8; i++){
+    const k = keyOfIndex(di - i), a = (S.act || {})[k] || {};
+    const w = cards.filter(c => (c.added || c.t) && learningDayKey(c.added || c.t) === k).length;
+    if(a.xp || a.q || a.fc || w) act[k] = Object.assign({}, a, { w });
+  }
+  const last = cards.reduce((m, c) => Math.max(m, c.last || 0), 0);
+  return { done, streak: dailyStreak(), phr, qq: quickPool(),
+           cards: { n: cardGroups().learning.length, lastDay: last ? learningDayKey(last) : "" }, act };
+}
+
+/* Keeps the server up to date. Important changes (today done, settings, cards) go
+   straight away; small ones (points) wait up to 10 minutes, to keep writes low. */
+const PS = { last:"", key:"", at:0, t:null };
+function pushSync(force){
+  if(!S.notifOn || !CLOUD.user || !CLOUD.loaded) return;
+  clearTimeout(PS.t);
+  PS.t = setTimeout(() => pushSyncNow(force), force ? 200 : 2500);
+}
+async function pushSyncNow(force, keepalive){
+  if(!S.notifOn || !CLOUD.user || !CLOUD.loaded) return;
+  try{
+    const body = { prefs: notifPrefs(), data: pushData() };
+    const full = JSON.stringify(body);
+    if(full === PS.last) return;
+    const key = JSON.stringify([body.prefs, body.data.done, body.data.streak, body.data.cards, body.data.qq.length, Object.keys(body.data.phr)[0]]);
+    if(!force && key === PS.key && Date.now() - PS.at < 10 * 60 * 1000) return;
+    await pushApi("sync", body, keepalive);
+    PS.last = full; PS.key = key; PS.at = Date.now();
+  }catch(e){ /* the next change tries again */ }
+}
+function pushEvent(title, body){
+  if(!S.notifOn || !notifPrefs().milestone || !CLOUD.user) return;
+  pushApi("event", { title, body }).catch(() => {});
+}
+const STREAK_MILESTONES = [3, 7, 14, 21, 30, 50, 75, 100, 150, 200, 250, 300, 365, 500];
+const MASTER_MILESTONES = [10, 25, 50, 100, 150, 200, 300, 400, 500, 750, 1000];
+
+/* ---- opening the app from a notification ---- */
+let LINK = null;
+const LINK_ROUTES = ["home", "kartice", "napredak", "provjera", "gramatika", "lekcije", "rjecnik", "citanje"];
+function readLink(u){
+  try{
+    const p = new URL(u, location.origin).searchParams, l = {};
+    if(p.get("go")) l.go = p.get("go");
+    if(p.get("qq")) l.qq = p.get("qq");
+    return (l.go || l.qq) ? l : null;
+  }catch(e){ return null; }
+}
+function runLink(){
+  const l = LINK; LINK = null; if(!l) return;
+  if(l.qq){
+    try{
+      const q = JSON.parse(new TextDecoder().decode(b64uBytes(l.qq)));
+      const valid = q && typeof q.q === "string" &&
+        ((q.t === "mc" && Array.isArray(q.o) && typeof q.a === "number") || (q.t === "type" && Array.isArray(q.a)));
+      if(valid){
+        CUR = "provjera"; paintNav();
+        D = { unit:null, title:"Quick question", q:[q], i:0, score:0 };
+        return paintDrill();
+      }
+    }catch(e){}
+  }
+  if(l.go && LINK_ROUTES.includes(l.go)) go(l.go);
+}
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.addEventListener("message", e => {
+    if(!e.data || e.data.type !== "open") return;
+    LINK = readLink(e.data.url);
+    if(!CLOUD.user || CLOUD.loaded) runLink();
+  });
+}
+
+/* ---- the card on the Account page ---- */
+const NS = { sub:null, checked:false, busy:false, msg:"", err:false };
+async function notifCheck(){
+  try{
+    if(pushSupported()){
+      const reg = await navigator.serviceWorker.getRegistration();
+      NS.sub = reg ? await reg.pushManager.getSubscription() : null;
+    }
+  }catch(e){ NS.sub = null; }
+  NS.checked = true; paintNotif();
+}
+function notifErrText(e){
+  const m = String((e && e.message) || e);
+  if(m === "DENIED") return isIOS()
+    ? "Notifications are blocked for this app. Turn them on in Settings → Notifications → Nauči hrvatski, then try again."
+    : "Notifications are blocked for this site. Click the icon to the left of the address bar → Notifications → Allow, then try again.";
+  if(m === "NOKV" || m === "NOSERVER" || /HTTP 404|HTTP 405/.test(m)) return "The server isn't set up for notifications yet — that's the Cloudflare part (a KV namespace called PUSH and an hourly trigger).";
+  if(m === "SIGNIN") return "Sign in first.";
+  return "Couldn't do that: " + m;
+}
+async function notifOn(){
+  NS.busy = true; NS.msg = ""; paintNotif();
+  try{
+    const perm = await Notification.requestPermission();
+    if(perm !== "granted") throw new Error("DENIED");
+    const kr = await fetch("/api/push/key");
+    const kj = await kr.json().catch(() => ({}));
+    if(!kr.ok || !kj.key) throw new Error(kj.error || "NOSERVER");
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    const want = b64uBytes(kj.key);
+    if(sub){                                                       // made with an old key? start fresh
+      const had = sub.options && sub.options.applicationServerKey ? new Uint8Array(sub.options.applicationServerKey) : null;
+      if(!had || had.length !== want.length || had.some((b, i) => b !== want[i])){ await sub.unsubscribe(); sub = null; }
+    }
+    sub = sub || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: want });
+    S.notifOn = true; save();
+    await pushApi("subscribe", { sub: sub.toJSON(), prefs: notifPrefs(), data: pushData() });
+    NS.sub = sub; PS.last = ""; NS.err = false;
+    NS.msg = "On ✓ — a test notification is on its way.";
+  }catch(e){ NS.err = true; NS.msg = notifErrText(e); }
+  NS.busy = false; paintNotif();
+}
+async function notifOff(){
+  NS.busy = true; paintNotif();
+  try{
+    const sub = NS.sub;
+    if(sub){ const ep = sub.endpoint; await sub.unsubscribe(); await pushApi("unsubscribe", { endpoint: ep }).catch(() => {}); }
+    NS.sub = null; NS.err = false; NS.msg = "Off on this device.";
+  }catch(e){ NS.err = true; NS.msg = notifErrText(e); }
+  NS.busy = false; paintNotif();
+}
+async function notifTest(){
+  NS.busy = true; NS.msg = ""; paintNotif();
+  try{
+    await pushSyncNow(true);
+    const j = await pushApi("test", {});
+    NS.err = false; NS.msg = `Sent to ${j.devices} device${j.devices === 1 ? "" : "s"} — it should pop up in a few seconds.`;
+  }catch(e){ NS.err = true; NS.msg = String(e.message) === "NOSUB" ? "No device has notifications turned on yet." : notifErrText(e); }
+  NS.busy = false; paintNotif();
+}
+function toggleNotif(k){
+  S.notif = S.notif || {};
+  S.notif[k] = !notifPrefs()[k];
+  save(); pushSync(true); paintNotif();
+}
+function paintNotif(){
+  const box = $("#notif-card"); if(!box) return;
+  const p = notifPrefs();
+  let status;
+  if(isIOS() && !isStandalone()) status = `<p style="font-size:14.5px;margin:0">On iPhone, notifications only work in the <b>Home Screen app</b>. Open Nauči hrvatski from its icon on your Home Screen and turn them on there.</p>`;
+  else if(!pushSupported()) status = `<p style="font-size:14.5px;margin:0">This browser can't show notifications. On iPhone use the Home Screen app; on a computer use Chrome.</p>`;
+  else if(!NS.checked) status = `<span class="spin"></span>`;
+  else status = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:14.5px">This device: <b style="color:${NS.sub ? "var(--olive)" : "var(--stone-dim)"}">${NS.sub ? "on" : "off"}</b></span>
+      ${NS.sub
+        ? `<button class="btn ghost sm" ${NS.busy ? "disabled" : ""} onclick="notifTest()">${dual("Send a test","Probaj")}</button>
+           <button class="btn ghost sm" ${NS.busy ? "disabled" : ""} onclick="notifOff()">${dual("Turn off here","Isključi")}</button>`
+        : `<button class="btn sm" ${NS.busy ? "disabled" : ""} onclick="notifOn()">🔔 ${dual("Turn on notifications","Uključi obavijesti")}</button>`}
+      ${NS.busy ? `<span class="spin"></span>` : ""}
+    </div>`;
+  box.innerHTML = `<div class="kicker">notifications · obavijesti</div>
+    ${status}
+    ${NS.msg ? `<div style="margin-top:10px;font-size:14px;color:${NS.err ? "var(--madder)" : "var(--olive)"}">${esc(NS.msg)}</div>` : ""}
+    <div style="margin-top:14px">
+      ${NOTIF_TYPES.map(([k, name, when]) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line)">
+          <div style="min-width:0"><div style="font-size:15px">${name}</div><div style="font-size:12.5px;color:var(--stone-dim)">${esc(when)}</div></div>
+          <button class="chip" style="flex:none" aria-pressed="${p[k]}" onclick="toggleNotif('${k}')">${p[k] ? "On" : "Off"}</button>
+        </div>`).join("")}
+      <p style="font-size:12.5px;color:var(--stone-dim);margin:8px 0 0">Times are New York time. These switches count for every device you've turned notifications on.</p>
+    </div>`;
+}
+
 document.addEventListener("visibilitychange", () => {
-  if(document.visibilityState === "hidden"){ if(CLOUD.dirty){ clearTimeout(PUSH_T); CLOUD.write(); } }
+  if(document.visibilityState === "hidden"){ if(CLOUD.dirty){ clearTimeout(PUSH_T); CLOUD.write(); } pushSyncNow(true, true); }
   else CLOUD.refresh();
 });
 window.addEventListener("pagehide", () => { if(CLOUD.dirty) CLOUD.write(); });
@@ -8146,7 +8416,10 @@ window.addEventListener("pagehide", () => { if(CLOUD.dirty) CLOUD.write(); });
   paintNav();
   paintStats();
   paintGear();
-  go("home");
+  LINK = readLink(location.href);
+  if(LINK) history.replaceState(null, "", location.pathname);
+  if(LINK && LINK.go && LINK_ROUTES.includes(LINK.go)) CUR = LINK.go;
+  go(CUR);
   CLOUD.init();
 })();
 </script>
