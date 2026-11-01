@@ -538,7 +538,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.22";
+const VERSION = "10.23";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -4825,13 +4825,32 @@ const VIEWS = [
   {k:"napredak", hr:"Account",  en:"Račun"}
 ];
 let CUR = "home";
+/* Each tab remembers where you were. Switching tabs brings you back there;
+   tapping the tab you're already in takes you to its main page. */
+const TAB_OF = { unit:"gramatika", step:"gramatika", unitall:"gramatika", skill:"lekcije",
+                 forms:"provjera", fwrite:"provjera", qq:"home" };
+const tabOf = r => TAB_OF[r] || r;
+const LAST = {};
 function paintNav(){
   $("#nav").innerHTML = VIEWS.map(v=>
-    `<button aria-current="${CUR===v.k}" onclick="go('${v.k}')"><span class="hr">${v.hr}</span><span class="en">${v.en}</span></button>`
+    `<button aria-current="${tabOf(CUR)===v.k}" onclick="navTo('${v.k}')"><span class="hr">${v.hr}</span><span class="en">${v.en}</span></button>`
   ).join("");
+}
+function navTo(k){
+  const last = LAST[k];
+  if(tabOf(CUR) === k || !last) return go(k);
+  if(last.drill){                                          // a quiz you were in the middle of
+    CUR = last.route; paintNav(); paintSlow();
+    window.scrollTo({top:0, behavior:"instant"});
+    D = last.drill;
+    if(D.ans === D.i) D.i++;                               // that one's answered — never score it twice
+    return paintDrill();
+  }
+  go(last.route, last.arg);
 }
 function go(v, arg){
   CUR = v; paintNav(); paintSlow();
+  LAST[tabOf(v)] = { route: v, arg };
   window.scrollTo({top:0, behavior:"instant"});
   ({home:vHome, lekcije:vSkills, skill:vSkill, unit:vUnit, step:vStep, unitall:vUnitFull, forms:vForms, fwrite:vWrite, qq:vQQ, razgovor:vTalk, provjera:vQuiz,
     citanje:vRead, rjecnik:vPacks, kartice:vCards, gramatika:vGrammar, napredak:vSave}[v] || vHome)(arg);
@@ -5693,7 +5712,9 @@ function vStep(arg){
   }
 
   const g = u.grammar[k];
-  SQ = { u:uid, k, q: shuffle((STEP_Q[uid] || [])[k] || []).map(shuffleOpts), i:0, again:new Set(), log:[] };
+  const keep = SQ && SQ.u === uid && SQ.k === k;           // came back to the step you left
+  if(keep){ if(SQ.ans === SQ.i) SQ.i++; }
+  else SQ = { u:uid, k, q: shuffle((STEP_Q[uid] || [])[k] || []).map(shuffleOpts), i:0, again:new Set(), log:[] };
   shell(`unit ${unitNo(uid)} · step ${k + 1} of ${n}`, g.h, esc(u.title),
     `${top}<div class="card"><div style="font-size:15px">${fillUnitRefs(g.b)}</div></div>${phrasesHTML(uid, k)}
     <div class="card stepcheck" style="margin-top:14px">
@@ -5737,6 +5758,7 @@ function pickSQ(i){
     inp.style.borderColor = ok ? "var(--olive)" : "var(--madder)";
   }
   logAnswer(SQ.log, q, ok, q.t === "mc" ? q.o[i] : q.t === "build" ? buildAnswer() : $("#sqa").value, q.t === "mc" ? q.o[q.a] : (typo || q.a[0]));
+  SQ.ans = SQ.i;
   const key = q.q;
   const retry = !ok && !SQ.again.has(key);
   if(retry){ SQ.again.add(key); SQ.q.push(shuffleOpts(q)); }   // a missed one comes back once at the end
@@ -5816,6 +5838,7 @@ function startDrill(id, custom){
 let TYPED = "", TYPO = "";
 function paintDrill(){
   TYPED = ""; TYPO = "";
+  { const t = tabOf(CUR), prev = LAST[t] || {}; LAST[t] = { drill: D, route: CUR, arg: prev.arg }; }
   if(D.i >= D.q.length){ return endDrill(); }
   const q = D.q[D.i];
   const bar = `<div class="progressline"><i style="width:${(D.i/D.q.length)*100}%"></i></div>
@@ -5913,6 +5936,7 @@ function pick(i){
 }
 function endDrill(){
   if(D === QZ) QZ = null;
+  { const t = tabOf(CUR), l = LAST[t]; if(l && l.drill === D) LAST[t] = { route: l.route, arg: l.arg }; }
   countQuiz();
   const pct = Math.round(D.score/D.q.length*100);
   const wrong = D.q.length - D.score;
