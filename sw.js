@@ -49,3 +49,33 @@ self.addEventListener("fetch", e => {
     }
   })());
 });
+
+/* ---- notifications ---- */
+self.addEventListener("push", e => {
+  let m = {};
+  try{ m = e.data ? e.data.json() : {}; }catch(err){ m = { title: "Nauči hrvatski", body: e.data ? e.data.text() : "" }; }
+  e.waitUntil(self.registration.showNotification(m.title || "Nauči hrvatski", {
+    body: m.body || "",
+    icon: "/icon-192.png",
+    badge: "/favicon-32.png",
+    tag: m.tag || undefined,
+    renotify: !!m.tag,
+    data: { url: m.url || "/" }
+  }));
+});
+
+// Tapping a notification opens the app on the right page (or brings it to the front).
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  const url = new URL((e.notification.data && e.notification.data.url) || "/", self.location.origin).href;
+  e.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const w = wins.find(c => new URL(c.url).origin === self.location.origin);
+    if(w){
+      w.postMessage({ type: "open", url });
+      try{ await w.focus(); }catch(err){}
+      return;
+    }
+    await self.clients.openWindow(url);
+  })());
+});
