@@ -538,7 +538,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.20";
+const VERSION = "10.21";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -5127,6 +5127,13 @@ function unlockDaily(kind){
 const DC_BUSY = new Set();
 /* Tells the AI which unit the learner is on, so a correction that needs later
    grammar says "you'll learn this in Unit N" instead of throwing jargon at them. */
+/* The same judging rules for every AI sentence check in the app — the daily word/verb,
+   "Write a sentence", and anything added later. */
+const CHECK_RULES = `How to judge:
+- Missing or wrong accents (c/č/ć, s/š, z/ž, d/đ) NEVER make a sentence wrong. Treat "isli" as "išli", "secera" as "šećera". Don't mention accents in the note; just write "fixed" with the proper accents.
+- Small slips are fine if the sentence is understandable.
+- Never mark a sentence wrong for grammar from a unit the learner hasn't reached yet. If they used later grammar, accept it; if it's slightly off, set ok to true, put the correct version in "fixed" and mention the unit in a few words.
+- Set ok to false only for a real mistake in what's being practised, or a sentence that doesn't make sense.`;
 function courseContext(){
   const cur = unitNo(firstOpen());
   return `The learner is currently on Unit ${cur} of a ${UNITS.length}-unit grammar course. The units, in order:
@@ -5146,7 +5153,7 @@ async function checkDailySentence(kind){
   try{
     const txt = await ask(STYLE_RULES + "You are a friendly Croatian teacher checking a single learner sentence. Be encouraging and brief.",
       [{role:"user", content:`The learner had to write a sentence using the ${kind === "word" ? "word" : "verb"} "${target}". They wrote: "${r[kind + "S"]}".
-Ignore missing diacritics. Small slips are fine if it's understandable.
+${CHECK_RULES}
 ${courseContext()}
 Return ONLY JSON, no markdown: {"ok":true or false,"fixed":"<the corrected sentence, or identical if already fine>","en":"<English translation>","note":"<1–2 short, kind English sentences: what changed and why, in plain words, plus the unit pointer if it's later material>"}`}], 600);
     const j = parseJSON(txt);
@@ -6566,7 +6573,8 @@ function newWriteTask(){
     const fits = FW.filter(w => FF.some(fr => fr.c === k && fr.ok(w)));
     const w = fits[Math.floor(Math.random() * fits.length)]; word = w.b; en = w.en;
   }
-  FWR.task = { k, word, en, done: null };
+  const fw = FW.find(x => norm(x.b) === norm(word));                  // a course word: the app knows its forms
+  FWR.task = { k, word, en, form: fw ? (formForm(fw, k) || "") : "", done: null };
   if(CUR === "fwrite" && $("#fw-card")) paintWriteTask(); else vWrite();
 }
 function paintWriteTask(){
@@ -6590,24 +6598,36 @@ async function checkWrite(){
   const t = FWR.task, inp = $("#fw-a"), out = $("#fw-v"); if(!t || !inp || !out) return;
   const s = inp.value.trim();
   if(tokens(s).length < 2){ out.innerHTML = `<div class="verdict no">Write a full sentence — at least two words.</div>`; return; }
-  out.innerHTML = `<div style="margin-top:12px"><span class="spin"></span> Checking…</div>`;
   const c = FCASE[t.k];
+  // Instant part: for the course's own words the app already knows the right form.
+  const formUsed = t.form ? tokens(s).includes(norm(t.form)) : null;
+  out.innerHTML = formUsed
+    ? `<div class="verdict ok"><b style="color:var(--olive)">Right ending ✓</b> <span class="hr" style="font-family:var(--display);font-size:17px">${esc(t.form)}</span>
+         <div style="font-size:13px;color:var(--stone-dim);margin-top:4px"><span class="spin"></span> Checking the rest of your sentence…</div></div>`
+    : `<div style="margin-top:12px"><span class="spin"></span> Checking…</div>`;
+  const btn = $("#fw-check"); if(btn) btn.disabled = true;
   try{
     const txt = await ask(STYLE_RULES + "You are a friendly Croatian teacher checking one learner sentence. Be encouraging and brief.",
       [{role:"user", content:`Task: write a sentence using "${t.word}" in the ${c.name} case (${c.role}).
 The learner wrote: "${s}"
-Check two things: (1) is the sentence correct standard Croatian, and (2) is "${t.word}" actually used in the ${c.name} with the right ending? Ignore missing diacritics.
+What's being practised is the ending on "${t.word}". Is it the right ${c.name} form? Then glance at the rest.
+${CHECK_RULES}
 ${courseContext()}
-Return ONLY JSON, no markdown: {"ok":true or false,"caseOk":true or false,"fixed":"<corrected sentence, or identical if fine>","en":"<English translation>","form":"<the form of ${t.word} that belongs in this sentence>","note":"<1–2 short sentences in plain English: what's right or what changed and why>"}`}], 700);
+Return ONLY JSON, no markdown: {"ok":true or false,"caseOk":true or false,"fixed":"<the sentence with any real fix, written WITH proper diacritics; identical apart from accents if nothing else is wrong>","en":"<English translation>","form":"<the ${c.name} form of ${t.word}>","note":"<one short sentence in plain English>"}`}], 450);
     const j = parseJSON(txt);
-    const good = !!j.ok && j.caseOk !== false;
+    const fixed = String(j.fixed || s);
+    const onlyAccents = norm(fixed) === norm(s);              // the same sentence once accents are ignored
+    const caseOk = formUsed === true || j.caseOk !== false;
+    const good = caseOk && (!!j.ok || onlyAccents);
     if(good) addXP(4);
+    const showFix = rvPlain(fixed) !== rvPlain(s);                 // full stops and capitals don't count
     out.innerHTML = `<div class="verdict ${good ? "ok" : "no"}">
         <b style="color:${good ? "var(--olive)" : "var(--madder)"}">${good ? "Nice — that's right ✓" : "Almost ✗"}</b>
-        ${!good && j.fixed ? `<div style="margin-top:6px"><span style="color:var(--stone-dim)">Better:</span> <span style="font-family:var(--display);font-size:18px">${esc(j.fixed)}</span> ${spk(j.fixed)}</div>` : ""}
+        ${showFix ? `<div style="margin-top:6px"><span style="color:var(--stone-dim)">${!good ? "Better:" : onlyAccents ? "With the accents:" : "Polished:"}</span>
+          <span style="font-family:var(--display);font-size:18px">${esc(fixed)}</span> ${spk(fixed)}</div>` : ""}
         ${j.en ? `<div style="font-size:13px;color:var(--stone-dim);font-style:italic;margin-top:3px">${esc(j.en)}</div>` : ""}
-        ${j.form ? `<div style="font-size:14px;margin-top:5px">${esc(c.name)} of <b>${esc(t.word)}</b>: <b class="hr" style="font-family:var(--display);font-size:16px">${esc(j.form)}</b></div>` : ""}
-        ${j.note ? `<div style="font-size:14px;margin-top:4px">${esc(j.note)}</div>` : ""}
+        ${(t.form || j.form) ? `<div style="font-size:14px;margin-top:5px">${esc(c.name)} of <b>${esc(t.word)}</b>: <b class="hr" style="font-family:var(--display);font-size:16px">${esc(t.form || j.form)}</b></div>` : ""}
+        ${j.note && !(good && onlyAccents) ? `<div style="font-size:14px;margin-top:4px">${esc(j.note)}</div>` : ""}
       </div>
       <div style="margin-top:12px;display:flex;gap:9px;flex-wrap:wrap">
         <button class="btn" onclick="FWR.own='';newWriteTask()">${dual("Next word","Sljedeća")} →</button>
@@ -6615,8 +6635,10 @@ Return ONLY JSON, no markdown: {"ok":true or false,"caseOk":true or false,"fixed
       </div>`;
     if(FWR.task === t){ t.vHTML = out.innerHTML; t.typed = s; }
   }catch(e){
-    out.innerHTML = apiError(e) + `<div style="margin-top:8px"><button class="btn ghost sm" onclick="checkWrite()">↻ ${dual("Retry","Opet")}</button></div>`;
+    out.innerHTML = (formUsed ? `<div class="verdict ok"><b style="color:var(--olive)">Right ending ✓</b> ${esc(t.form)} — the AI couldn't check the rest just now.</div>` : apiError(e))
+      + `<div style="margin-top:8px"><button class="btn ghost sm" onclick="checkWrite()">↻ ${dual("Retry","Opet")}</button></div>`;
   }
+  const b2 = $("#fw-check"); if(b2) b2.disabled = false;
 }
 
 let QZ = null;                                    // a Quiz-tab quiz you're in the middle of
