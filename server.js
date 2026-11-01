@@ -1,6 +1,7 @@
 /* ============================================================
    Nauči hrvatski — Cloudflare Worker
-   Serves the site and proxies /api/chat to Gemini.
+   Serves the site, proxies /api/chat to Gemini, and sends
+   reminder notifications (/api/push/*, plus an hourly cron).
    Works both as a Pages advanced-mode _worker.js and as a
    Worker with static assets.
    The API key lives in the GEMINI_API_KEY environment variable
@@ -344,6 +345,220 @@ async function handlePost(request, env){
   }
 }
 
+/* ============================================================
+   NOTIFICATIONS (Web Push)
+   Needs a KV namespace bound as PUSH and an hourly Cron Trigger.
+   The signing keys are made by the worker itself the first time
+   and kept in KV — nothing secret to paste anywhere.
+   ============================================================ */
+// Public values — the same ones the app itself uses. Used only to check who's signed in.
+const SUPABASE_URL = "https://pknwqovojwpopuohljoc.supabase.co";
+const SUPABASE_KEY = "sb_publishable_-xDtrsRuva6dYG2RAU_2JQ_uv1S__Hr";
+
+// The app's day runs on New York time and rolls over at 7:00 AM — same here.
+const NY_TZ = "America/New_York", NY_RESET = 7;
+const NOTIF_DEFAULTS = { streak:true, phrase:true, qq:true, cards:true, milestone:true, weekly:true };
+const CASE_NAMES = { A:"accusative", G:"genitive", L:"locative", D:"dative", I:"instrumental", V:"vocative" };
+
+const te = new TextEncoder();
+const b64u = {
+  enc(buf){ const b = new Uint8Array(buf); let s = ""; for(let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+            return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); },
+  dec(str){ str = String(str).replace(/-/g, "+").replace(/_/g, "/"); while(str.length % 4) str += "=";
+            const s = atob(str), b = new Uint8Array(s.length); for(let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
+};
+const cat = (...a) => { const o = new Uint8Array(a.reduce((n, x) => n + x.length, 0)); let i = 0; a.forEach(x => { o.set(x, i); i += x.length; }); return o; };
+
+function nyNow(t){
+  const f = new Intl.DateTimeFormat("en-US", { timeZone: NY_TZ, hourCycle:"h23", weekday:"short",
+    year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit" });
+  const p = {}; f.formatToParts(new Date(t)).forEach(x => p[x.type] = x.value);
+  const dt = new Date(Date.UTC(+p.year, +p.month - 1, +p.day));
+  const h = (+p.hour) % 24;
+  if(h < NY_RESET) dt.setUTCDate(dt.getUTCDate() - 1);
+  return { h, wd: ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].indexOf(p.weekday), day: dt.toISOString().slice(0, 10) };
+}
+const dayIdx = k => Math.floor(Date.parse(k + "T00:00:00Z") / 864e5);
+const dayKey = i => new Date(i * 864e5).toISOString().slice(0, 10);
+
+/* ---- keys + encryption (RFC 8291 / 8188, aes128gcm) ---- */
+async function vapidKeys(env){
+  let v = await env.PUSH.get("vapid", "json");
+  if(v && v.pub && v.jwk) return v;
+  const kp = await crypto.subtle.generateKey({ name:"ECDSA", namedCurve:"P-256" }, true, ["sign", "verify"]);
+  v = { pub: b64u.enc(await crypto.subtle.exportKey("raw", kp.publicKey)),
+        jwk: await crypto.subtle.exportKey("jwk", kp.privateKey) };
+  await env.PUSH.put("vapid", JSON.stringify(v));
+  return v;
+}
+async function vapidHeader(endpoint, v, contact){
+  const enc = o => b64u.enc(te.encode(JSON.stringify(o)));
+  const unsigned = enc({ typ:"JWT", alg:"ES256" }) + "." +
+    enc({ aud: new URL(endpoint).origin, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: contact });
+  const key = await crypto.subtle.importKey("jwk", v.jwk, { name:"ECDSA", namedCurve:"P-256" }, false, ["sign"]);
+  const sig = await crypto.subtle.sign({ name:"ECDSA", hash:"SHA-256" }, key, te.encode(unsigned));
+  return `vapid t=${unsigned}.${b64u.enc(sig)}, k=${v.pub}`;
+}
+async function hkdf(salt, ikm, info, bytes){
+  const k = await crypto.subtle.importKey("raw", ikm, "HKDF", false, ["deriveBits"]);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name:"HKDF", hash:"SHA-256", salt, info }, k, bytes * 8));
+}
+async function encryptPush(sub, text){
+  const uaPub = b64u.dec(sub.keys.p256dh), auth = b64u.dec(sub.keys.auth);
+  const eph = await crypto.subtle.generateKey({ name:"ECDH", namedCurve:"P-256" }, true, ["deriveBits"]);
+  const asPub = new Uint8Array(await crypto.subtle.exportKey("raw", eph.publicKey));
+  const ua = await crypto.subtle.importKey("raw", uaPub, { name:"ECDH", namedCurve:"P-256" }, false, []);
+  const shared = new Uint8Array(await crypto.subtle.deriveBits({ name:"ECDH", public: ua }, eph.privateKey, 256));
+  const ikm = await hkdf(auth, shared, cat(te.encode("WebPush: info\0"), uaPub, asPub), 32);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const cek = await hkdf(salt, ikm, te.encode("Content-Encoding: aes128gcm\0"), 16);
+  const nonce = await hkdf(salt, ikm, te.encode("Content-Encoding: nonce\0"), 12);
+  const key = await crypto.subtle.importKey("raw", cek, "AES-GCM", false, ["encrypt"]);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name:"AES-GCM", iv: nonce }, key, cat(te.encode(text), new Uint8Array([2]))));
+  return cat(salt, new Uint8Array([0, 0, 16, 0]), new Uint8Array([asPub.length]), asPub, ct);
+}
+// Sends one notification. Returns the push service's status (201 = delivered; 404/410 = that device is gone).
+async function sendPush(env, sub, msg, contact, ttl){
+  try{
+    const v = await vapidKeys(env);
+    const r = await fetch(sub.endpoint, { method:"POST", body: await encryptPush(sub, JSON.stringify(msg)), headers:{
+      "Authorization": await vapidHeader(sub.endpoint, v, contact || "mailto:notifications@example.com"),
+      "Content-Encoding":"aes128gcm", "Content-Type":"application/octet-stream",
+      "TTL": String(ttl || 3600), "Urgency":"normal" } });
+    if(r.status >= 400) console.warn("push", r.status, await r.text().catch(() => ""));
+    return r.status;
+  }catch(e){ console.error("push failed:", e && e.message); return 0; }
+}
+async function sendAll(env, rec, msg, ttl){
+  let changed = false;
+  for(const s of (rec.subs || []).slice()){
+    const st = await sendPush(env, s, msg, rec.site, ttl);
+    if(st === 404 || st === 410){ rec.subs = rec.subs.filter(x => x.endpoint !== s.endpoint); changed = true; }
+  }
+  return changed;
+}
+
+/* ---- who's asking ---- */
+async function pushUser(request){
+  const auth = request.headers.get("authorization") || "";
+  if(!/^Bearer \S+/.test(auth)) return null;
+  const r = await fetch(SUPABASE_URL + "/auth/v1/user", { headers:{ apikey: SUPABASE_KEY, Authorization: auth } });
+  if(!r.ok) return null;
+  const u = await r.json().catch(() => null);
+  return u && u.id ? u : null;
+}
+const cleanPrefs = p => { const o = {}; Object.keys(NOTIF_DEFAULTS).forEach(k => o[k] = !(p && p[k] === false)); return o; };
+const clip = (s, n) => String(s || "").slice(0, n);
+
+async function handlePush(request, env, path){
+  if(!env.PUSH) return json(503, { error:"NOKV" });
+  if(path === "key") return json(200, { key: (await vapidKeys(env)).pub });
+  if(request.method !== "POST") return json(405, { error:"Method not allowed" });
+  if(!originOk(request, env)) return json(403, { error:"Forbidden" });
+  const user = await pushUser(request);
+  if(!user) return json(401, { error:"SIGNIN" });
+  const text = await request.text();
+  if(text.length > 120000) return json(413, { error:"Too large" });
+  let body; try{ body = JSON.parse(text || "{}"); }catch(e){ return json(400, { error:"Bad JSON" }); }
+
+  const id = "u:" + user.id;
+  const rec = (await env.PUSH.get(id, "json")) || { subs: [] };
+  rec.site = new URL(request.url).origin;
+  if(body.prefs) rec.prefs = cleanPrefs(body.prefs);
+  if(body.data && typeof body.data === "object") rec.data = body.data;
+  const put = () => env.PUSH.put(id, JSON.stringify(rec));
+
+  if(path === "subscribe"){
+    const s = body.sub;
+    if(!s || typeof s.endpoint !== "string" || !/^https:\/\//.test(s.endpoint) || !s.keys || !s.keys.p256dh || !s.keys.auth)
+      return json(400, { error:"Bad subscription" });
+    rec.subs = (rec.subs || []).filter(x => x.endpoint !== s.endpoint);
+    rec.subs.push({ endpoint: s.endpoint, keys: { p256dh: s.keys.p256dh, auth: s.keys.auth }, at: Date.now() });
+    rec.subs = rec.subs.slice(-6);
+    await put();
+    const st = await sendPush(env, rec.subs[rec.subs.length - 1],
+      { title:"Notifications are on ✓", body:"Bok! This is what reminders from Nauči hrvatski will look like.", url:"/?go=napredak", tag:"hello" }, rec.site, 600);
+    return json(200, { ok:true, status: st });
+  }
+  if(path === "unsubscribe"){
+    rec.subs = (rec.subs || []).filter(x => x.endpoint !== body.endpoint);
+    await put(); return json(200, { ok:true });
+  }
+  if(path === "sync"){ rec.at = Date.now(); await put(); return json(200, { ok:true }); }
+  if(path === "test"){
+    if(!(rec.subs || []).length) return json(400, { error:"NOSUB" });
+    const changed = await sendAll(env, rec, { title:"Test ✓", body:"Notifications from Nauči hrvatski are working.", url:"/?go=napredak", tag:"test" }, 600);
+    if(changed) await put();
+    return json(200, { ok:true, devices: (rec.subs || []).length });
+  }
+  if(path === "event"){
+    if(!(rec.prefs || NOTIF_DEFAULTS).milestone) return json(200, { ok:true, skipped:true });
+    const changed = await sendAll(env, rec, { title: clip(body.title, 80), body: clip(body.body, 180), url:"/?go=home", tag:"milestone" }, 86400);
+    if(changed) await put();
+    return json(200, { ok:true });
+  }
+  return json(404, { error:"Not found" });
+}
+
+/* ---- the hourly schedule (all times New York) ---- */
+function plan(rec, now){
+  const { h, wd, day } = now;
+  const p = rec.prefs || NOTIF_DEFAULTS, d = rec.data || {};
+  const done = (d.done || []).includes(day);
+  const n = d.streak || 0;
+  const out = [];
+  if(p.streak && !done && (h === 14 || h === 20 || h === 22)){
+    const keep = n > 0 ? `your ${n}-day streak` : "a new streak";
+    out.push(h === 14 ? { title:"🔥 Today's word and verb are waiting", body:`Two quick sentences keep ${keep} going.`, url:"/?go=home", tag:"streak", ttl:7200 }
+      : h === 20 ? { title:"⏰ Streak check", body:`Today's word and verb still aren't done. Two minutes now saves ${keep}.`, url:"/?go=home", tag:"streak", ttl:7200 }
+      : { title:"🚨 Last reminder today", body:`Do today's word and verb before bed to keep ${keep}.`, url:"/?go=home", tag:"streak", ttl:7200 });
+  }
+  if(p.phrase && h === 9 && d.phr && d.phr[day]){
+    const [hr, en] = d.phr[day];
+    out.push({ title:"💬 Fraza dana: " + clip(hr, 70), body: clip(en, 120), url:"/?go=home", tag:"phrase", ttl:6 * 3600 });
+  }
+  if(p.qq && h === 17 && Array.isArray(d.qq) && d.qq.length){
+    const q = d.qq[dayIdx(day) % d.qq.length];
+    out.push({ title:"❓ Quick question", body: clip(q.q, 160) + (q.t === "mc" && Array.isArray(q.o) ? "\n" + q.o.map(x => clip(x, 40)).join(" · ").slice(0, 120) : ""),
+               url:"/?qq=" + b64u.enc(te.encode(JSON.stringify(q))), tag:"qq", ttl:5 * 3600 });
+  }
+  if(p.cards && h === 19 && d.cards && d.cards.n > 0 && d.cards.lastDay !== day){
+    out.push({ title:"🃏 Your flashcards are waiting", body:`${d.cards.n} words in your learning set. One round takes about two minutes.`, url:"/?go=kartice", tag:"cards", ttl:3 * 3600 });
+  }
+  if(p.weekly && wd === 0 && h === 18){
+    const keys = Array.from({ length: 7 }, (_, i) => dayKey(dayIdx(day) - i));
+    const act = d.act || {};
+    const sum = f => keys.reduce((s, k) => s + ((act[k] || {})[f] || 0), 0);
+    const days = keys.filter(k => (d.done || []).includes(k)).length;
+    const fc = {};
+    keys.forEach(k => Object.entries((act[k] || {}).fc || {}).forEach(([c, [r, t]]) => { fc[c] = fc[c] || [0, 0]; fc[c][0] += r; fc[c][1] += t; }));
+    const weak = Object.entries(fc).filter(([, v]) => v[1] >= 5).map(([c, v]) => [c, Math.round(v[0] / v[1] * 100)]).sort((a, b) => a[1] - b[1])[0];
+    out.push({ title:"📊 Your week in Croatian",
+      body:`${days}/7 days done · ${sum("xp")} points · ${sum("q")} quizzes · ${sum("w")} new words.` +
+           (weak ? ` Weakest case: ${CASE_NAMES[weak[0].replace(/^p/, "")] || weak[0]} (${weak[1]}%).` : "") + (n ? ` Streak: ${n} 🔥` : ""),
+      url:"/?go=napredak", tag:"weekly", ttl:24 * 3600 });
+  }
+  return out;
+}
+async function runSchedule(env, t){
+  const now = nyNow(t);
+  let cursor;
+  do{
+    const page = await env.PUSH.list({ prefix:"u:", cursor });
+    for(const k of page.keys){
+      const rec = await env.PUSH.get(k.name, "json");
+      if(!rec || !(rec.subs || []).length) continue;
+      let changed = false;
+      for(const m of plan(rec, now)){
+        const { ttl, ...msg } = m;
+        if(await sendAll(env, rec, msg, ttl)) changed = true;
+      }
+      if(changed) await env.PUSH.put(k.name, JSON.stringify(rec));
+    }
+    cursor = page.list_complete ? null : page.cursor;
+  }while(cursor);
+}
+
 
 /* ============================================================
    Entry point. Anything that isn't /api/chat is served as a
@@ -360,7 +575,18 @@ export default {
       return json(405, { error: "Method not allowed" });
     }
 
+    if(url.pathname.startsWith("/api/push/")){
+      if(request.method === "OPTIONS") return new Response(null, { status: 204 });
+      try{ return await handlePush(request, env, url.pathname.slice(10)); }
+      catch(e){ console.error("push route:", e && e.message); return json(500, { error:"Push error" }); }
+    }
+
     if(env.ASSETS) return env.ASSETS.fetch(request);
     return new Response("Not found", { status: 404 });
+  },
+
+  // Runs every hour (Cron Trigger "0 * * * *") and sends whatever reminders are due.
+  async scheduled(event, env, ctx){
+    if(env.PUSH) ctx.waitUntil(runSchedule(env, event.scheduledTime || Date.now()));
   }
 };
