@@ -352,7 +352,8 @@ async function handlePost(request, env){
    kept in Cloudflare's cache, so the same sentence is only ever made once.
    ============================================================ */
 const TTS_MODELS = ["gemini-3.1-flash-tts-preview", "gemini-2.5-flash-preview-tts"];
-const TTS_VOICE  = "Kore";
+const TTS_VOICE  = "Kore";                                 // default
+const TTS_VOICES = new Set(["Kore", "Aoede", "Leda", "Charon", "Orus", "Puck"]);
 const TTS_MAX    = 1800;
 
 function wavFromPcm(pcm, rate){
@@ -374,13 +375,20 @@ async function handleTts(request, env, ctx){
   const text = String(body.text || "").replace(/\s+/g, " ").trim();
   if(!text) return json(400, { error:"No text" });
   if(text.length > TTS_MAX) return json(413, { error:"Too long" });
+  const voice = TTS_VOICES.has(body.voice) ? body.voice : TTS_VOICE;
 
   // already made? (shared cache, keyed by the exact text)
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(TTS_VOICE + "|" + text));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(voice + "|" + text));
   const key = new Request("https://tts.cache/" + [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join(""));
   const cache = caches.default;
-  const hit = await cache.match(key);
+  const hit = await cache.match(key);                       // (only works on custom domains)
   if(hit) return hit;
+  // Kept for good in KV, which also works on workers.dev — each sentence is made only once, ever.
+  const kvKey = "tts:" + key.url.slice(-64);
+  if(env.PUSH){
+    const stored = await env.PUSH.get(kvKey, "arrayBuffer");
+    if(stored) return new Response(stored, { headers:{ "Content-Type":"audio/wav", "Cache-Control":"public, max-age=31536000, immutable", "X-From":"kv" } });
+  }
 
   const ip = request.headers.get("cf-connecting-ip") || "unknown";
   const limited = rateLimit(ip);
@@ -395,7 +403,7 @@ async function handleTts(request, env, ctx){
         headers:{ "Content-Type":"application/json", "x-goog-api-key": env.GEMINI_API_KEY },
         body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }],
           generationConfig:{ responseModalities:["AUDIO"],
-            speechConfig:{ voiceConfig:{ prebuiltVoiceConfig:{ voiceName: TTS_VOICE } } } } })
+            speechConfig:{ voiceConfig:{ prebuiltVoiceConfig:{ voiceName: voice } } } } })
       });
       if(!r.ok){ last = r.status + " " + (await r.text().catch(() => "")).slice(0, 200); console.warn("tts", model, last); continue; }
       const j = await r.json();
@@ -406,7 +414,11 @@ async function handleTts(request, env, ctx){
       for(let i = 0; i < bin.length; i++) pcm[i] = bin.charCodeAt(i);
       const res = new Response(wavFromPcm(pcm, rate), { headers:{
         "Content-Type":"audio/wav", "Cache-Control":"public, max-age=31536000, immutable", "X-Model-Used": model } });
-      if(ctx && ctx.waitUntil) ctx.waitUntil(cache.put(key, res.clone()));
+      const wav = await res.clone().arrayBuffer();
+      if(ctx && ctx.waitUntil){
+        ctx.waitUntil(cache.put(key, res.clone()).catch(() => {}));
+        if(env.PUSH) ctx.waitUntil(env.PUSH.put(kvKey, wav).catch(e => console.warn("tts kv:", e && e.message)));
+      }
       return res;
     }catch(e){ last = String(e && e.message); }
   }
