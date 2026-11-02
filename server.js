@@ -351,9 +351,9 @@ async function handlePost(request, env){
    Gemini's speech models read Croatian with a natural voice. Every clip is
    kept in Cloudflare's cache, so the same sentence is only ever made once.
    ============================================================ */
-const TTS_MODELS = ["gemini-3.1-flash-tts-preview", "gemini-2.5-flash-preview-tts"];
+const TTS_MODELS = ["gemini-3.1-flash-tts-preview", "gemini-2.5-flash-preview-tts", "gemini-2.5-pro-preview-tts"];  // each has its own daily allowance
 const TTS_VOICE  = "Kore";                                 // default
-const TTS_VOICES = new Set(["Kore", "Aoede", "Leda", "Charon", "Orus", "Puck"]);
+const TTS_VOICES = new Set(["Kore", "Aoede", "Leda", "Charon", "Orus", "Fenrir", "Puck"]);
 const TTS_MAX    = 1800;
 
 function wavFromPcm(pcm, rate){
@@ -389,6 +389,8 @@ async function handleTts(request, env, ctx){
     const stored = await env.PUSH.get(kvKey, "arrayBuffer");
     if(stored) return new Response(stored, { headers:{ "Content-Type":"audio/wav", "Cache-Control":"public, max-age=31536000, immutable", "X-From":"kv" } });
   }
+  // "only if it's already made" — used for getting pages ready; never spends the daily allowance
+  if(body.only) return json(404, { error:"NOT_STORED" });
 
   const ip = request.headers.get("cf-connecting-ip") || "unknown";
   const limited = rateLimit(ip);
@@ -422,7 +424,18 @@ async function handleTts(request, env, ctx){
       return res;
     }catch(e){ last = String(e && e.message); }
   }
-  return json(502, { error: "TTS_FAILED: " + (last || "") });
+  // Couldn't make it (usually the free daily allowance is used up). Any other voice
+  // that already said this sentence is still better than the phone's robot voice.
+  if(env.PUSH){
+    for(const v of TTS_VOICES){
+      if(v === voice) continue;
+      const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(v + "|" + text));
+      const other = await env.PUSH.get("tts:" + [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, "0")).join(""), "arrayBuffer");
+      if(other) return new Response(other, { headers:{ "Content-Type":"audio/wav", "Cache-Control":"no-store", "X-Fallback-Voice": v } });
+    }
+  }
+  const quota = /429|RESOURCE_EXHAUSTED|quota/i.test(last || "");
+  return json(quota ? 429 : 502, { error: (quota ? "QUOTA: " : "TTS_FAILED: ") + (last || "") });
 }
 
 
