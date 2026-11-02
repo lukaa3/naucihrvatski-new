@@ -539,7 +539,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.29";
+const VERSION = "10.30";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -4586,7 +4586,7 @@ function voiceNote(){
 
 /* ---- natural voice: Gemini reads it (via /api/tts), kept on this device after the first play.
    If that's not possible (offline, busy), the device's own Croatian voice reads it instead. ---- */
-const TTS = { audio: null, unlocked: false, seq: 0, failUntil: 0 };
+const TTS = { audio: null, unlocked: false, seq: 0, failUntil: 0, last: "" };
 function ttsAudio(){
   if(!TTS.audio){ TTS.audio = new Audio(); TTS.audio.preload = "auto"; }
   return TTS.audio;
@@ -4612,34 +4612,35 @@ function ttsLoading(on){
 }
 const VOICES_NATURAL = [
   ["Kore",   "woman", "clear"],  ["Aoede", "woman", "light"],  ["Leda", "woman", "young"],
-  ["Charon", "man",   "calm"],   ["Orus",  "man",   "firm"],   ["Puck", "man",  "upbeat"]
+  ["Charon", "man",   "calm"],   ["Orus",  "man",   "firm"],   ["Fenrir", "man", "lively"]
 ];
-const ttsVoice = () => VOICES_NATURAL.some(v => v[0] === S.voice) ? S.voice : "Kore";
+const ttsVoice = () => S.voice === "Puck" ? "Fenrir" : VOICES_NATURAL.some(v => v[0] === S.voice) ? S.voice : "Kore";
 const TTS_INFLIGHT = new Map();                          // one request per sentence, even if tapped twice
-function ttsClip(text, voice){
+function ttsClip(text, voice, only){
   voice = voice || ttsVoice();
-  const k = voice + "|" + text;
-  if(!TTS_INFLIGHT.has(k)) TTS_INFLIGHT.set(k, ttsClipFetch(text, voice).finally(() => TTS_INFLIGHT.delete(k)));
+  const k = voice + "|" + text + (only ? "|only" : "");
+  if(!TTS_INFLIGHT.has(k)) TTS_INFLIGHT.set(k, ttsClipFetch(text, voice, only).finally(() => TTS_INFLIGHT.delete(k)));
   return TTS_INFLIGHT.get(k);
 }
-async function ttsClipFetch(text, voice){
+async function ttsClipFetch(text, voice, only){
   const key = voice === "Kore" ? "/tts/" + encodeURIComponent(text) : "/tts/" + voice + "/" + encodeURIComponent(text);
   let c = null;
   try{ c = await caches.open("nauci-tts"); const hit = await c.match(key); if(hit) return await hit.blob(); }catch(e){}
-  const r = await fetch("/api/tts", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ text, voice }) });
+  const r = await fetch("/api/tts", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(only ? { text, voice, only: true } : { text, voice }) });
   if(!r.ok) throw new Error("TTS " + r.status);
+  const fallback = r.headers.get("X-Fallback-Voice");
   const blob = await r.blob();
   if(!blob.size || !/audio/.test(blob.type || r.headers.get("content-type") || "")) throw new Error("TTS not audio");
-  try{ if(c) await c.put(key, new Response(blob, { headers:{ "Content-Type":"audio/wav" } })); }catch(e){}
+  if(!fallback){ try{ if(c) await c.put(key, new Response(blob, { headers:{ "Content-Type":"audio/wav" } })); }catch(e){} }
   return blob;
 }
-async function speakNatural(text){
+async function speakNatural(text, only){
   const my = ++TTS.seq;
   try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
   const a = ttsAudio(); try{ a.pause(); }catch(e){}
   const t = setTimeout(() => { if(my === TTS.seq) ttsLoading(true); }, 700);
   try{
-    const blob = await ttsClip(text);
+    const blob = await ttsClip(text, null, only);
     if(my !== TTS.seq) return true;                       // you tapped something else meanwhile
     if(a.dataset.url) URL.revokeObjectURL(a.dataset.url);
     a.dataset.url = URL.createObjectURL(blob);
@@ -4655,9 +4656,9 @@ const TTSQ = { list: [], busy: false, seen: new Set(), t: null };
 function ttsPrefetchPage(){
   clearTimeout(TTSQ.t);
   TTSQ.t = setTimeout(() => {
-    if(S.naturalVoice === false || navigator.onLine === false || Date.now() < TTS.failUntil || document.hidden) return;
+    if(S.naturalVoice === false || navigator.onLine === false || document.hidden) return;
     const texts = [...new Set($$("#main .spk[data-say]").map(b => b.dataset.say.trim()))]
-      .filter(t => t && t.length <= 300 && !TTSQ.seen.has(ttsVoice() + "|" + t)).slice(0, 4);
+      .filter(t => t && t.length <= 300 && !TTSQ.seen.has(ttsVoice() + "|" + t)).slice(0, 12);
     texts.forEach(t => { TTSQ.seen.add(ttsVoice() + "|" + t); TTSQ.list.push(t); });
     ttsPump();
   }, 1500);
@@ -4666,17 +4667,19 @@ async function ttsPump(){
   if(TTSQ.busy) return; TTSQ.busy = true;
   while(TTSQ.list.length){
     const t = TTSQ.list.shift();
-    try{ await ttsClip(t); }catch(e){ TTSQ.list.length = 0; break; }   // busy or offline: stop quietly
-    await new Promise(r => setTimeout(r, 1200));
+    try{ await ttsClip(t, null, true); }catch(e){}         // only clips that already exist — never uses up the daily allowance
+    await new Promise(r => setTimeout(r, 300));
   }
   TTSQ.busy = false;
 }
 function speak(text){
   text = String(text || "").trim(); if(!text) return;
-  if(S.naturalVoice !== false && Date.now() > TTS.failUntil && navigator.onLine !== false){
-    speakNatural(text).catch(err => {
-      console.warn("natural voice unavailable:", err && err.message);
-      TTS.failUntil = Date.now() + 2 * 60 * 1000;           // use the device voice for a couple of minutes
+  TTS.last = text;
+  if(S.naturalVoice !== false && navigator.onLine !== false){
+    const only = Date.now() < TTS.failUntil;                 // can't make new ones right now — but saved ones still play
+    speakNatural(text, only).catch(err => {
+      const m = String(err && err.message);
+      if(!only) TTS.failUntil = Date.now() + (/429/.test(m) ? 30 : 2) * 60 * 1000;
       speakDevice(text);
     });
     return;
@@ -4714,7 +4717,11 @@ function paintSlow(){
   b.setAttribute("aria-pressed", S.slowAudio ? "true" : "false");
   b.textContent = "🐢 Slow audio: " + (S.slowAudio ? "on" : "off");
 }
-function toggleSlow(){ S.slowAudio = !S.slowAudio; save(); paintSlow(); speak("Polako i jasno."); }
+function toggleSlow(){
+  S.slowAudio = !S.slowAudio; save(); paintSlow();
+  if(TTS.audio && TTS.audio.src && !TTS.audio.paused) TTS.audio.playbackRate = S.slowAudio ? 0.75 : 1;   // change it mid-sentence
+  else if(TTS.last) speak(TTS.last);          // replay the last sentence (already made, so no robot voice)
+}
 
 function voiceHelp(){
   if($("#voicebar")) return;
@@ -8339,8 +8346,10 @@ function vSave(){
 /* ---- choosing the voice ---- */
 function pickVoice(v){
   S.voice = v; save();
-  speakNatural(v === "Charon" || v === "Orus" || v === "Puck" ? "Bok! Ja ću ti čitati hrvatski. Može?" : "Bok! Ja ću ti čitati hrvatski. Može?")
-    .catch(() => toast("Couldn't play the voice right now — try again in a minute."));
+  speakNatural("Bok! Ja ću ti čitati hrvatski. Može?")
+    .catch(e => toast(/429/.test(String(e && e.message))
+      ? "Today's free voice allowance is used up, so " + v + " can't be tried until tomorrow. Sentences already made still play in a natural voice."
+      : "Couldn't play the voice right now — try again in a minute."));
   paintVoicePick();
 }
 function paintVoicePick(){
