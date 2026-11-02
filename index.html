@@ -539,7 +539,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.27";
+const VERSION = "10.29";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -4610,11 +4610,23 @@ function ttsLoading(on){
     el.innerHTML = `<span class="spin"></span> Loading the voice…`; document.body.appendChild(el);
   } else if(!on && el) el.remove();
 }
-async function ttsClip(text){
-  const key = "/tts/" + encodeURIComponent(text);
+const VOICES_NATURAL = [
+  ["Kore",   "woman", "clear"],  ["Aoede", "woman", "light"],  ["Leda", "woman", "young"],
+  ["Charon", "man",   "calm"],   ["Orus",  "man",   "firm"],   ["Puck", "man",  "upbeat"]
+];
+const ttsVoice = () => VOICES_NATURAL.some(v => v[0] === S.voice) ? S.voice : "Kore";
+const TTS_INFLIGHT = new Map();                          // one request per sentence, even if tapped twice
+function ttsClip(text, voice){
+  voice = voice || ttsVoice();
+  const k = voice + "|" + text;
+  if(!TTS_INFLIGHT.has(k)) TTS_INFLIGHT.set(k, ttsClipFetch(text, voice).finally(() => TTS_INFLIGHT.delete(k)));
+  return TTS_INFLIGHT.get(k);
+}
+async function ttsClipFetch(text, voice){
+  const key = voice === "Kore" ? "/tts/" + encodeURIComponent(text) : "/tts/" + voice + "/" + encodeURIComponent(text);
   let c = null;
   try{ c = await caches.open("nauci-tts"); const hit = await c.match(key); if(hit) return await hit.blob(); }catch(e){}
-  const r = await fetch("/api/tts", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ text }) });
+  const r = await fetch("/api/tts", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ text, voice }) });
   if(!r.ok) throw new Error("TTS " + r.status);
   const blob = await r.blob();
   if(!blob.size || !/audio/.test(blob.type || r.headers.get("content-type") || "")) throw new Error("TTS not audio");
@@ -4625,7 +4637,7 @@ async function speakNatural(text){
   const my = ++TTS.seq;
   try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
   const a = ttsAudio(); try{ a.pause(); }catch(e){}
-  const t = setTimeout(() => { if(my === TTS.seq) ttsLoading(true); }, 500);
+  const t = setTimeout(() => { if(my === TTS.seq) ttsLoading(true); }, 700);
   try{
     const blob = await ttsClip(text);
     if(my !== TTS.seq) return true;                       // you tapped something else meanwhile
@@ -4637,6 +4649,27 @@ async function speakNatural(text){
     await a.play();
     return true;
   }finally{ clearTimeout(t); if(my === TTS.seq) ttsLoading(false); }
+}
+/* Get the first few 🔊 phrases on a page ready in the background, so tapping them plays at once. */
+const TTSQ = { list: [], busy: false, seen: new Set(), t: null };
+function ttsPrefetchPage(){
+  clearTimeout(TTSQ.t);
+  TTSQ.t = setTimeout(() => {
+    if(S.naturalVoice === false || navigator.onLine === false || Date.now() < TTS.failUntil || document.hidden) return;
+    const texts = [...new Set($$("#main .spk[data-say]").map(b => b.dataset.say.trim()))]
+      .filter(t => t && t.length <= 300 && !TTSQ.seen.has(ttsVoice() + "|" + t)).slice(0, 4);
+    texts.forEach(t => { TTSQ.seen.add(ttsVoice() + "|" + t); TTSQ.list.push(t); });
+    ttsPump();
+  }, 1500);
+}
+async function ttsPump(){
+  if(TTSQ.busy) return; TTSQ.busy = true;
+  while(TTSQ.list.length){
+    const t = TTSQ.list.shift();
+    try{ await ttsClip(t); }catch(e){ TTSQ.list.length = 0; break; }   // busy or offline: stop quietly
+    await new Promise(r => setTimeout(r, 1200));
+  }
+  TTSQ.busy = false;
 }
 function speak(text){
   text = String(text || "").trim(); if(!text) return;
@@ -4697,7 +4730,7 @@ function voiceHelp(){
     <button class="btn sm" onclick="this.parentNode.remove()">OK</button>`;
   document.body.appendChild(el);
 }
-const spk = t => `<button class="spk" title="Poslušaj" onclick="speak(${JSON.stringify(t).replace(/"/g,'&quot;')})">🔊</button>`;
+const spk = t => `<button class="spk" title="Poslušaj" data-say="${esc(String(t))}" onclick="speak(${JSON.stringify(t).replace(/"/g,'&quot;')})">🔊</button>`;
 
 /* --- word rows --- */
 let CARD_SRC = "Other";
@@ -5122,6 +5155,7 @@ function saveBanner(){
 function shell(eyebrow, title, lede, body){
   $("#main").innerHTML = `<div class="view">${saveBanner()}<div class="eyebrow">${eyebrow}</div>
     <h1 class="page-h">${title}</h1>${lede?`<p class="lede">${lede}</p>`:""}${body}</div>`;
+  try{ ttsPrefetchPage(); }catch(e){}
 }
 
 /* ============================================================
@@ -8274,6 +8308,8 @@ function vSave(){
       </div>
     </div>
 
+    <div class="card" style="margin-top:14px" id="voice-card"></div>
+
     <div class="card" style="margin-top:14px" id="notif-card"></div>
 
     <div class="card" style="margin-top:14px">
@@ -8297,7 +8333,26 @@ function vSave(){
       <p style="font-size:14px;color:var(--stone-dim)">Erases everything in your account. It's backed up first, so you could still restore it from the list above.</p>
       <button class="btn ghost" id="wipe" onclick="wipe()">${dual("Erase all progress","Obriši sve")}</button>
     </div>` : ""}`);
-  if(signedIn){ loadBackupsUI(); paintNotif(); notifCheck(); }
+  if(signedIn){ loadBackupsUI(); paintNotif(); notifCheck(); paintVoicePick(); }
+}
+
+/* ---- choosing the voice ---- */
+function pickVoice(v){
+  S.voice = v; save();
+  speakNatural(v === "Charon" || v === "Orus" || v === "Puck" ? "Bok! Ja ću ti čitati hrvatski. Može?" : "Bok! Ja ću ti čitati hrvatski. Može?")
+    .catch(() => toast("Couldn't play the voice right now — try again in a minute."));
+  paintVoicePick();
+}
+function paintVoicePick(){
+  const box = $("#voice-card"); if(!box) return;
+  const cur = ttsVoice();
+  const row = who => VOICES_NATURAL.filter(v => v[1] === who).map(([name, , feel]) =>
+    `<button class="chip" aria-pressed="${cur === name}" onclick="pickVoice('${name}')">${dual(name, feel)}</button>`).join("");
+  box.innerHTML = `<div class="kicker">voice · glas</div>
+    <p style="font-size:14px;color:var(--stone-dim);margin:2px 0 10px">Who reads the Croatian aloud. Tap one to hear it.</p>
+    <div style="font-size:13px;color:var(--stone-dim);margin-bottom:4px">Women</div><div class="chips">${row("woman")}</div>
+    <div style="font-size:13px;color:var(--stone-dim);margin:10px 0 4px">Men</div><div class="chips">${row("man")}</div>
+    <p style="font-size:12.5px;color:var(--stone-dim);margin:10px 0 0">A new voice has to make each sentence once the first time, so it's a little slower until it has.</p>`;
 }
 
 function toast(msg){
