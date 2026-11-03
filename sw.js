@@ -9,9 +9,10 @@ self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(CORE.map(u => c.add(u).catch(() => {})))).then(() => self.skipWaiting()));
 });
 
+// (nauci-tts holds the voice clips you've already heard — never thrown away on an update)
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== "nauci-link").map(k => caches.delete(k))))
+    .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== "nauci-link" && k !== "nauci-tts").map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 
