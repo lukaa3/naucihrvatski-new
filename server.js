@@ -367,6 +367,45 @@ function wavFromPcm(pcm, rate){
   return out;
 }
 
+const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+async function ttsKvKey(voice, text){
+  return "tts:" + hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(voice + "|" + text)));
+}
+const wavResponse = (buf, extra) => new Response(buf, { headers: Object.assign({
+  "Content-Type":"audio/wav", "Cache-Control":"public, max-age=31536000, immutable" }, extra || {}) });
+
+// When Google says a model's free allowance is used up, remember it, so the next taps
+// don't each wait for three refusals before getting an answer.
+const TTS_WAIT = {};                                          // model -> time it can be tried again
+function nextPacificMidnight(now){                            // Google's daily allowance resets at midnight Pacific
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone:"America/Los_Angeles", hourCycle:"h23",
+    hour:"numeric", minute:"numeric", second:"numeric" }).formatToParts(new Date(now)).map(x => [x.type, x.value]));
+  return now + (86400 - ((+p.hour % 24) * 3600 + +p.minute * 60 + +p.second)) * 1000 + 60000;
+}
+function waitFromError(status, text, now){
+  if(status === 404 || status === 400 && /not (found|supported)/i.test(text)) return now + 86400000;   // model not available to this key
+  if(status !== 429 && !/RESOURCE_EXHAUSTED/.test(text)) return 0;
+  if(/PerDay|per day|daily/i.test(text)) return nextPacificMidnight(now);
+  const m = /"retryDelay"\s*:\s*"(\d+)/.exec(text);
+  return now + Math.min(600, m ? +m[1] + 1 : 60) * 1000;
+}
+async function ttsWaits(env){
+  if(env.PUSH && !TTS_WAIT._loaded){
+    try{ Object.assign(TTS_WAIT, JSON.parse(await env.PUSH.get("tts:wait") || "{}")); }catch(e){}
+    TTS_WAIT._loaded = Date.now();
+  }
+  if(TTS_WAIT._loaded && Date.now() - TTS_WAIT._loaded > 60000) TTS_WAIT._loaded = 0;   // re-read now and then (other copies of the worker)
+  return TTS_WAIT;
+}
+async function otherVoiceClip(env, text, skip){
+  if(!env.PUSH) return null;
+  const vs = TTS_VOICE === skip ? [] : [TTS_VOICE];
+  TTS_VOICES.forEach(v => { if(v !== skip && !vs.includes(v)) vs.push(v); });
+  const got = await Promise.all(vs.map(async v => [v, await env.PUSH.get(await ttsKvKey(v, text), "arrayBuffer")]));
+  const hit = got.find(x => x[1]);
+  return hit ? { voice: hit[0], buf: hit[1] } : null;
+}
+
 async function handleTts(request, env, ctx){
   if(request.method !== "POST") return json(405, { error:"Method not allowed" });
   if(!originOk(request, env)) return json(403, { error:"Forbidden" });
@@ -377,28 +416,41 @@ async function handleTts(request, env, ctx){
   if(text.length > TTS_MAX) return json(413, { error:"Too long" });
   const voice = TTS_VOICES.has(body.voice) ? body.voice : TTS_VOICE;
 
-  // already made? (shared cache, keyed by the exact text)
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(voice + "|" + text));
-  const key = new Request("https://tts.cache/" + [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join(""));
-  const cache = caches.default;
-  const hit = await cache.match(key);                       // (only works on custom domains)
-  if(hit) return hit;
-  // Kept for good in KV, which also works on workers.dev — each sentence is made only once, ever.
-  const kvKey = "tts:" + key.url.slice(-64);
+  // Already made? Kept for good in KV — each sentence is made only once, ever.
+  const kvKey = await ttsKvKey(voice, text);
   if(env.PUSH){
     const stored = await env.PUSH.get(kvKey, "arrayBuffer");
-    if(stored) return new Response(stored, { headers:{ "Content-Type":"audio/wav", "Cache-Control":"public, max-age=31536000, immutable", "X-From":"kv" } });
+    if(stored) return wavResponse(stored, { "X-From":"kv" });
   }
-  // "only if it's already made" — used for getting pages ready; never spends the daily allowance
-  if(body.only) return json(404, { error:"NOT_STORED" });
+
+  const now = Date.now();
+  const waits = await ttsWaits(env);
+  const models = TTS_MODELS.filter(m => !(waits[m] > now));
+  const quotaUntil = () => Math.min(...TTS_MODELS.map(m => waits[m] || 0)) || 0;
+  const fallback = async () => {
+    // Couldn't make it right now: any other voice that already said this sentence
+    // is still much better than the phone's robot voice.
+    if(body.strict) return null;                        // trying out a voice: only that voice will do
+    const o = await otherVoiceClip(env, text, voice);
+    return o ? wavResponse(o.buf, { "Cache-Control":"no-store", "X-Fallback-Voice": o.voice, "X-Quota-Until": String(quotaUntil()) }) : null;
+  };
+
+  // "only if it's already made" (getting a page ready, or the allowance is used up): never spends anything
+  if(body.only || !models.length){
+    const fb = await fallback();
+    if(fb) return fb;
+    return body.only ? json(404, { error:"NOT_STORED" })
+      : new Response(JSON.stringify({ error:"QUOTA: the free voice allowance is used up for today" }),
+          { status: 429, headers:{ "Content-Type":"application/json", "X-Quota-Until": String(quotaUntil()) } });
+  }
 
   const ip = request.headers.get("cf-connecting-ip") || "unknown";
   const limited = rateLimit(ip);
   if(limited) return json(429, { error: limited });
 
   const prompt = "Read this aloud in standard Croatian, in a warm, natural, clear voice at a relaxed pace, like a friendly Croatian teacher:\n" + text;
-  let last = null;
-  for(const model of TTS_MODELS){
+  let last = null, waitChanged = false;
+  for(const model of models){
     try{
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method:"POST",
@@ -407,35 +459,35 @@ async function handleTts(request, env, ctx){
           generationConfig:{ responseModalities:["AUDIO"],
             speechConfig:{ voiceConfig:{ prebuiltVoiceConfig:{ voiceName: voice } } } } })
       });
-      if(!r.ok){ last = r.status + " " + (await r.text().catch(() => "")).slice(0, 200); console.warn("tts", model, last); continue; }
+      if(!r.ok){
+        const t = await r.text().catch(() => "");
+        last = r.status + " " + t.slice(0, 300); console.warn("tts", model, last);
+        const w = waitFromError(r.status, t, Date.now());
+        if(w){ waits[model] = w; waitChanged = true; }
+        continue;
+      }
       const j = await r.json();
       const part = (((((j.candidates || [])[0] || {}).content || {}).parts) || []).find(p => p.inlineData && p.inlineData.data);
       if(!part){ last = "no audio"; continue; }
       const rate = +((/rate=(\d+)/.exec(part.inlineData.mimeType || "") || [])[1] || 24000);
       const bin = atob(part.inlineData.data), pcm = new Uint8Array(bin.length);
       for(let i = 0; i < bin.length; i++) pcm[i] = bin.charCodeAt(i);
-      const res = new Response(wavFromPcm(pcm, rate), { headers:{
-        "Content-Type":"audio/wav", "Cache-Control":"public, max-age=31536000, immutable", "X-Model-Used": model } });
-      const wav = await res.clone().arrayBuffer();
-      if(ctx && ctx.waitUntil){
-        ctx.waitUntil(cache.put(key, res.clone()).catch(() => {}));
-        if(env.PUSH) ctx.waitUntil(env.PUSH.put(kvKey, wav).catch(e => console.warn("tts kv:", e && e.message)));
-      }
-      return res;
+      const wav = wavFromPcm(pcm, rate);
+      if(env.PUSH && ctx && ctx.waitUntil) ctx.waitUntil(env.PUSH.put(kvKey, wav).catch(e => console.warn("tts kv:", e && e.message)));
+      if(waitChanged && env.PUSH && ctx && ctx.waitUntil) ctx.waitUntil(saveWaits(env, waits));
+      return wavResponse(wav, { "X-Model-Used": model });
     }catch(e){ last = String(e && e.message); }
   }
-  // Couldn't make it (usually the free daily allowance is used up). Any other voice
-  // that already said this sentence is still better than the phone's robot voice.
-  if(env.PUSH){
-    for(const v of TTS_VOICES){
-      if(v === voice) continue;
-      const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(v + "|" + text));
-      const other = await env.PUSH.get("tts:" + [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, "0")).join(""), "arrayBuffer");
-      if(other) return new Response(other, { headers:{ "Content-Type":"audio/wav", "Cache-Control":"no-store", "X-Fallback-Voice": v } });
-    }
-  }
+  if(waitChanged && env.PUSH){ if(ctx && ctx.waitUntil) ctx.waitUntil(saveWaits(env, waits)); }
+  const fb = await fallback();
+  if(fb) return fb;
   const quota = /429|RESOURCE_EXHAUSTED|quota/i.test(last || "");
-  return json(quota ? 429 : 502, { error: (quota ? "QUOTA: " : "TTS_FAILED: ") + (last || "") });
+  return new Response(JSON.stringify({ error: (quota ? "QUOTA: " : "TTS_FAILED: ") + (last || "") }),
+    { status: quota ? 429 : 502, headers:{ "Content-Type":"application/json", "X-Quota-Until": String(quotaUntil()) } });
+}
+function saveWaits(env, waits){
+  const o = {}; TTS_MODELS.forEach(m => { if(waits[m] > Date.now()) o[m] = waits[m]; });
+  return env.PUSH.put("tts:wait", JSON.stringify(o), { expirationTtl: 2 * 86400 }).catch(() => {});
 }
 
 
