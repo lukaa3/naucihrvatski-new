@@ -544,7 +544,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.31";
+const VERSION = "10.32";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -4621,31 +4621,49 @@ const VOICES_NATURAL = [
 ];
 const ttsVoice = () => S.voice === "Puck" ? "Fenrir" : VOICES_NATURAL.some(v => v[0] === S.voice) ? S.voice : "Kore";
 const TTS_INFLIGHT = new Map();                          // one request per sentence, even if tapped twice
-function ttsClip(text, voice, only){
+function ttsClip(text, voice, only, strict){
   voice = voice || ttsVoice();
-  const k = voice + "|" + text + (only ? "|only" : "");
-  if(!TTS_INFLIGHT.has(k)) TTS_INFLIGHT.set(k, ttsClipFetch(text, voice, only).finally(() => TTS_INFLIGHT.delete(k)));
+  const k = voice + "|" + text + (only ? "|only" : "") + (strict ? "|strict" : "");
+  if(!TTS_INFLIGHT.has(k)) TTS_INFLIGHT.set(k, ttsClipFetch(text, voice, only, strict).finally(() => TTS_INFLIGHT.delete(k)));
   return TTS_INFLIGHT.get(k);
 }
-async function ttsClipFetch(text, voice, only){
-  const key = voice === "Kore" ? "/tts/" + encodeURIComponent(text) : "/tts/" + voice + "/" + encodeURIComponent(text);
+const ttsKey = (voice, text) => voice === "Kore" ? "/tts/" + encodeURIComponent(text) : "/tts/" + voice + "/" + encodeURIComponent(text);
+const TTS_MEM = new Map();                               // clips played this session — instant replays
+// The server says when Google's free allowance comes back; until then, don't ask for new clips.
+function ttsQuota(r){
+  const u = +(r.headers.get("X-Quota-Until") || 0);
+  if(u > Date.now()) TTS.failUntil = Math.max(TTS.failUntil, Math.min(u, Date.now() + 24 * 3600 * 1000));
+}
+async function ttsClipFetch(text, voice, only, strict){
+  const key = ttsKey(voice, text);
+  if(TTS_MEM.has(key)) return TTS_MEM.get(key);
+  const keep = b => { TTS_MEM.set(key, b); if(TTS_MEM.size > 60) TTS_MEM.delete(TTS_MEM.keys().next().value); return b; };
   let c = null;
-  try{ c = await caches.open("nauci-tts"); const hit = await c.match(key); if(hit) return await hit.blob(); }catch(e){}
-  const r = await fetch("/api/tts", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(only ? { text, voice, only: true } : { text, voice }) });
+  try{ c = await caches.open("nauci-tts"); const hit = await c.match(key); if(hit) return keep(await hit.blob()); }catch(e){}
+  // can't make new clips right now: another voice already saved on this phone is still a natural voice
+  if(only && c && !strict){
+    for(const [v] of VOICES_NATURAL){
+      if(v === voice) continue;
+      try{ const h = await c.match(ttsKey(v, text)); if(h) return await h.blob(); }catch(e){}
+    }
+  }
+  const r = await fetch("/api/tts", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(Object.assign({ text, voice }, only ? { only: true } : {}, strict ? { strict: true } : {})) });
+  ttsQuota(r);
   if(!r.ok) throw new Error("TTS " + r.status);
   const fallback = r.headers.get("X-Fallback-Voice");
   const blob = await r.blob();
   if(!blob.size || !/audio/.test(blob.type || r.headers.get("content-type") || "")) throw new Error("TTS not audio");
-  if(!fallback){ try{ if(c) await c.put(key, new Response(blob, { headers:{ "Content-Type":"audio/wav" } })); }catch(e){} }
-  return blob;
+  // save it under the voice that actually said it, so next time it plays straight from the phone
+  try{ if(c) await c.put(fallback ? ttsKey(fallback, text) : key, new Response(blob, { headers:{ "Content-Type":"audio/wav" } })); }catch(e){}
+  return fallback ? blob : keep(blob);
 }
-async function speakNatural(text, only){
+async function speakNatural(text, only, strict){
   const my = ++TTS.seq;
   try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
   const a = ttsAudio(); try{ a.pause(); }catch(e){}
   const t = setTimeout(() => { if(my === TTS.seq) ttsLoading(true); }, 700);
   try{
-    const blob = await ttsClip(text, null, only);
+    const blob = await ttsClip(text, null, only, strict);
     if(my !== TTS.seq) return true;                       // you tapped something else meanwhile
     if(a.dataset.url) URL.revokeObjectURL(a.dataset.url);
     a.dataset.url = URL.createObjectURL(blob);
@@ -4684,7 +4702,7 @@ function speak(text){
     const only = Date.now() < TTS.failUntil;                 // can't make new ones right now — but saved ones still play
     speakNatural(text, only).catch(err => {
       const m = String(err && err.message);
-      if(!only) TTS.failUntil = Date.now() + (/429/.test(m) ? 30 : 2) * 60 * 1000;
+      if(!only) TTS.failUntil = Math.max(TTS.failUntil, Date.now() + (/429/.test(m) ? 30 : 2) * 60 * 1000);
       speakDevice(text);
     });
     return;
@@ -8614,7 +8632,7 @@ function vSave(){
 /* ---- choosing the voice ---- */
 function pickVoice(v){
   S.voice = v; save();
-  speakNatural("Bok! Ja ću ti čitati hrvatski. Može?")
+  speakNatural("Bok! Ja ću ti čitati hrvatski. Može?", false, true)
     .catch(e => toast(/429/.test(String(e && e.message))
       ? "Today's free voice allowance is used up, so " + v + " can't be tried until tomorrow. Sentences already made still play in a natural voice."
       : "Couldn't play the voice right now — try again in a minute."));
