@@ -373,6 +373,11 @@ details.card > summary::-webkit-details-marker{display:none}
   box-shadow:0 8px 26px rgba(0,0,0,.5);max-width:250px;
 }
 .gloss b{font-family:var(--display);font-size:16px;color:var(--brass);display:block}
+.gtag{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:400;letter-spacing:.06em;padding:1px 6px;margin-left:7px;border:1px solid var(--line-2);border-radius:6px;color:var(--stone-dim);vertical-align:middle;line-height:1.4}
+.flash .front .gtag{font-size:13px;vertical-align:.35em}
+.conj{display:grid;grid-template-columns:auto auto;gap:3px 18px;font-size:13.5px;text-align:left;margin-top:6px}
+.conj span{color:var(--stone-dim);white-space:nowrap}.conj b{color:var(--stone);font-family:var(--display);font-weight:700;display:inline;font-size:inherit}
+.flash .conj{font-size:15.5px;margin-top:2px}
 
 /* ---------- flashcard ---------- */
 .flash{
@@ -539,7 +544,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.30";
+const VERSION = "10.31";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -7268,12 +7273,12 @@ async function gloss(ev, word){
   const key = norm(word);
   const target = ev.target;
   const put = txt => {
-    g.innerHTML = `<b>${esc(word)}</b>${txt}${glossStar(key)}`;
+    g.innerHTML = `<b>${esc(word)}</b>${txt}${glossStar(key, word)}`;
     g.classList.remove("hidden");
-    const r = target.getBoundingClientRect();
-    g.style.left = Math.min(window.innerWidth - 260, Math.max(8, r.left)) + "px";
-    g.style.top  = (r.bottom + 8) + "px";
+    g.dataset.k = key;
+    placeGloss(g, target);
     clearTimeout(g._t);
+    fillGlossConj(key, target);
   };
   const wait = msg => put(`<span style="color:var(--stone-dim)">${msg}</span>`);
 
@@ -7336,17 +7341,107 @@ Reply with ONLY this, one line, no JSON, no extra words:
     }
   }
 }
-/* ☆ in the word popup: saves the dictionary form + meaning to your cards. */
-function glossStar(key){
+/* ---- The word popup: "dictionary form — meaning (note)". ---- */
+function parseGloss(line){
+  const s = String(line || ""), i = s.indexOf("—");
+  if(i < 0) return null;
+  const base = s.slice(0, i).trim();
+  let en = s.slice(i + 1).trim(), note = "";
+  const m = en.match(/\(([^)]*)\)\s*$/);
+  if(m){ note = m[1]; en = en.slice(0, m.index).trim(); }
+  if(en.indexOf("—") > -1) en = en.split("—")[0].trim();
+  return base ? { base, en, note } : null;
+}
+const isInfinitive = w => /(ti|ći)(\s+se)?$/i.test(String(w || "").trim());
+function placeGloss(g, target){
+  const r = target.getBoundingClientRect();
+  g.style.left = Math.min(window.innerWidth - 260, Math.max(8, r.left)) + "px";
+  g.style.top  = (r.bottom + 8) + "px";
+  const h = g.offsetHeight;
+  if(r.bottom + 8 + h > window.innerHeight - 8 && r.top - 8 - h > 8) g.style.top = (r.top - 8 - h) + "px";   // no room below: open above the word
+}
+function glossSentence(word){
+  const t = (RD && RD.text && RD.text.indexOf(word) > -1) ? RD.text : (GLOSS_CTX || "");
+  const parts = t.split(/(?<=[.!?…])\s+/);
+  return (parts.find(x => x.indexOf(word) > -1) || "").slice(0, 220);
+}
+// the card you made from this popup word (so ★ shows, and tapping again removes it)
+const GSTAR = {};
+function glossCardFor(key){
+  if(GSTAR[key] && S.cards && S.cards[GSTAR[key]]) return GSTAR[key];
+  const p = parseGloss(translationCache[key]);
+  if(!p || !S.cards) return null;
+  const b = p.base.toLowerCase();
+  const hit = Object.keys(S.cards).find(k => splitCard(k)[0].split(" / ")[0].toLowerCase() === b);
+  if(hit) GSTAR[key] = hit;
+  return hit || null;
+}
+/* ☆ in the word popup: always saves the basic form (kave → kava, volim → voljeti) with its real meaning. */
+function glossStar(key, word){
   const line = translationCache[key];
   if(!line || line.indexOf("—") < 0) return "";
-  const parts = line.split("—");
-  const hr = parts[0].trim();
-  const en = parts.slice(1).join("—").replace(/\s*\([^)]*\)\s*$/, "").trim();
-  if(!hr || !en) return "";
-  const k = cardKey(withForms(hr), en), on = cardSet().has(k);
-  return `<div style="margin-top:7px"><button class="save gstar" aria-pressed="${on}" data-card="${esc(k)}">${on ? "★" : "☆"}</button>
-    <span style="font-size:12px;color:var(--stone-dim)">add “${esc(withForms(hr))}” to your flashcards</span></div>`;
+  const p = parseGloss(line);
+  const on = !!glossCardFor(key);
+  const label = on ? `in your flashcards as “${esc(splitCard(GSTAR[key])[0])}”` : "add to your flashcards";
+  return `<div class="gconj"></div><div style="margin-top:7px"><button class="save gstar" aria-pressed="${on}" data-gword="${esc(word)}" onclick="starGloss(this)">${on ? "★" : "☆"}</button>
+    <span class="gstar-l" style="font-size:12px;color:var(--stone-dim)">${label}</span></div>`;
+}
+async function starGloss(btn){
+  const word = btn.getAttribute("data-gword"), key = norm(word);
+  const lab = btn.parentNode.querySelector(".gstar-l");
+  S.cards = S.cards || {};
+  const had = glossCardFor(key);
+  if(had){
+    dropCard(had); delete GSTAR[key]; save();
+    btn.setAttribute("aria-pressed", "false"); btn.textContent = "☆";
+    if(lab) lab.textContent = "add to your flashcards";
+    return;
+  }
+  if(btn.disabled) return;
+  btn.disabled = true;
+  if(lab) lab.innerHTML = `<span class="spin"></span> saving the basic form…`;
+  const p = parseGloss(translationCache[key]) || { base: word, en: "" };
+  const hint = gramOnly(p.en) ? "" : p.en;
+  let info = null;
+  try{ info = (await wordInfoBatch([{ w: word, en: hint, ctx: glossSentence(word) }]))[0]; }catch(e){}
+  let hr, en, meta = {};
+  if(info && info.base && info.en){ hr = info.base; en = info.en; meta = infoMeta(info); }
+  else{
+    // no AI right now: the tapped word is certainly Croatian, so it goes on the Croatian side;
+    // it gets switched to its basic form automatically once the check can run
+    const okBase = p.base && p.base.split(/\s+/)[0].slice(0, 2).toLowerCase() === word.slice(0, 2).toLowerCase();
+    hr = okBase ? withForms(p.base) : word; en = hint;
+  }
+  btn.disabled = false;
+  if(!en){ if(lab) lab.textContent = "couldn't look it up right now — try again in a moment"; return; }
+  const k = cardKey(hr, en);
+  if(!S.cards[k]) putCard(k, meta);
+  GSTAR[key] = k; save();
+  btn.setAttribute("aria-pressed", "true"); btn.textContent = "★";
+  const c = S.cards[k];
+  if(lab) lab.innerHTML = `in your flashcards as “${esc(hr)}”${gTag(c)}`;
+  const g = $("#gloss"); if(g && g.dataset.k === key) fillGlossConj(key);
+}
+// verbs: show the present tense right in the popup
+async function fillGlossConj(key, target){
+  const g = $("#gloss"), box = g && g.querySelector(".gconj");
+  if(!box) return;
+  const p = parseGloss(translationCache[key]);
+  if(!p || !isInfinitive(p.base)) return;
+  const show = pres => {
+    const b2 = $("#gloss") && $("#gloss").dataset.k === key && $("#gloss .gconj");
+    if(!b2 || !pres) return;
+    b2.innerHTML = `<div style="font-size:11px;color:var(--stone-dim);margin-top:7px;letter-spacing:.05em">PRESENT · ${esc(p.base)}</div>` + conjHTML(pres);
+    if(target) placeGloss($("#gloss"), target);
+  };
+  const have = WINFO["v:" + norm(p.base)];
+  if(have) return show(have);
+  box.innerHTML = `<div style="font-size:12px;color:var(--stone-dim);margin-top:6px"><span class="spin"></span> verb forms…</div>`;
+  try{
+    const info = (await wordInfoBatch([{ w: p.base, en: gramOnly(p.en) ? "" : p.en }]))[0];
+    if(info && info.pres) show(info.pres);
+    else if($("#gloss .gconj")) $("#gloss .gconj").innerHTML = "";
+  }catch(e){ const b3 = $("#gloss .gconj"); if(b3 && $("#gloss").dataset.k === key) b3.innerHTML = ""; }
 }
 function hideGloss(){ const g = $("#gloss"); if(g) g.classList.add("hidden"); }
 document.addEventListener("click", e => {
@@ -7420,29 +7515,47 @@ let FC = null;
 function addCardForm(){
   return `<div class="card" style="margin-bottom:14px">
     <div class="kicker">add your own word · dodaj riječ</div>
-    <p style="font-size:14px;color:var(--stone-dim);margin:0 0 12px">Saw a word online? Add it here and it joins your flashcards in box 1.</p>
+    <p style="font-size:14px;color:var(--stone-dim);margin:0 0 12px">Saw a word online? Type it the way you saw it — it's saved in its basic form (kave → kava), with its gender.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <input class="field" id="nc-hr" placeholder="Croatian  (e.g. sladoled)" autocomplete="off" spellcheck="false"
              style="flex:1;min-width:160px;font-family:var(--display);font-size:17px">
       <input class="field" id="nc-en" placeholder="English  (e.g. ice cream)" autocomplete="off"
              style="flex:1;min-width:160px;font-family:var(--body);font-size:16px">
-      <button class="btn" onclick="addCustomCard()">${dual("Add card","Dodaj")}</button>
+      <button class="btn" id="nc-add" onclick="addCustomCard()">${dual("Add card","Dodaj")}</button>
     </div>
     <div id="nc-msg" style="margin-top:9px;font-size:13.5px;min-height:1em"></div>
   </div>`;
 }
-function addCustomCard(){
+let NC_BUSY = false;
+async function addCustomCard(){
+  if(NC_BUSY) return;
   const hrEl = $("#nc-hr"), enEl = $("#nc-en"), msg = $("#nc-msg");
   const hr = (hrEl.value || "").replace(/\|/g,"/").trim(), en = (enEl.value || "").replace(/\|/g,"/").trim();
   if(!hr || !en){ msg.innerHTML = `<span style="color:var(--madder)">Fill in both the Croatian and the English.</span>`; return; }
   S.cards = S.cards || {};
-  const k = cardKey(hr, en);
-  if(S.cards[k]){ msg.innerHTML = `<span style="color:var(--brass)">“${esc(hr)}” is already in your cards.</span>`; return; }
-  putCard(k, { custom:true, added:Date.now(), src:"My words" });
+  NC_BUSY = true;
+  const btn = $("#nc-add"); if(btn) btn.disabled = true;
+  msg.innerHTML = `<span class="spin"></span> <span style="color:var(--stone-dim)">Finding the basic form…</span>`;
+  let info = null;
+  try{
+    info = (await Promise.race([wordInfoBatch([{ w: hr, en }]), new Promise((_, no) => setTimeout(() => no(new Error("TIMEOUT")), 12000))]))[0];
+  }catch(e){}
+  NC_BUSY = false;
+  const H = info ? info.base : hr, E = (info && info.en) || en;
+  const k = cardKey(H, E);
+  const tagFor = c => gTag(c) ? " " + gTag(c) : "";
+  if(S.cards[k]){
+    if(btn) btn.disabled = false;
+    msg.innerHTML = `<span style="color:var(--brass)">“${esc(H)}”${tagFor(S.cards[k])} is already in your cards.</span>${info && info.was ? `<br><span style="color:var(--stone-dim)">${esc(info.was)}</span>` : ""}`;
+    return;
+  }
+  putCard(k, Object.assign({ custom:true, added:Date.now(), src:"My words" }, info ? infoMeta(info) : {}));
   save();
   vCards();
   const m2 = $("#nc-msg");
-  if(m2) m2.innerHTML = `<span style="color:var(--olive)">Added “${esc(hr)}” — ${esc(en)}.</span>`;
+  if(m2) m2.innerHTML = `<span style="color:var(--olive)">Added “${esc(H)}”${tagFor(S.cards[k])} — ${esc(E)}.</span>` +
+    (info && info.was ? `<br><span style="color:var(--stone-dim)">${esc(info.was)}</span>` : "") +
+    (info ? "" : `<br><span style="color:var(--stone-dim)">Couldn't check it right now — it'll be switched to its basic form automatically later.</span>`);
   const f = $("#nc-hr"); if(f) f.focus();
 }
 function wireCardForm(){
@@ -7532,6 +7645,7 @@ function cardRowHTML(k){
   const box = Math.min(5, c.box || 1);
   const dots = `<span class="boxdots" title="box ${box} of 5">${[1,2,3,4].map(i => `<i class="${i < box ? "on" : ""}"></i>`).join("")}</span>`;
   return wordRow(p[0], p[1], true)
+    .replace('</span><span class="en">', gTag(c) + '</span><span class="en">')
     .replace('<span class="en">', `<span class="en">${box < 5 ? dots : ""}${c.custom ? '<span class="pill" style="margin-right:7px;font-size:9px;padding:1px 7px">mine</span>' : ""}`)
     .replace('<button class="save"', `${box < 5 ? `<button class="cact" title="Swap out — send to the back of the line" onclick='swapCard(${JSON.stringify(k).replace(/'/g,"&#39;")})'>⇄</button>` : ""}<button class="cact" title="Edit" onclick='editCard(${JSON.stringify(k).replace(/'/g,"&#39;")})'>✎</button><button class="save"`);
 }
@@ -7593,6 +7707,7 @@ function vCards(){
     ${M.length ? `<details class="card" style="margin-top:14px"><summary class="kicker" style="cursor:pointer;margin:0">mastered · naučeno (${M.length})</summary>
       <div class="wordlist" style="margin-top:10px">${M.map(cardRowHTML).join("")}</div></details>` : ""}`);
   wireCardForm();
+  if(keys.some(k => (S.cards[k].nv || 0) < NV)) fixCardsSoon(300);
 }
 function seedCards(){
   S.cards = S.cards||{};
@@ -7645,9 +7760,10 @@ function paintCard(){
     `<div class="progressline"><i style="width:${FC.i / FC.q.length * 100}%"></i></div>
     <div class="flash">
       <div style="font-size:11px;color:var(--stone-dim);letter-spacing:.06em">${box >= 5 ? "MASTERED · REVIEW" : esc(cardTopic(k))}</div>
-      <div class="front">${esc(front)}</div>
+      <div class="front">${esc(front)}${FC.dir === "hr" ? gTag(c) : ""}</div>
       ${FC.dir === "hr" ? spk(p[0]) : ""}
-      <div class="back" id="bk">${FC.flipped ? esc(back) + (FC.dir === "en" ? " " + spk(p[0]) : "") : '<span style="opacity:.4">· · ·</span>'}</div>
+      <div class="back" id="bk">${FC.flipped ? esc(back) + (FC.dir === "en" ? gTag(c) + " " + spk(p[0]) : "") : '<span style="opacity:.4">· · ·</span>'}</div>
+      ${FC.flipped && c.pos === "verb" ? conjHTML(c.pres) : ""}
       ${box < 5 ? `<span class="boxdots" style="margin-top:6px">${[1,2,3,4].map(i => `<i class="${i < box ? "on" : ""}"></i>`).join("")}</span>` : ""}
     </div>
     <div style="margin-top:16px;display:flex;gap:9px;justify-content:center;flex-wrap:wrap">
@@ -7778,9 +7894,161 @@ function putCard(k, extra){
   // t = when it was starred (keeps the order when a whole pack is added at once)
   S.cards[k] = Object.assign({ box:1, seen:0, t: Date.now() + (CARD_SEQ++ % 1000) / 1000, src: CARD_SRC }, extra || {});
   if(S.removed) delete S.removed[k];
+  if(!S.cards[k].nv) fixCardsSoon();
+}
+
+/* ============================================================
+   BASIC FORMS — every flashcard is kept in its dictionary form
+   (kave → kava, velikog → velik / velika / veliko, volim → voljeti),
+   with its gender, and verbs carry their present tense.
+   ============================================================ */
+const NV = 1;                                    // bump to re-check every card
+const WI_POS = new Set(["noun","adj","verb","pron","num","adv","prep","conj","phrase","other"]);
+const GRAM_WORDS = /\b(singular|plural|nominative|genitive|dative|accusative|locative|instrumental|vocative|person|infinitive|present|past|future|tense|case|form|masculine|feminine|neuter|1st|2nd|3rd|first|second|third|of|the)\b/gi;
+// true when the "English" is only a grammar note, like "instrumental singular"
+const gramOnly = s => !!String(s || "").trim() && /\b(singular|plural|nominative|genitive|dative|accusative|locative|instrumental|vocative|person|infinitive)\b/i.test(s) &&
+  !String(s).replace(GRAM_WORDS, "").replace(/[\s,;()\/.-]+/g, "");
+const PERSONS = ["ja", "ti", "on / ona", "mi", "vi", "oni"];
+let WINFO = (() => { try{ return JSON.parse(localStorage.getItem("nauci-winfo") || "{}"); }catch(e){ return {}; } })();
+function keepWinfo(){ try{ localStorage.setItem("nauci-winfo", JSON.stringify(WINFO)); }catch(e){} }
+
+const WI_RULES = `You are a precise dictionary of standard Croatian for an English-speaking learner.
+For each item give its dictionary entry. "w" is Croatian, but it may be in any case or form, misspelled, or missing č ć š ž đ.
+"en" is the learner's English meaning. It may be empty, or wrong (for example a grammar note such as "instrumental singular" instead of a meaning) — then give the real meaning.
+"ctx", if present, is the sentence the word came from: use it to pick the right meaning.
+If "w" is actually an English word and "en" is a grammar note, the two sides were swapped by mistake: give the Croatian word that matches.
+
+Return ONLY a JSON array with one object per item, in the same order:
+{"base":"…","en":"…","pos":"noun|adj|verb|pron|num|adv|prep|conj|phrase|other","g":"m|f|n","pl":true,"pres":["…","…","…","…","…","…"],"was":"…"}
+- "g": nouns only (the noun's gender). "pl": only for nouns that exist only in the plural. "pres": verbs only — the six present-tense forms in the order ja, ti, on, mi, vi, oni (with se after the verb when it has one: zovem se).
+
+base rules:
+- noun → nominative singular: kave → kava, psa → pas, gradovima → grad, kući → kuća. Plural-only nouns stay plural with pl true (vrata, hlače, novine, naočale, škare, leđa). Keep ljudi (people) and djeca (children) as they are.
+- describing word → its three nominative singular forms "m / f / n": velikog → "velik / velika / veliko", hrvatskoj → "hrvatski / hrvatska / hrvatsko", najboljeg → "najbolji / najbolja / najbolje".
+- possessive and this/that words → the same three-form style: moju → "moj / moja / moje", ovu → "ovaj / ova / ovo".
+- personal pronouns → nominative: mene → ja, njega → on, nam → mi.
+- verb → infinitive, keeping se when the verb needs it: volim → voljeti, zovem se → zvati se, išao → ići, pila → piti.
+- numbers → the plain number: dvije → dva.
+- words that never change (ovdje, sutra, i, ali, u, na, vrlo, često…) → unchanged.
+- a phrase or sentence of three or more words → unchanged, pos "phrase", en unchanged.
+- correct the spelling, including missing č ć š ž đ.
+"en": a short English meaning of base — singular for nouns, "to …" for verbs. Keep the learner's wording when it's right; only adjust it to fit base (coffees → coffee).
+"was": ONLY when base differs from w — one short English sentence saying what w was, e.g. "kave is the plural (or genitive) of kava." Otherwise "".
+All English text in English only.`;
+
+function cleanInfo(x){
+  if(!x || typeof x !== "object") return null;
+  const str = v => String(v == null ? "" : v).replace(/\|/g, "/").replace(/\s+/g, " ").trim();
+  const o = { base: str(x.base), en: str(x.en), pos: WI_POS.has(x.pos) ? x.pos : "other" };
+  if(!o.base || o.base.length > 80 || o.en.length > 120) return null;
+  if(gramOnly(o.en)) o.en = "";
+  if(o.pos === "noun" && /^[mfn]$/.test(x.g)) o.g = x.g;
+  if(o.pos === "noun" && x.pl === true) o.pl = true;
+  if(o.pos === "verb" && Array.isArray(x.pres) && x.pres.length === 6 && x.pres.every(v => str(v) && str(v).length < 40)) o.pres = x.pres.map(str);
+  const was = str(x.was);
+  if(was && looksEnglish(was) && o.base.toLowerCase() !== "") o.was = was;
+  return o;
+}
+async function wordInfoBatch(items){
+  const list = items.map(it => { const o = { w: it.w }; o.en = it.en || ""; if(it.ctx) o.ctx = String(it.ctx).slice(0, 220); return o; });
+  const txt = await ask(STYLE_RULES + WI_RULES, [{ role:"user", content: JSON.stringify(list) }], Math.min(6000, 400 + items.length * 140));
+  const j = parseJSON(txt);
+  if(!Array.isArray(j) || j.length !== items.length) throw new Error("bad word info");
+  const out = j.map(cleanInfo);
+  out.forEach(o => { if(o && o.pres){ WINFO["v:" + norm(o.base)] = o.pres; } });
+  keepWinfo();
+  return out;
+}
+const infoMeta = info => {
+  const m = { nv: NV, pos: info.pos };
+  if(info.g) m.g = info.g;
+  if(info.pl) m.pl = true;
+  if(info.pres) m.pres = info.pres;
+  return m;
+};
+const splitCard = k => { const i = k.indexOf("|"); return [k.slice(0, i), k.slice(i + 1)]; };
+// cards whose words the course itself wrote keep their exact wording; anything you typed or picked up yourself gets fixed
+const cardIsFree = (c, hr, en) => !!(c.custom || /^Reading/.test(c.src || "") || ["Other", "Earlier", "My words"].includes(c.src || "Earlier") || gramOnly(en));
+
+function applyInfo(k, info){
+  const c = S.cards && S.cards[k]; if(!c) return k;
+  if(!info){ c.nv = NV; return k; }
+  const [hr, en] = splitCard(k);
+  let nhr = hr, nen = en;
+  if(cardIsFree(c, hr, en)){ nhr = info.base || hr; nen = info.en || en; }
+  else if(info.pos === "adj" && info.base.toLowerCase().startsWith(hr.toLowerCase() + " /")) nhr = info.base;
+  const meta = infoMeta(info);
+  ["g", "pl", "pres"].forEach(f => delete c[f]);
+  Object.assign(c, meta);
+  const nk = cardKey(nhr, nen);
+  if(nk === k || !nen) return k;
+  if(S.cards[nk]){                                   // you already had the basic form: keep one card, with the better progress
+    const o = S.cards[nk];
+    o.box = Math.max(o.box || 1, c.box || 1); o.seen = Math.max(o.seen || 0, c.seen || 0);
+    ["g", "pl", "pres"].forEach(f => delete o[f]);
+    Object.assign(o, meta);
+  }else{
+    S.cards[nk] = Object.assign({}, c);
+    if(S.removed) delete S.removed[nk];
+  }
+  dropCard(k);
+  if(FC && FC.q) FC.q = FC.q.map(x => x === k ? nk : x);
+  return nk;
+}
+
+let FIX_RUN = null, FIX_WAIT = 0, FIX_T = 0;
+function fixCardsSoon(ms){ clearTimeout(FIX_T); FIX_T = setTimeout(fixCards, ms == null ? 1200 : ms); }
+function fixCards(){
+  if(FIX_RUN || Date.now() < FIX_WAIT || !S.cards || navigator.onLine === false) return FIX_RUN;
+  const todo = Object.keys(S.cards).filter(k => (S.cards[k].nv || 0) < NV);
+  if(!todo.length) return null;
+  FIX_RUN = (async () => {
+    let changed = false;
+    const words = [];
+    todo.forEach(k => {
+      const hr = splitCard(k)[0];
+      if(hr.split(" / ")[0].trim().split(/\s+/).length >= 3){ S.cards[k].nv = NV; S.cards[k].pos = "phrase"; changed = true; }
+      else words.push(k);
+    });
+    for(let i = 0; i < words.length; i += 30){
+      const chunk = words.slice(i, i + 30).filter(k => S.cards[k]);
+      if(!chunk.length) continue;
+      let res;
+      try{ res = await wordInfoBatch(chunk.map(k => { const [w, en] = splitCard(k); return { w, en }; })); }
+      catch(e){
+        try{ res = await wordInfoBatch(chunk.map(k => { const [w, en] = splitCard(k); return { w, en }; })); }   // one quiet retry
+        catch(e2){ FIX_WAIT = Date.now() + 5 * 60 * 1000; break; }
+      }
+      chunk.forEach((k, n) => { applyInfo(k, res[n]); changed = true; });
+    }
+    if(changed){ save(); refreshCardsView(); }
+  })().finally(() => { FIX_RUN = null; });
+  return FIX_RUN;
+}
+function refreshCardsView(){
+  if(CUR !== "kartice" || $("#cedit")) return;
+  const a = document.activeElement;
+  if(a && /^(nc-|ce-)/.test(a.id || "") && (a.value || "").trim()) return;      // don't wipe what you're typing
+  if($("#main .flash") && FC && FC.q && FC.i < FC.q.length) return paintCard();
+  if($("#nc-hr")) vCards();
+}
+setTimeout(() => fixCardsSoon(0), 6000);
+
+// small label next to the Croatian: m / f / n for nouns, "verb" for verbs
+function gTag(c){
+  if(!c || !c.nv) return "";
+  if(c.pos === "noun" && c.g) return `<span class="gtag" title="${{m:"masculine",f:"feminine",n:"neuter"}[c.g]}${c.pl ? ", only plural" : ""}">${c.g}${c.pl ? " · pl" : ""}</span>`;
+  if(c.pos === "verb") return `<span class="gtag">verb</span>`;
+  return "";
+}
+function conjHTML(pres){
+  if(!pres || pres.length !== 6) return "";
+  const cell = i => `<span>${PERSONS[i]} <b>${esc(pres[i])}</b></span>`;
+  return `<div class="conj">${cell(0)}${cell(3)}${cell(1)}${cell(4)}${cell(2)}${cell(5)}</div>`;
 }
 function dropCard(k){
   if(S.cards) delete S.cards[k];
+  CARDSET_N = -1;                                   // a renamed card keeps the count the same, so refresh the ★ list
   S.removed = S.removed || {}; S.removed[k] = Date.now();
 }
 
