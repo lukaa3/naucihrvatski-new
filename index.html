@@ -544,7 +544,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.32";
+const VERSION = "10.33";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -848,7 +848,7 @@ const UNITS = [
     {h:"What cases actually do",
      b:"English shows who-does-what by <b>word order</b>. Croatian marks it on the <b>word ending</b> instead, so the order is free.<br><em>Ana voli Marka</em> and <em>Marka voli Ana</em> both mean Ana loves Marko — the <b>-a</b> on Marko is what marks him as the one being loved.<br><br>Croatian has seven of these endings. Here's the whole map, <b>in the order you'll learn them</b>:<table><tr><th>case</th><th>job</th><th>example</th><th>unit</th></tr><tr><td class='cs'>N nominativ</td><td>the subject — who does it</td><td class='hr'>Ana pije kavu.</td><td>you know it</td></tr><tr><td class='cs'>A akuzativ</td><td>the object — what it's done to</td><td class='hr'>Pijem kavu.</td><td>this unit</td></tr><tr><td class='cs'>G genitiv</td><td>of, from, without</td><td class='hr'>čaša vode</td><td>Unit {u9}</td></tr><tr><td class='cs'>L lokativ</td><td>where, about</td><td class='hr'>u Zagrebu</td><td>Unit {u10}</td></tr><tr><td class='cs'>D dativ</td><td>to / for whom</td><td class='hr'>Pišem Ani.</td><td>Unit {u11}</td></tr><tr><td class='cs'>I instrumental</td><td>with, by means of</td><td class='hr'>s Anom</td><td>Unit {u12}</td></tr><tr><td class='cs'>V vokativ</td><td>calling someone</td><td class='hr'>Ano!</td><td>Unit {u13}</td></tr></table>The reference tables on the Grammar page use this same order. (Croatian school books list them differently — Unit {u13} shows you that once you know all seven.)<br><br>This unit is the <b>akuzativ</b> — the direct object: the thing had, wanted, seen, eaten, bought."},
     {h:"The endings",
-     b:"What happens to each kind of word when it's the object (the thing seen, had, wanted, bought). <b>Alive</b> = people and animals.<table><tr><th>word</th><th>what to do</th></tr><tr><td class='cs'>m<br>thing</td><td>nothing — no change<br><em class='exl'>stol → stol · auto → auto</em></td></tr><tr><td class='cs'>m<br>alive</td><td><b>add -a</b> · names in -o / -e: change it to -a<br><em class='exl'>brat → brata · Ivan → Ivana · Marko → Marka</em></td></tr><tr><td class='cs'>f<br>-a</td><td><b>-a → -u</b> (alive or not)<br><em class='exl'>kava → kavu · mama → mamu · Ana → Anu</em></td></tr><tr><td class='cs'>f<br>other</td><td>nothing — no change<br><em class='exl'>noć → noć · Kim → Kim</em></td></tr><tr><td class='cs'>n</td><td>nothing — no change (even dijete)<br><em class='exl'>pivo → pivo · more → more</em></td></tr></table><b>Feminine -a → -u</b> is the single most useful ending in the language. Masculine changes <b>only if it's alive</b>. Neuter never changes.<br><br><b>Two things to watch:</b><br>• <b>Men whose word ends in -a</b> (tata, Luka, kolega) take <b>-u</b>, like feminine words: <em>Vidim tatu.</em> — I see Dad. · <em>Zovem Luku.</em> — I'm calling Luka. They're still men, so describing words stay masculine: <em>Tata je <b>umoran</b>.</em><br>• A few masculine words <b>drop an a</b> from inside before adding -a: pas → <b>psa</b> (not pasa) · otac → <b>oca</b> · mačak → <b>mačka</b>. Unit {u24} explains why — for now just learn these three."},
+     b:"What happens to each kind of word when it's the object (the thing seen, had, wanted, bought). <b>Alive</b> = people and animals.<table><tr><th>word</th><th>what to do</th></tr><tr><td class='cs'>m<br>thing</td><td>nothing — no change<br><em class='exl'>stol → stol · auto → auto</em></td></tr><tr><td class='cs'>m<br>alive</td><td><b>add -a</b> · names in -o / -e: change it to -a<br><em class='exl'>brat → brata · Ivan → Ivana · Marko → Marka</em></td></tr><tr><td class='cs'>f<br>-a</td><td><b>-a → -u</b> (alive or not)<br><em class='exl'>kava → kavu · mama → mamu · Ana → Anu</em></td></tr><tr><td class='cs'>f<br>other</td><td>nothing — no change<br><em class='exl'>noć → noć · Kim → Kim</em></td></tr><tr><td class='cs'>n</td><td>nothing — no change (even dijete)<br><em class='exl'>pivo → pivo · more → more</em></td></tr></table><b>Feminine -a → -u</b> is the single most useful ending in the language. Masculine changes <b>only if it's alive</b>. Neuter never changes.<br><br><b>Two things to watch:</b><br>• <b>Men whose word ends in -a</b> (tata, Luka, kolega) take <b>-u</b>, like feminine words: <em>Vidim tatu.</em> — I see Dad. · <em>Zovem Luku.</em> — I'm calling Luka. They're still men, so describing words stay masculine: <em>Tata je <b>umoran</b>.</em><br>• A few masculine words <b>drop an a</b> from inside before adding -a: pas → <b>psa</b> (not pasa) · otac → <b>oca</b> · mačak → <b>mačka</b>. Unit {u24} explains why — for now just learn these three.<br><br><b>More than one</b> — start from the basic plural you know from Unit {u4}:<br>• <b>masculine -i → -e</b>: gradovi → Vidim grad<b>ove</b>. · prijatelji → Imam prijatelj<b>e</b>.<br>• <b>feminine and neuter stay the same</b>: Volim kuće. · Volim sela.<br>(With a number in front, the number decides the ending instead — that's the genitive, next unit.)"},
     {h:"Alive or not",
      b:"Vidim <b>stol</b>. — I see the table (a thing, no change)<br>Vidim <b>psa</b>. — I see the dog (alive, takes -a)<br>Vidim <b>Marka</b>. — I see Marko (a person, takes -a)<br>Vidim <b>prijatelja</b> / <b>prijateljicu</b>. — I see my friend (a boy / a girl)<br><br><b>Describing words change too</b>, and they follow the same idea:<br>• masculine <b>alive</b> → <b>-og</b>: Imam <b>velikog</b> psa. · Imam <b>dobrog</b> prijatelja.<br>• feminine → <b>-u</b>: Imam <b>veliku</b> kuću. · Imam <b>dobru</b> prijateljicu.<br>• everything else → no change: Imam <b>velik</b> stol. · Imam <b>veliko</b> more.<br><br><b>More than one</b> (plural): masculine and feminine end in <b>-e</b>, neuter in <b>-a</b>: Vidim <b>gradove</b> · <b>žene</b> · <b>sela</b>.<br><br><b>him / her / them</b> as the object are the little words <b>ga / je / ih</b>: <em>Vidim ga. Volim je.</em> — Unit {u21} covers them properly."},
     {h:"Several ways to order the same coffee",
@@ -3151,6 +3151,18 @@ EXTRA_STEPS.forEach(x => {
     SQm("five people =",["pet čovjeka","pet ljudi"],1,"The other odd one: ljudi.")]);
   PHR[7][1] = [["jedna kava · dvije kave · pet kava","1 · 2 · 5 coffees"],["jedan stol · dva stola · pet stolova","1 · 2 · 5 tables"],["jedno pivo · dva piva · pet piva","1 · 2 · 5 beers"]];
   PHR[7].splice(2, 0, [["jedan dan · dva dana · pet dana","1 · 2 · 5 days"],["jedna godina · dvije godine · pet godina","1 · 2 · 5 years"],["jedan sat · dva sata · pet sati","1 · 2 · 5 hours"],["jedan euro · dva eura · pet eura","1 · 2 · 5 euros"],["Za pet minuta.","In five minutes."]]);
+  STEP_Q[8][1].push(SQm("'I see the cities.' (gradovi) =",["Vidim gradovi.","Vidim gradove.","Vidim grade."],1,"More than one, as the object: masculine -i → -e."),
+     SQm("'I love villages.' (sela) =",["Volim sela.","Volim sele."],0,"Neuter plural stays the same as the object."));
+  FINAL_Q[8].push(SQm("'I see the cities.' =",["Vidim gradovi.","Vidim gradove."],1,"More than one, as the object: masculine -i → -e."),
+     SQm("'I'm drinking cold water.' =",["Pijem hladna voda.","Pijem hladnu vodu.","Pijem hladnu voda."],1,"Feminine object → -u on both words."));
+  FINAL_Q[9].push(SQm("'a lot of cities' =",["puno grada","puno gradova"],1,"Genitive, more than one: short masculine words → -ova."),
+     SQt("Say: from an old town (star grad)",["iz starog grada"],"Masculine → -og on the describing word, -a on the noun."));
+  FINAL_Q[10].push(SQm("'on the beaches' =",["na plažama","na plažima"],0,"Feminine, more than one → -ama."),
+     SQt("Say: in a big house",["u velikoj kući"],"Feminine → -oj on the describing word, -i on the noun."));
+  FINAL_Q[11].push(SQm("'I'm writing to my sisters.' =",["Pišem sestrama.","Pišem sestrima."],0,"Feminine, more than one → -ama."),
+     SQt("Say: I'm helping a good friend (m).",["pomažem dobrom prijatelju"],"Masculine → -om on the describing word, -u on the noun."));
+  FINAL_Q[12].push(SQm("'with friends' =",["s prijateljima","s prijatelji"],0,"More than one → -ima."),
+     SQt("Say: with a big dog",["s velikim psom"],"Masculine → -im on the describing word, -om on the noun."));
   FINAL_Q[7].push(SQt("Say: four beers",["četiri piva"],"A few → piva."),
                   SQm("21 coffees =",["dvadeset jedna kava","dvadeset jedna kave"],0,"Only the last word counts: jedna."));
 })();
@@ -6691,11 +6703,16 @@ const FF = [
   // plural
   {c:"pN", ok:w=>!!w.p&&!FW_HAS(w,"abstract"), q:"Ovdje su ___.", en:w=>`The ${FW_PL(w)} are here.`},
   {c:"pA", ok:w=>!!w.p&&!FW_HAS(w,"abstract"), q:"Vidim ___.", en:w=>`I see the ${FW_PL(w)}.`},
+  {c:"pA", ok:w=>!!w.p&&!FW_HAS(w,"abstract")&&!FW_HAS(w,"family"), q:"Volim ___.", en:w=>`I love ${FW_PL(w)}.`},
+  {c:"pA", ok:w=>!!w.p&&(FW_HAS(w,"thing")||FW_HAS(w,"animal")||FW_HAS(w,"person")&&w.b!=="obitelj"), q:"Imam ___.", en:w=>`I have ${FW_PL(w)}.`},
   {c:"pG", ok:w=>!!w.p&&!FW_HAS(w,"place"), q:"Imam pet ___.", en:w=>`I have five ${FW_PL(w)}.`},
   {c:"pG", ok:w=>!!w.p&&!FW_HAS(w,"place"), q:"Nema ___.", en:w=>`There are no ${FW_PL(w)}.`},
   {c:"pL", ok:w=>!!w.p&&!FW_HAS(w,"abstract"), q:"Pričamo o ___.", pre:"o", en:w=>`We're talking about the ${FW_PL(w)}.`},
-  {c:"pL", ok:w=>!!w.p&&FW_HAS(w,"person"), q:"Pišem ___.", en:w=>`I'm writing to the ${FW_PL(w)}.`},
-  {c:"pL", ok:w=>!!w.p&&(FW_HAS(w,"person")||FW_HAS(w,"animal")), q:"Idem ___ ___.", sprep:1, en:w=>`I'm going with the ${FW_PL(w)}.`}
+  {c:"pL", ok:w=>w.b==="plaža", q:"Često smo na ___.", pre:"na", en:w=>`We're often at the ${FW_PL(w)}.`},
+  {c:"pD", ok:w=>!!w.p&&FW_HAS(w,"person"), q:"Pišem ___.", en:w=>`I'm writing to the ${FW_PL(w)}.`},
+  {c:"pD", ok:w=>!!w.p&&FW_HAS(w,"person"), q:"Pomažem ___.", en:w=>`I'm helping the ${FW_PL(w)}.`},
+  {c:"pI", ok:w=>!!w.p&&(FW_HAS(w,"person")||FW_HAS(w,"animal")), q:"Idem ___ ___.", sprep:1, en:w=>`I'm going with the ${FW_PL(w)}.`},
+  {c:"pI", ok:w=>!!w.p&&FW_HAS(w,"person"), q:"Pričam ___ ___.", sprep:1, en:w=>`I'm talking with the ${FW_PL(w)}.`}
 ];
 const FCASE = {   // which unit opens each one
   A:{unit:8,  name:"Accusative", hr:"Akuzativ", role:"the thing or person being seen, had, wanted or loved"},
@@ -6707,12 +6724,58 @@ const FCASE = {   // which unit opens each one
 };
 function formForm(w, c){
   if(c === "D") return w.L;
-  if(c[0] === "p") return w.p ? w.p[{pN:0, pA:1, pG:2, pL:3}[c]] : null;
+  if(c[0] === "p") return w.p ? w.p[{pN:0, pA:1, pG:2, pL:3, pD:3, pI:3}[c]] : null;
   return w[c];
 }
 // a case opens for practice once its unit's big quiz is passed
 const caseOpen = k => unitPassed((S.done || {})[FCASE[k].unit]);
-const pluralOpen = () => unitPassed((S.done || {})[13]);
+// plurals and describing words open together with their case — you learn them in the same unit
+const plCase = c => c === "pN" ? null : c.slice(1);                 // pA → A, pG → G…
+const fOpen = (c, cases) => c[0] === "p" ? (c === "pN" ? cases.length > 0 : cases.includes(plCase(c))) : cases.includes(c);
+
+/* Describing words, for every case. st = the part the endings go on. */
+const FA = [
+  {m:"velik", st:"velik", en:"big",       fit:w => (FW_HAS(w,"place") && !FW_HAS(w,"abstract") && !FW_HAS(w,"name")) || ["stol","auto","pas","obitelj","knjiga"].includes(w.b)},
+  {m:"nov",   st:"nov",   en:"new",       fit:w => FW_HAS(w,"thing") || ["dućan","škola","kino","kuća","grad"].includes(w.b)},
+  {m:"star",  st:"star",  en:"old",       fit:w => (FW_HAS(w,"thing") || (FW_HAS(w,"place") && !FW_HAS(w,"name") && !FW_HAS(w,"abstract")) || ["prijatelj","prijateljica","susjed","pas"].includes(w.b)) && w.b !== "more"},
+  {m:"lijep", st:"lijep", en:"beautiful", fit:w => ["grad","selo","plaža","kuća","more"].includes(w.b)},
+  {m:"dobar", st:"dobr",  en:"good",      fit:w => (FW_HAS(w,"person") && !FW_HAS(w,"name") && w.b !== "obitelj") || w.b === "kruh" || w.b === "knjiga" || w.b === "pas"},
+  {m:"mlad",  st:"mlad",  en:"young",     fit:w => ["prijatelj","prijateljica","konobar","učitelj","student","susjed","otac"].includes(w.b)},
+  {m:"mali",  st:"mal",   en:"little",    fit:w => ["pas","dijete","selo","stol","grad"].includes(w.b), longOnly:1},
+  {m:"hladan",st:"hladn", en:"cold",      fit:w => FW_HAS(w,"drink")},
+  {m:"vruć",  st:"vruć",  en:"hot",       fit:w => ["kava","mlijeko","voda"].includes(w.b), soft:1},
+  {m:"brz",   st:"brz",   en:"fast",      fit:w => FW_HAS(w,"vehicle")},
+  {m:"skup",  st:"skup",  en:"expensive", fit:w => ["auto","mobitel","knjiga","stol"].includes(w.b)},
+  {m:"svjež", st:"svjež", en:"fresh",     fit:w => w.b === "kruh" || w.b === "mlijeko", soft:1}
+];
+// every correct spelling of the describing word in this slot (the first is the one the course teaches)
+function adjForms(a, c, w){
+  const st = a.st, o = a.soft ? "e" : "o", g = w.g, al = !!w.al;
+  if(c[0] === "p"){
+    const k = c.slice(1);
+    if(k === "N") return [st + {m:"i", f:"e", n:"a"}[g]];
+    if(k === "A") return [st + (g === "n" ? "a" : "e")];
+    if(k === "G") return [st + "ih"];
+    return [st + "im", st + "ima"];                                   // L · D · I
+  }
+  if(c === "A") return g === "f" ? [st + "u"] : g === "n" ? [st + o] : al ? [st + o + "g", st + o + "ga"] : (a.longOnly ? [st + "i"] : [a.m, st + "i"]);
+  if(c === "G") return g === "f" ? [st + "e"] : [st + o + "g", st + o + "ga"];
+  if(c === "L" || c === "D") return g === "f" ? [st + "oj"] : a.soft ? [st + "em", st + "emu"] : [st + "om", st + "ome", st + "omu"];
+  if(c === "I") return g === "f" ? [st + "om"] : [st + "im"];
+  return null;
+}
+function adjReason(a, c, w){
+  const g = w.g, soft = a.soft, og = soft ? "-eg" : "-og", om = soft ? "-em" : "-om";
+  const k = c[0] === "p" ? c.slice(1) : c, pl = c[0] === "p";
+  let r;
+  if(pl) r = k === "N" ? "basic plural: masculine -i, feminine -e, neuter -a" : k === "A" ? (g === "n" ? "neuter, more than one → -a" : "masculine and feminine, more than one → -e")
+    : k === "G" ? "more than one, every gender → -ih" : "more than one, every gender → -im";
+  else if(c === "A") r = g === "f" ? "feminine → -u" : g === "n" ? "neuter → no change" : w.al ? "masculine and alive → " + og : a.longOnly ? "mali keeps its -i form" : "a masculine thing → no change";
+  else if(c === "G") r = g === "f" ? "feminine → -e" : "masculine and neuter → " + og;
+  else if(c === "L" || c === "D") r = g === "f" ? "feminine → -oj" : "masculine and neuter → " + om;
+  else if(c === "I") r = g === "f" ? "feminine → -om" : "masculine and neuter → -im";
+  return "Describing word: " + r + ".";
+}
 
 // Plain-English reason, built from the kind of word, plus any note for that exact word.
 function formReason(w, c){
@@ -6729,41 +6792,78 @@ function formReason(w, c){
   if(c === "pN") r = w.g === "m" ? "Masculine plural → add -i (short words: -ovi)." : w.g === "f" ? (endA ? "Feminine -a → -e." : "Feminine ending in a consonant → -i.") : "Neuter plural → -a.";
   if(c === "pA") r = w.g === "n" ? "Neuter plural object → -a." : w.g === "f" && !endA ? "→ -i." : "Masculine and feminine plural object → -e.";
   if(c === "pG") r = w.g === "m" ? (/ova$/.test(f) ? "Short masculine words → -ova." : "Masculine → -a.") : w.g === "f" ? (endA ? "Feminine → -a (looks like the basic form)." : "→ -i.") : "Neuter → -a.";
-  if(c === "pL") r = w.g === "f" && endA ? "Feminine plural L · D · I → -ama." : "Plural L · D · I → -ima.";
+  if(c === "pL" || c === "pD" || c === "pI") r = w.g === "f" && endA ? "Feminine, more than one → -ama." : "More than one → -ima.";
   const note = (w.n || {})[c === "D" ? "L" : c];
   if(note && /never change|doesn't change|usually stays|take -|it's -em/.test(note)) return note;
   return (note ? note + " " : "") + r;
 }
-function buildFQ(cases, plural){
-  const pool = [];
-  FF.forEach(fr => {
-    const isPl = fr.c[0] === "p";
-    if(isPl ? !plural : !cases.includes(fr.c)) return;
-    if(isPl && fr.c === "pG" && !cases.includes("G")) return;
-    FW.forEach(w => { if(fr.ok(w) && formForm(w, fr.c)) pool.push([fr, w]); });
-  });
+// plural and adj: whether those can come up. Each question decides at random, so a round mixes all of them.
+function buildFQ(cases, plural, adj){
+  const wantPl = plural && Math.random() < 0.35, wantAdj = adj && Math.random() < 0.45;
+  const collect = (pl, ad) => {
+    const pool = [];
+    FF.forEach(fr => {
+      if((fr.c[0] === "p") !== pl || !fOpen(fr.c, cases)) return;
+      if(ad && fr.c === "V") return;
+      FW.forEach(w => {
+        if(!fr.ok(w) || !formForm(w, fr.c)) return;
+        if(!ad) return pool.push([fr, w, null]);
+        if(FW_HAS(w, "name") || FW_HAS(w, "country")) return;
+        FA.forEach(a => { if(a.fit(w)) pool.push([fr, w, a]); });
+      });
+    });
+    return pool;
+  };
+  let pool = collect(wantPl, wantAdj);
+  if(!pool.length) pool = collect(wantPl, false);
+  if(!pool.length) pool = collect(false, false);
   if(!pool.length) return null;
-  const [fr, w] = pool[Math.floor(Math.random() * pool.length)];
+  const [fr, w, a] = pool[Math.floor(Math.random() * pool.length)];
   const form = formForm(w, fr.c);
-  const sp = fr.sprep ? FW_SA(form) : "";
+  const af = a ? adjForms(a, fr.c, w) : null;
+  const first = af ? af[0] : form;                                  // s / sa depends on the very next word
+  const sp = fr.sprep ? FW_SA(first) : "";
   const shown = fr.sprep ? fr.q.replace("___ ___", sp + " ___") : fr.q;
-  const accept = [form];
-  if(fr.pre) accept.push(fr.pre + " " + form);
-  if(fr.sprep) accept.push(sp + " " + form);
-  return { fr, w, form, shown, full: shown.replace("___", form), accept, c: fr.c };
+  const fill = af ? af[0] + " " + form : form;
+  const accept = [];
+  (af || [""]).forEach(x => {
+    const f = (x ? x + " " : "") + form;
+    accept.push(f);
+    if(fr.pre) accept.push(fr.pre + " " + f);
+    if(fr.sprep) accept.push(FW_SA(x || form) + " " + f);
+  });
+  return { fr, w, a, form, af, shown, full: shown.replace("___", fill), accept, c: fr.c };
 }
+// "I see the city." → "I see the big city." (the describing word goes in front of the noun)
+function fqEn(q){
+  const e = q.fr.en(q.w);
+  if(!q.a) return e;
+  const noun = q.c[0] === "p" ? FW_PL(q.w) : FW_NAME(q.w);
+  const i = e.lastIndexOf(noun);
+  if(i < 0) return e;
+  let pre = e.slice(0, i);
+  if(FW_HAS(q.w, "family") && q.c[0] !== "p" && !/(my|the) $/.test(pre)) pre += "my ";   // "good grandma" → "my good grandma"
+  const vowel = /^[aeiou]/i.test(q.a.en);
+  if(vowel && / a $/.test(pre)) pre = pre.replace(/ a $/, " an ");
+  else if(!vowel && / an $/.test(pre)) pre = pre.replace(/ an $/, " a ");
+  return pre + q.a.en + " " + e.slice(i);
+}
+const fqReason = q => (q.a ? adjReason(q.a, q.c, q.w) + " Noun: " : "") + formReason(q.w, q.c);
+const fqLabel = q => (q.c[0] === "p" ? (q.c === "pN" ? "basic plural" : FCASE[plCase(q.c)].name.toLowerCase() + " · more than one") : FCASE[q.c].name.toLowerCase()) + (q.a ? " · + describing word" : "");
 
 /* ---------- 1. endings drill ---------- */
 let FD = null;
 function vForms(){
   const open = Object.keys(FCASE).filter(caseOpen);
-  FD = FD || { pick: "mix", plural: false, right: 0, done: 0, streak: 0, len: 20, miss: [] };
+  FD = FD || { pick: "mix", plural: true, adj: true, right: 0, done: 0, streak: 0, len: 20, miss: [] };
   if(FD.len === undefined){ FD.len = 20; FD.miss = []; }
+  if(FD.adj === undefined){ FD.adj = true; FD.plural = true; }
   if(FD.pick !== "mix" && !open.includes(FD.pick)){ FD.pick = "mix"; FD.q = null; }
-  const plOk = pluralOpen();
-  if(!plOk) FD.plural = false;
-  // a question from a case that's no longer allowed is thrown away
-  if(FD.q && !(FD.q.c[0] === "p" ? FD.plural : (FD.pick === "mix" ? open : [FD.pick]).includes(FD.q.c))) FD.q = null;
+  // a question that's no longer allowed by the choices above is thrown away
+  if(FD.q){
+    const cs = FD.pick === "mix" ? open : [FD.pick];
+    if(!fOpen(FD.q.c, cs) || (FD.q.c[0] === "p" && !FD.plural) || (FD.q.a && !FD.adj)) FD.q = null;
+  }
   const lens = [[10,"10"],[20,"20"],[30,"30"],[0,"∞"]];
   shell("practise · vježbaj", "Practise the <i>forms</i>",
     "Fill in the right ending. A case opens here once you've passed the big quiz of its Grammar unit.",
@@ -6775,10 +6875,10 @@ function vForms(){
           ? `<button class="chip" aria-pressed="${FD.pick === k}" onclick="FD.pick='${k}';FD.q=null;vForms()">${dual(FCASE[k].name, FCASE[k].hr)}</button>`
           : `<button class="chip" disabled title="Pass the big quiz of Unit ${unitNo(FCASE[k].unit)} to open">${dual("&#128274; " + FCASE[k].name, "pass Unit " + unitNo(FCASE[k].unit))}</button>`).join("")}
       </div>
-      <div class="chips" style="margin-top:10px">
-        <button class="chip" aria-pressed="${!FD.plural}" onclick="FD.plural=false;FD.q=null;vForms()">${dual("One (singular)","Jednina")}</button>
-        ${plOk ? `<button class="chip" aria-pressed="${FD.plural}" onclick="FD.plural=true;FD.q=null;vForms()">${dual("+ More than one (plural)","+ Množina")}</button>`
-               : `<button class="chip" disabled>&#128274; Plural — pass Unit ${unitNo(13)} first</button>`}
+      <div class="kicker" style="margin-top:14px">also include · uključi</div>
+      <div class="chips">
+        <button class="chip" aria-pressed="${FD.plural}" onclick="FD.plural=!FD.plural;if(FD.q&&FD.q.ans===undefined)FD.q=null;vForms()">${dual("More than one","Množina")}</button>
+        <button class="chip" aria-pressed="${FD.adj}" onclick="FD.adj=!FD.adj;if(FD.q&&FD.q.ans===undefined)FD.q=null;vForms()">${dual("Describing words","Pridjevi")}</button>
       </div>
       <div class="kicker" style="margin-top:14px">questions per round · pitanja</div>
       <div class="chips">${lens.map(([n, t]) => `<button class="chip" aria-pressed="${FD.len === n}" onclick="setFormLen(${n})">${t}</button>`).join("")}</div>
@@ -6800,7 +6900,7 @@ function nextForm(){
   if(FD.len && FD.done >= FD.len){ if(!FD.over) countQuiz(); FD.over = true; return paintFormResults(); }
   const open = Object.keys(FCASE).filter(caseOpen);
   const cases = FD.pick === "mix" ? open : [FD.pick];
-  const q = buildFQ(cases, FD.plural);
+  const q = buildFQ(cases, FD.plural, FD.adj);
   const card = $("#fd-card"); if(!card) return;
   if(!q){ card.innerHTML = `<p>Nothing to practise in this selection yet.</p>`; return; }
   FD.q = q;
@@ -6808,16 +6908,16 @@ function nextForm(){
 }
 function paintForm(){
   const q = FD.q, card = $("#fd-card"); if(!q || !card) return;
-  const label = q.c[0] === "p" ? "plural" : FCASE[q.c].name.toLowerCase();
+  const label = fqLabel(q);
   const num = FD.done + (q.ans === undefined ? 1 : 0);
   card.innerHTML = `${FD.len ? `<div class="progressline" style="margin:0 0 12px"><i style="width:${Math.min(100, FD.done / FD.len * 100)}%"></i></div>` : ""}
     <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--stone-dim);margin-bottom:10px">
       <span>${FD.len ? `Question ${num} / ${FD.len} · ` : ""}${FD.right} right${FD.streak > 2 ? ` · 🔥 ${FD.streak} in a row` : ""}</span><span>${esc(label)}</span></div>
-    <div class="q" style="font-size:24px">${esc(q.shown).replace("___", `<span class="fgap">___</span>`)}</div>
-    <div style="color:var(--stone-dim);font-size:14px;margin:-4px 0 10px">${esc(q.fr.en(q.w))}</div>
-    <div style="font-size:14px;margin-bottom:10px">Word: <b class="hr" style="font-family:var(--display);font-size:18px">${esc(q.w.b)}</b>
-      <span style="color:var(--stone-dim)">· ${{m:"masculine",f:"feminine",n:"neuter"}[q.w.g]}${q.w.al ? " · alive" : ""}</span></div>
-    <input class="answer" id="fd-a" placeholder="Type the missing word…" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div class="q" style="font-size:24px">${esc(q.shown).replace("___", q.a ? `<span class="fgap">___</span> <span class="fgap">___</span>` : `<span class="fgap">___</span>`)}</div>
+    <div style="color:var(--stone-dim);font-size:14px;margin:-4px 0 10px">${esc(fqEn(q))}</div>
+    <div style="font-size:14px;margin-bottom:10px">${q.a ? "Words" : "Word"}: ${q.a ? `<b class="hr" style="font-family:var(--display);font-size:18px">${esc(q.a.m)}</b> <span style="color:var(--stone-dim)">(${esc(q.a.en)})</span> + ` : ""}<b class="hr" style="font-family:var(--display);font-size:18px">${esc(q.c[0] === "p" ? q.w.p[0] : q.w.b)}</b>
+      <span style="color:var(--stone-dim)">· ${{m:"masculine",f:"feminine",n:"neuter"}[q.w.g]}${q.w.al ? " · alive" : ""}${q.c[0] === "p" ? " · more than one" : ""}</span></div>
+    <input class="answer" id="fd-a" placeholder="${q.a ? "Type both missing words…" : "Type the missing word…"}" autocomplete="off" autocapitalize="off" spellcheck="false">
     <div style="margin-top:12px;display:flex;gap:9px;flex-wrap:wrap">
       <button class="btn" onclick="checkForm()">${dual("Check","Provjeri")}</button>
       <button class="btn ghost sm" onclick="formHint()">${dual("Hint","Pomoć")}</button>
@@ -6831,8 +6931,8 @@ function paintForm(){
 }
 function formHint(){
   const q = FD.q, v = $("#fd-v"); if(!q || !v) return;
-  const c = q.c[0] === "p" ? null : FCASE[q.c];
-  v.innerHTML = `<div class="verdict" style="border:1px dashed var(--line)">${c ? `<b>${c.name}:</b> ${esc(c.role)}.<br>` : ""}${esc(formReason(q.w, q.c).replace(/→.*$/, "→ …"))}</div>`;
+  const c = q.c === "pN" ? null : FCASE[q.c[0] === "p" ? plCase(q.c) : q.c];
+  v.innerHTML = `<div class="verdict" style="border:1px dashed var(--line)">${c ? `<b>${c.name}:</b> ${esc(c.role)}.<br>` : ""}${esc(fqReason(q).replace(/→[^.]*/g, "→ …"))}</div>`;
 }
 function checkForm(){
   const q = FD.q, inp = $("#fd-a"); if(!q || !inp || q.ans !== undefined) return;
@@ -6842,8 +6942,8 @@ function checkForm(){
   FD.done++;
   if(r.ok){ FD.right++; FD.streak++; addXP(1); }
   else FD.streak = 0;
-  { const a = actRec(); a.fc = a.fc || {}; const t = a.fc[q.c] || [0, 0]; a.fc[q.c] = [t[0] + (r.ok ? 1 : 0), t[1] + 1]; }
-  (FD.log = FD.log || []).push({ q: q.shown + "  (" + q.w.b + ")", qEn: q.fr.en(q.w), ok: r.ok, yours: inp.value, right: q.full, e: formReason(q.w, q.c) });
+  if(q.c !== "pN"){ const a = actRec(); a.fc = a.fc || {}; const t = a.fc[q.c] || [0, 0]; a.fc[q.c] = [t[0] + (r.ok ? 1 : 0), t[1] + 1]; }
+  (FD.log = FD.log || []).push({ q: q.shown + "  (" + (q.a ? q.a.m + " + " : "") + (q.c[0] === "p" ? q.w.p[0] : q.w.b) + ")", qEn: fqEn(q), ok: r.ok, yours: inp.value, right: q.full, e: fqReason(q) });
   showFormVerdict();
   const top = $("#fd-card span"); if(top) top.innerHTML = `${FD.len ? `Question ${FD.done} / ${FD.len} · ` : ""}${FD.right} right${FD.streak > 2 ? ` · 🔥 ${FD.streak} in a row` : ""}`;
   const bar = $("#fd-card .progressline i"); if(bar) bar.style.width = Math.min(100, FD.done / FD.len * 100) + "%";
@@ -6855,7 +6955,7 @@ function showFormVerdict(){
   v.innerHTML = `<div class="verdict ${q.ok ? "ok" : "no"}">
       <b style="color:${q.ok ? "var(--olive)" : "var(--madder)"}">${q.ok ? "Correct ✓" : "Not quite ✗"}</b>
       <span style="font-family:var(--display);font-size:18px;margin-left:6px">${esc(q.full)}</span> ${spk(q.full)}<br>
-      <span style="font-size:14px">${esc(formReason(q.w, q.c))}</span>
+      <span style="font-size:14px">${esc(fqReason(q))}</span>
     </div>
     <div style="margin-top:12px;display:flex;gap:9px">
       <button class="btn" id="fd-next" onclick="nextForm()">${last ? dual("See results","Rezultat") : dual("Next","Dalje") + " →"}</button>
@@ -6913,21 +7013,27 @@ function newWriteTask(){
   const open = Object.keys(FCASE).filter(caseOpen);
   if(!open.length) return;
   const k = FWR.pick === "mix" ? open[Math.floor(Math.random() * open.length)] : FWR.pick;
-  let word, en = "";
+  let word, en = "", pl = false, a = null;
   if(FWR.own){ word = FWR.own; }
   else {
-    const fits = FW.filter(w => FF.some(fr => fr.c === k && fr.ok(w)));
-    const w = fits[Math.floor(Math.random() * fits.length)]; word = w.b; en = w.en;
+    // like the endings drill: sometimes more than one, sometimes with a describing word
+    pl = k !== "V" && Math.random() < 0.3;
+    let fits = FW.filter(w => FF.some(fr => fr.c === k && fr.ok(w)) && (!pl || w.p));
+    if(!fits.length){ pl = false; fits = FW.filter(w => FF.some(fr => fr.c === k && fr.ok(w))); }
+    const w = fits[Math.floor(Math.random() * fits.length)]; word = w.b; en = pl ? FW_PL(w) : w.en;
+    const adjs = k === "V" || FW_HAS(w, "name") || FW_HAS(w, "country") ? [] : FA.filter(x => x.fit(w));
+    if(adjs.length && Math.random() < 0.4) a = adjs[Math.floor(Math.random() * adjs.length)];
   }
   const fw = FW.find(x => norm(x.b) === norm(word));                  // a course word: the app knows its forms
-  FWR.task = { k, word, en, form: fw ? (formForm(fw, k) || "") : "", done: null };
+  const code = pl ? "p" + k : k;
+  FWR.task = { k, word, en, pl, a, form: fw ? (formForm(fw, code) || "") : "", aforms: a && fw ? adjForms(a, code, fw) : null, done: null };
   if(CUR === "fwrite" && $("#fw-card")) paintWriteTask(); else vWrite();
 }
 function paintWriteTask(){
   const t = FWR.task, card = $("#fw-card"); if(!t || !card) return;
   const c = FCASE[t.k];
   card.innerHTML = `<div class="kicker">${esc(c.name)} · ${esc(c.hr)}</div>
-    <p style="font-size:16px;margin:4px 0 12px">Write a sentence with <b class="hr" style="font-family:var(--display);font-size:20px">${esc(t.word)}</b>${t.en ? ` <span style="color:var(--stone-dim)">(${esc(t.en)})</span>` : ""} as <b>${esc(c.role)}</b>.</p>
+    <p style="font-size:16px;margin:4px 0 12px">Write a sentence with ${t.a ? `<b class="hr" style="font-family:var(--display);font-size:20px">${esc(t.a.m)}</b> + ` : ""}<b class="hr" style="font-family:var(--display);font-size:20px">${esc(t.word)}</b>${t.en ? ` <span style="color:var(--stone-dim)">(${esc((t.a ? t.a.en + " " : "") + t.en)})</span>` : ""}${t.pl ? ` — <b>more than one</b>` : ""} as <b>${esc(c.role)}</b>.</p>
     <input class="answer" id="fw-a" placeholder="Napiši rečenicu…" autocomplete="off" spellcheck="false">
     <div style="margin-top:12px;display:flex;gap:9px;flex-wrap:wrap">
       <button class="btn" id="fw-check" onclick="checkWrite()">${dual("Check my sentence","Provjeri")}</button>
@@ -6938,8 +7044,18 @@ function paintWriteTask(){
   if(t.typed) a.value = t.typed;
   a.addEventListener("input", () => { t.typed = a.value; });
   if(t.vHTML){ $("#fw-v").innerHTML = t.vHTML; return; }
-  if(t.sent){ paintWriteResult(t, t.form ? tokens(t.sent).includes(norm(t.form)) : null, t.failed ? { failed: true } : { busy: "Getting feedback on the rest…" }); return; }
+  if(t.sent){ paintWriteResult(t, writeFormUsed(t, t.sent), t.failed ? { failed: true } : { busy: "Getting feedback on the rest…" }); return; }
   a.focus(); a.addEventListener("keydown", e => { if(e.key === "Enter") checkWrite(); });
+}
+// what the app expects, e.g. "velikom gradu"; and whether the sentence has it (null = the app can't tell by itself)
+const writeTarget = t => (t.aforms ? t.aforms[0] + " " : "") + t.form;
+const writeWhat = t => `${FCASE[t.k].name}${t.pl ? ", more than one," : ""} of ${t.a ? t.a.m + " " : ""}${t.word}`;
+function writeFormUsed(t, s){
+  if(!t.form) return null;
+  const tk = tokens(s);
+  if(!tk.includes(norm(t.form))) return false;
+  if(t.aforms && !t.aforms.some(f => tk.includes(norm(f)))) return false;
+  return true;
 }
 /* Works like the daily-sentence check: the part the app can judge by itself shows at
    once, you can move on straight away, and the AI's feedback drops in when it's ready
@@ -6953,13 +7069,14 @@ async function checkWrite(retry){
     t.sent = s0; t.ai = null; t.vHTML = ""; t.typed = s0; t.failed = false;
   }
   const s = t.sent, c = FCASE[t.k];
-  const formUsed = t.form ? tokens(s).includes(norm(t.form)) : null;
+  const formUsed = writeFormUsed(t, s);
   paintWriteResult(t, formUsed, { busy: retry === 2 ? "The AI is busy — trying again…" : "Getting feedback on the rest…" });
   try{
     const txt = await ask(STYLE_RULES + "You are a friendly Croatian teacher checking one learner sentence. Be encouraging and brief. Write all explanations in English.",
-      [{role:"user", content:`Task: write a sentence using "${t.word}" in the ${c.name} case (${c.role}).
+      [{role:"user", content:`Task: write a sentence using ${t.a ? `"${t.a.m} ${t.word}" (the describing word ${t.a.m} + ${t.word})` : `"${t.word}"`}${t.pl ? " in the plural (more than one)" : ""} in the ${c.name} case (${c.role}).
 The learner wrote: "${s}"
-What's being practised is the ending on "${t.word}". Is it the right ${c.name} form? Then glance at the rest.
+What's being practised is the ending on "${t.word}"${t.a ? ` and on the describing word "${t.a.m}" in front of it (it must match the noun)` : ""}${t.pl ? ", in the plural" : ""}. Is it the right ${c.name} form? Then glance at the rest.${t.form ? `
+For reference, the form the course teaches is "${writeTarget(t)}" — other correct forms are fine too.` : ""}
 ${CHECK_RULES}
 ${courseContext()}
 Return ONLY JSON, no markdown: {"ok":true or false,"caseOk":true or false,"fixed":"<the sentence with any real fix, written WITH proper diacritics; identical apart from accents if nothing else is wrong>","en":"<English translation>","form":"<the ${c.name} form of ${t.word}>","note":"<one short sentence in plain English>"}`}], 1000);
@@ -6994,15 +7111,15 @@ function paintWriteResult(t, formUsed, st){
     body = `${showFix ? `<div style="margin-top:6px"><span style="color:var(--stone-dim)">${level === "no" ? "Better:" : onlyAccents ? "With the accents:" : "Fixed:"}</span>
           <span style="font-family:var(--display);font-size:18px">${esc(fixed)}</span> ${spk(fixed)}</div>` : ""}
         ${j.en && looksEnglish(j.en) ? `<div style="font-size:13px;color:var(--stone-dim);font-style:italic;margin-top:3px">${esc(j.en)}</div>` : ""}
-        ${(t.form || j.form) ? `<div style="font-size:14px;margin-top:5px">${esc(c.name)} of <b>${esc(t.word)}</b>: <b class="hr" style="font-family:var(--display);font-size:16px">${esc(t.form || j.form)}</b></div>` : ""}
+        ${(t.form || j.form) ? `<div style="font-size:14px;margin-top:5px">${esc(writeWhat(t))}: <b class="hr" style="font-family:var(--display);font-size:16px">${esc(t.form ? writeTarget(t) : j.form)}</b></div>` : ""}
         ${j.note && looksEnglish(j.note) && !(level === "ok" && onlyAccents) ? `<div style="font-size:14px;margin-top:4px">${esc(j.note)}</div>` : ""}`;
     out.innerHTML = `<div class="verdict ${level === "no" ? "no" : "ok"}">${head}${body}</div>${writeButtons()}`;
     t.vHTML = out.innerHTML;
     return;
   }
   // No AI answer yet: show what the app knows by itself, and let you move on.
-  head = formUsed === true ? `<b style="color:var(--olive)">Right ending ✓</b> <span class="hr" style="font-family:var(--display);font-size:17px">${esc(t.form)}</span>`
-       : formUsed === false ? `<b style="color:var(--madder)">Check the ending</b> — the ${esc(c.name.toLowerCase())} of <b>${esc(t.word)}</b> is <b class="hr" style="font-family:var(--display);font-size:17px">${esc(t.form)}</b>`
+  head = formUsed === true ? `<b style="color:var(--olive)">Right ending${t.a ? "s" : ""} ✓</b> <span class="hr" style="font-family:var(--display);font-size:17px">${esc(writeTarget(t))}</span>`
+       : formUsed === false ? `<b style="color:var(--madder)">Check the ending${t.a ? "s" : ""}</b> — ${esc(writeWhat(t).replace(/^./, x => x.toLowerCase()))} is <b class="hr" style="font-family:var(--display);font-size:17px">${esc(writeTarget(t))}</b>`
        : "";
   const tail = st.failed
     ? `<div style="font-size:13px;color:var(--stone-dim);margin-top:6px">Couldn't get AI feedback right now${formUsed === true ? " — the ending is right, so it counts" : ""}.
