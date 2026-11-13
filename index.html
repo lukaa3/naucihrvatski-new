@@ -551,7 +551,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.34";
+const VERSION = "10.35";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -5578,6 +5578,7 @@ function verbCardHTML(){
       <div><span style="color:var(--stone-dim)">past:</span> <span class="hr" style="font-family:var(--display);font-size:16px">${esc(v.pm)} sam${v.se ? " se" : ""}</span> <span style="color:var(--stone-dim)">(m)</span> · <span style="font-family:var(--display);font-size:16px">${esc(v.pf)} sam${v.se ? " se" : ""}</span> <span style="color:var(--stone-dim)">(f)</span></div>
       <div><span style="color:var(--stone-dim)">future:</span> <span style="font-family:var(--display);font-size:16px">${esc(v.fu)}</span></div>
     </div>
+    ${pairHTML(v.i, null, true)}
     <div style="margin-top:10px;font-size:14px"><span style="font-family:var(--display);font-size:16px">${esc(v.ex[0])}</span> ${spk(v.ex[0])}<br><span style="color:var(--stone-dim);font-style:italic;font-size:13px">${esc(v.ex[1])}</span></div>`;
   return `<div class="card daily ${r.verb ? "won" : ""}">
     <div class="kicker">verb of the day · glagol dana</div>
@@ -7858,7 +7859,7 @@ async function fillGlossConj(key, target){
   const show = pres => {
     const b2 = $("#gloss") && $("#gloss").dataset.k === key && $("#gloss .gconj");
     if(!b2 || !pres) return;
-    b2.innerHTML = `<div style="font-size:11px;color:var(--stone-dim);margin-top:7px;letter-spacing:.05em">PRESENT · ${esc(p.base)}</div>` + conjHTML(pres);
+    b2.innerHTML = `<div style="font-size:11px;color:var(--stone-dim);margin-top:7px;letter-spacing:.05em">PRESENT · ${esc(p.base)}</div>` + conjHTML(pres) + pairHTML(p.base, WINFO["a:" + norm(p.base)]);
     if(target) placeGloss($("#gloss"), target);
   };
   const have = WINFO["v:" + norm(p.base)];
@@ -8190,7 +8191,7 @@ function paintCard(){
       <div class="front">${esc(front)}${FC.dir === "hr" ? gTag(c) : ""}</div>
       ${FC.dir === "hr" ? spk(p[0]) : ""}
       <div class="back" id="bk">${FC.flipped ? esc(back) + (FC.dir === "en" ? gTag(c) + " " + spk(p[0]) : "") : '<span style="opacity:.4">· · ·</span>'}</div>
-      ${FC.flipped && c.pos === "verb" ? conjHTML(c.pres) : ""}
+      ${FC.flipped && (c.pos === "verb" || verbPair(p[0])) ? conjHTML(c.pres) + pairHTML(p[0], c) : ""}
       ${box < 5 ? `<span class="boxdots" style="margin-top:6px">${[1,2,3,4].map(i => `<i class="${i < box ? "on" : ""}"></i>`).join("")}</span>` : ""}
     </div>
     <div style="margin-top:16px;display:flex;gap:9px;justify-content:center;flex-wrap:wrap">
@@ -8325,6 +8326,62 @@ function putCard(k, extra){
 }
 
 /* ============================================================
+   VERB PAIRS — most action verbs come in two:
+   imperfective = doing it / a habit (kuhati), perfective = getting it done, once (skuhati).
+   [imperfective, perfective], hand-checked. Verbs with no common partner aren't listed.
+   ============================================================ */
+const ASPECT_PAIRS = [
+  ["raditi","napraviti"],["govoriti","reći"],["učiti","naučiti"],["gledati","pogledati"],["slušati","poslušati"],
+  ["čitati","pročitati"],["pisati","napisati"],["jesti","pojesti"],["piti","popiti"],["kupovati","kupiti"],
+  ["davati","dati"],["uzimati","uzeti"],["kuhati","skuhati"],["čekati","pričekati"],["pomagati","pomoći"],
+  ["plaćati","platiti"],["počinjati","početi"],["zvati","nazvati"],["odgovarati","odgovoriti"],["šetati","prošetati"],
+  ["otvarati","otvoriti"],["zatvarati","zatvoriti"],["pokušavati","pokušati"],["ponavljati","ponoviti"],
+  ["upoznavati","upoznati"],["spremati se","spremiti se"],["pripremati","pripremiti"],["crtati","nacrtati"],
+  ["slikati","naslikati"],["snimati","snimiti"],["kupati se","okupati se"],["tuširati se","istuširati se"],
+  ["odmarati se","odmoriti se"],["zabavljati se","zabaviti se"],["svađati se","posvađati se"],["sjećati se","sjetiti se"],
+  ["padati","pasti"],["računati","izračunati"],["mijenjati","promijeniti"],["birati","izabrati"],["prodavati","prodati"],
+  ["obećavati","obećati"],["ispričavati se","ispričati se"],["završavati","završiti"],["vraćati se","vratiti se"],
+  ["buditi se","probuditi se"],["oblačiti se","obući se"],["čistiti","očistiti"],["dolaziti","doći"],["odlaziti","otići"],
+  ["izlaziti","izaći"],["ulaziti","ući"],["prolaziti","proći"],["nalaziti","naći"],["stavljati","staviti"],["bacati","baciti"],
+  ["paliti","upaliti"],["gasiti","ugasiti"],["trošiti","potrošiti"],["odlučivati","odlučiti"],["naručivati","naručiti"],
+  ["preporučivati","preporučiti"],["objašnjavati","objasniti"],["prevoditi","prevesti"],["ljutiti se","naljutiti se"],
+  ["ljubiti","poljubiti"],["grliti","zagrliti"],["zaljubljivati se","zaljubiti se"],["dogovarati se","dogovoriti se"],
+  ["javljati se","javiti se"],["primati","primiti"],["zahvaljivati","zahvaliti"],["opraštati","oprostiti"],
+  ["nastavljati","nastaviti"],["žuriti se","požuriti se"],["kasniti","zakasniti"],["zaboravljati","zaboraviti"],
+  ["pamtiti","zapamtiti"],["shvaćati","shvatiti"],["graditi","izgraditi"],["popravljati","popraviti"],["seliti se","preseliti se"],
+  ["posuđivati","posuditi"],["slaviti","proslaviti"],["posjećivati","posjetiti"],["nuditi","ponuditi"],["prihvaćati","prihvatiti"],
+  ["puniti","napuniti"],["ostavljati","ostaviti"],["gubiti","izgubiti"],["pobjeđivati","pobijediti"],["primjećivati","primijetiti"],
+  ["dijeliti","podijeliti"],["štedjeti","uštedjeti"],["zarađivati","zaraditi"],["kretati","krenuti"],["skretati","skrenuti"],
+  ["pokazivati","pokazati"],["sjedati","sjesti"],["ustajati","ustati"],["stizati","stići"],["postajati","postati"],
+  ["ostajati","ostati"],["prestajati","prestati"],["peći","ispeći"],["donositi","donijeti"],["sretati","sresti"],
+  ["uspijevati","uspjeti"],["skakati","skočiti"],["vikati","viknuti"],["penjati se","popeti se"],["prati","oprati"],
+  ["dobivati","dobiti"],["odbijati","odbiti"],["pozivati","pozvati"],["slati","poslati"],["saznavati","saznati"]
+];
+const ASPECT = new Map();
+ASPECT_PAIRS.forEach(([i, p]) => { ASPECT.set(i, { impf: i, pf: p }); ASPECT.set(p, { impf: i, pf: p }); });
+// a verb's pair: from the table, or (for verbs not in it) what the dictionary check found
+function verbPair(inf, info){
+  const k = String(inf || "").trim().toLowerCase();
+  if(ASPECT.has(k)) return ASPECT.get(k);
+  if(info && info.pair && info.aspect){
+    const other = String(info.pair).trim().toLowerCase();
+    if(other && other !== k) return info.aspect === "pf" ? { impf: other, pf: k } : { impf: k, pf: other };
+  }
+  return null;
+}
+function pairHTML(inf, info, big){
+  const p = verbPair(inf, info); if(!p) return "";
+  const me = String(inf).trim().toLowerCase();
+  const one = (v, what) => `<div><b class="hr" style="font-family:var(--display);font-size:${big ? 17 : 15}px;${v === me ? "" : "color:var(--brass)"}">${esc(v)}</b>
+      <span style="color:var(--stone-dim);font-size:13px"> — ${what}</span></div>`;
+  return `<div class="vpair" style="margin-top:10px;font-size:13.5px;text-align:left;display:inline-block">
+    <div style="font-size:11px;color:var(--stone-dim);letter-spacing:.05em;margin-bottom:3px">PAIR · ${me === p.pf ? "this one is the “get it done” version" : "this one is the “doing it” version"}</div>
+    ${one(p.impf, "doing it, or a habit")}${one(p.pf, "getting it done, once")}
+    ${big ? `<div style="color:var(--stone-dim);font-size:12.5px;margin-top:4px">Unit ${unitNo(17)} · Perfective and imperfective</div>` : ""}
+  </div>`;
+}
+
+/* ============================================================
    BASIC FORMS — every flashcard is kept in its dictionary form
    (kave → kava, velikog → velik / velika / veliko, volim → voljeti),
    with its gender, and verbs carry their present tense.
@@ -8346,8 +8403,9 @@ For each item give its dictionary entry. "w" is Croatian, but it may be in any c
 If "w" is actually an English word and "en" is a grammar note, the two sides were swapped by mistake: give the Croatian word that matches.
 
 Return ONLY a JSON array with one object per item, in the same order:
-{"base":"…","en":"…","pos":"noun|adj|verb|pron|num|adv|prep|conj|phrase|other","g":"m|f|n","pl":true,"pres":["…","…","…","…","…","…"],"was":"…"}
+{"base":"…","en":"…","pos":"noun|adj|verb|pron|num|adv|prep|conj|phrase|other","g":"m|f|n","pl":true,"pres":["…","…","…","…","…","…"],"aspect":"impf|pf","pair":"…","was":"…"}
 - "g": nouns only (the noun's gender). "pl": only for nouns that exist only in the plural. "pres": verbs only — the six present-tense forms in the order ja, ti, on, mi, vi, oni (with se after the verb when it has one: zovem se).
+- "aspect" and "pair": verbs only. aspect = "impf" (doing it / a habit, like kuhati) or "pf" (getting it done once, like skuhati); pair = the infinitive of its common partner of the other kind (kuhati ↔ skuhati, pisati ↔ napisati, dolaziti ↔ doći), or "" if it has no common partner.
 
 base rules:
 - noun → nominative singular: kave → kava, psa → pas, gradovima → grad, kući → kuća. Plural-only nouns stay plural with pl true (vrata, hlače, novine, naočale, škare, leđa). Keep ljudi (people) and djeca (children) as they are.
@@ -8371,6 +8429,7 @@ function cleanInfo(x){
   if(gramOnly(o.en)) o.en = "";
   if(o.pos === "noun" && /^[mfn]$/.test(x.g)) o.g = x.g;
   if(o.pos === "noun" && x.pl === true) o.pl = true;
+  if(o.pos === "verb" && (x.aspect === "impf" || x.aspect === "pf")){ o.aspect = x.aspect; const pr = str(x.pair); if(pr && pr.length < 40 && pr !== o.base) o.pair = pr; }
   if(o.pos === "verb" && Array.isArray(x.pres) && x.pres.length === 6 && x.pres.every(v => str(v) && str(v).length < 40)) o.pres = x.pres.map(str);
   const was = str(x.was);
   if(was && looksEnglish(was) && o.base.toLowerCase() !== "") o.was = was;
@@ -8382,7 +8441,7 @@ async function wordInfoBatch(items){
   const j = parseJSON(txt);
   if(!Array.isArray(j) || j.length !== items.length) throw new Error("bad word info");
   const out = j.map(cleanInfo);
-  out.forEach(o => { if(o && o.pres){ WINFO["v:" + norm(o.base)] = o.pres; } });
+  out.forEach(o => { if(o && o.pres){ WINFO["v:" + norm(o.base)] = o.pres; } if(o && o.aspect) WINFO["a:" + norm(o.base)] = { aspect: o.aspect, pair: o.pair || "" }; });
   keepWinfo();
   return out;
 }
@@ -8391,6 +8450,7 @@ const infoMeta = info => {
   if(info.g) m.g = info.g;
   if(info.pl) m.pl = true;
   if(info.pres) m.pres = info.pres;
+  if(info.aspect){ m.aspect = info.aspect; if(info.pair) m.pair = info.pair; }
   return m;
 };
 const splitCard = k => { const i = k.indexOf("|"); return [k.slice(0, i), k.slice(i + 1)]; };
@@ -8405,14 +8465,14 @@ function applyInfo(k, info){
   if(cardIsFree(c, hr, en)){ nhr = info.base || hr; nen = info.en || en; }
   else if(info.pos === "adj" && info.base.toLowerCase().startsWith(hr.toLowerCase() + " /")) nhr = info.base;
   const meta = infoMeta(info);
-  ["g", "pl", "pres"].forEach(f => delete c[f]);
+  ["g", "pl", "pres", "aspect", "pair"].forEach(f => delete c[f]);
   Object.assign(c, meta);
   const nk = cardKey(nhr, nen);
   if(nk === k || !nen) return k;
   if(S.cards[nk]){                                   // you already had the basic form: keep one card, with the better progress
     const o = S.cards[nk];
     o.box = Math.max(o.box || 1, c.box || 1); o.seen = Math.max(o.seen || 0, c.seen || 0);
-    ["g", "pl", "pres"].forEach(f => delete o[f]);
+    ["g", "pl", "pres", "aspect", "pair"].forEach(f => delete o[f]);
     Object.assign(o, meta);
   }else{
     S.cards[nk] = Object.assign({}, c);
