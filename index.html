@@ -373,6 +373,13 @@ details.card > summary::-webkit-details-marker{display:none}
   box-shadow:0 8px 26px rgba(0,0,0,.5);max-width:250px;
 }
 .gloss b{font-family:var(--display);font-size:16px;color:var(--brass);display:block}
+.tiles{display:flex;flex-wrap:wrap;gap:8px;min-height:50px}
+.tile{font-family:var(--display);font-size:18px;font-weight:600;background:var(--deep-2);color:var(--stone);border:1px solid var(--line-2);border-bottom-width:3px;border-radius:10px;padding:7px 13px;line-height:1.2;cursor:pointer;transition:transform .08s}
+.tile:active{transform:translateY(1px)}
+.tile.used{visibility:hidden}
+.tiles.ans{border-bottom:1px solid var(--line-2);padding:4px 0 12px;margin-bottom:14px;min-height:56px}
+.tiles.ans:empty::before{content:"Tap the words in order…";color:var(--stone-dim);font-size:14px;align-self:center}
+.dw-ok{color:var(--olive)}.dw-no{color:var(--madder);text-decoration:underline wavy;text-underline-offset:4px}.dw-x{color:var(--stone-dim);text-decoration:line-through}
 .gtag{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:400;letter-spacing:.06em;padding:1px 6px;margin-left:7px;border:1px solid var(--line-2);border-radius:6px;color:var(--stone-dim);vertical-align:middle;line-height:1.4}
 .flash .front .gtag{font-size:13px;vertical-align:.35em}
 .conj{display:grid;grid-template-columns:auto auto;gap:3px 18px;font-size:13.5px;text-align:left;margin-top:6px}
@@ -544,7 +551,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.33";
+const VERSION = "10.34";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -4680,7 +4687,7 @@ async function speakNatural(text, only, strict){
     if(a.dataset.url) URL.revokeObjectURL(a.dataset.url);
     a.dataset.url = URL.createObjectURL(blob);
     a.src = a.dataset.url;
-    a.playbackRate = S.slowAudio ? 0.75 : 1;
+    a.playbackRate = S.slowAudio || TTS.slowOnce ? 0.75 : 1;
     try{ a.preservesPitch = true; }catch(e){}
     await a.play();
     return true;
@@ -4707,9 +4714,10 @@ async function ttsPump(){
   }
   TTSQ.busy = false;
 }
-function speak(text){
+function speak(text, opts){
   text = String(text || "").trim(); if(!text) return;
   TTS.last = text;
+  TTS.slowOnce = !!(opts && opts.slow);
   if(S.naturalVoice !== false && navigator.onLine !== false){
     const only = Date.now() < TTS.failUntil;                 // can't make new ones right now — but saved ones still play
     speakNatural(text, only).catch(err => {
@@ -4742,7 +4750,7 @@ function speakDevice(text){
   try{
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(String(text).replace(/\s*\/\s*/g," , "));
-    u.lang = v.lang || "hr-HR"; u.rate = S.slowAudio ? .7 : .95; u.voice = v;
+    u.lang = v.lang || "hr-HR"; u.rate = S.slowAudio || TTS.slowOnce ? .7 : .95; u.voice = v;
     speechSynthesis.speak(u);
   }catch(e){}
 }
@@ -5160,7 +5168,7 @@ let CUR = "home";
 /* Each tab remembers where you were. Switching tabs brings you back there;
    tapping the tab you're already in takes you to its main page. */
 const TAB_OF = { unit:"gramatika", step:"gramatika", unitall:"gramatika", skill:"lekcije",
-                 forms:"provjera", fwrite:"provjera", qq:"home" };
+                 forms:"provjera", fwrite:"provjera", slozi:"provjera", slusaj:"provjera", qq:"home" };
 const tabOf = r => TAB_OF[r] || r;
 const LAST = {};
 function paintNav(){
@@ -5184,7 +5192,7 @@ function go(v, arg){
   CUR = v; paintNav(); paintSlow();
   LAST[tabOf(v)] = { route: v, arg };
   window.scrollTo({top:0, behavior:"instant"});
-  ({home:vHome, lekcije:vSkills, skill:vSkill, unit:vUnit, step:vStep, unitall:vUnitFull, forms:vForms, fwrite:vWrite, qq:vQQ, razgovor:vTalk, provjera:vQuiz,
+  ({home:vHome, lekcije:vSkills, skill:vSkill, unit:vUnit, step:vStep, unitall:vUnitFull, forms:vForms, fwrite:vWrite, slozi:vBuild, slusaj:vDict, qq:vQQ, razgovor:vTalk, provjera:vQuiz,
     citanje:vRead, rjecnik:vPacks, kartice:vCards, gramatika:vGrammar, napredak:vSave}[v] || vHome)(arg);
 }
 function saveBanner(){
@@ -6983,6 +6991,282 @@ function paintFormResults(){
   card.insertAdjacentHTML("afterend", reviewHTML(FD.log));
 }
 
+/* ============================================================
+   GAMES — built only from the phrases of units you've reached,
+   so nothing in them uses grammar you haven't learned yet.
+   ============================================================ */
+const GAME_LEN = 10;
+const PUNCT = /[.,!?;:…"„“”]/g;
+function gamePool(min, max){
+  const out = [], seen = new Set();
+  UNITS.forEach(u => {
+    if(unitState(u) === "locked") return;
+    (u.phrases || []).forEach(([hr, en]) => {
+      const h = String(hr).trim();
+      if(!h || /[\/()]/.test(h) || seen.has(h)) return;
+      const n = h.replace(PUNCT, " ").trim().split(/\s+/).length;
+      if(n < min || n > max) return;
+      seen.add(h);
+      out.push({ hr: h, en: String(en).trim(), u: u.id, cur: unitState(u) !== "done" });
+    });
+  });
+  return out;
+}
+// a round: the unit you're on now shows up more often
+function gameRound(pool){
+  const w = shuffle(pool.flatMap(p => p.cur ? [p, p] : [p]));
+  const out = [], seen = new Set();
+  for(const p of w){ if(!seen.has(p.hr)){ seen.add(p.hr); out.push(p); } if(out.length >= GAME_LEN) break; }
+  return out;
+}
+const gameWords = s => String(s).replace(PUNCT, " ").trim().split(/\s+/).filter(Boolean);
+
+/* ---------- 🧩 Sentence builder ---------- */
+// Wrong-ending look-alikes, so you have to think about the ending and not just the order.
+let SB_FORMS = null;
+function sbForms(){
+  if(SB_FORMS) return SB_FORMS;
+  SB_FORMS = new Map();
+  const add = list => { const u = [...new Set(list.filter(Boolean))]; u.forEach(f => { if(!SB_FORMS.has(f)) SB_FORMS.set(f, u); }); };
+  FW.forEach(w => add([w.b, w.A, w.G, w.L, w.I, ...(w.p || [])]));
+  FA.forEach(a => { const st = a.st, o = a.soft ? "e" : "o";
+    add([a.m, st + "a", st + o, st + "u", st + o + "g", st + o + "m", st + "oj", st + "e", st + "i", st + "im", st + "ih"]); });
+  add(["jedan", "jedna", "jedno", "jednu", "jednog", "jednoj", "jednom"]);
+  add(["moj", "moja", "moje", "moju", "mog", "mojoj", "mom", "mojim"]);
+  add(["tvoj", "tvoja", "tvoje", "tvoju", "tvog", "tvojoj", "tvom", "tvojim"]);
+  return SB_FORMS;
+}
+let SB_NAMESET = null;
+const sbNames = () => SB_NAMESET || (SB_NAMESET = new Set(FW.filter(w => FW_HAS(w, "name")).map(w => w.b)));
+// little words that always sit second (je, sam, se…): if they're still in their place, another order is fine
+const CLITICS = new Set(["sam","si","je","smo","ste","su","se","me","te","ga","mu","joj","nam","vam","im","mi","ti","bih","bi","ću","ćeš","će","ćemo","ćete","li"]);
+function sbQuestion(p){
+  const names = sbNames();
+  const target = gameWords(p.hr).map((w, i) => i === 0 && !names.has(w) ? w.toLowerCase() : w);
+  const forms = sbForms(), lower = target.map(w => w.toLowerCase()), extra = [];
+  shuffle(target.map((w, i) => i)).forEach(i => {
+    if(extra.length >= 2) return;
+    const fam = forms.get(lower[i]); if(!fam) return;
+    const alt = shuffle(fam.filter(f => f !== lower[i] && !lower.includes(f) && !extra.map(x => x.toLowerCase()).includes(f)))[0];
+    if(alt) extra.push(names.has(target[i]) ? alt[0].toUpperCase() + alt.slice(1) : alt);
+  });
+  return { hr: p.hr, en: p.en, u: p.u, target, tiles: shuffle([...target, ...extra]), picked: [] };
+}
+let BLD = null;
+function newBuildRound(){
+  BLD = { q: gameRound(gamePool(3, 9)).map(sbQuestion), i: 0, right: 0, log: [], over: false };
+}
+function vBuild(){
+  if(!BLD) newBuildRound();
+  shell("games · igre", "Složi <i>rečenicu</i>",
+    "Put the words in order to say the English sentence. Watch out — some tiles have the wrong ending.",
+    `<div class="card" id="sb-card"></div>`);
+  if(!BLD.q.length){
+    $("#sb-card").innerHTML = `<p style="margin:0">Finish the first unit's steps to unlock sentences for this game.</p>`;
+    return;
+  }
+  BLD.over ? paintSBResults() : paintSB();
+}
+function paintSB(){
+  const card = $("#sb-card"); if(!card) return;
+  const q = BLD.q[BLD.i], done = q.ans !== undefined;
+  card.innerHTML = `<div class="progressline"><i style="width:${BLD.i / BLD.q.length * 100}%"></i></div>
+    <div style="font-family:var(--mono);font-size:12px;color:var(--stone-dim);margin:8px 0 14px">Sentence ${BLD.i + 1} / ${BLD.q.length} · ${BLD.right} right</div>
+    <div style="font-size:19px;margin-bottom:14px">${esc(q.en)}</div>
+    <div class="tiles ans" id="sb-ans">${q.picked.map((t, n) => `<button class="tile" ${done ? "disabled" : `onclick="sbUnpick(${n})"`}>${esc(q.tiles[t])}</button>`).join("")}</div>
+    <div class="tiles" id="sb-bank">${q.tiles.map((w, t) => `<button class="tile${q.picked.includes(t) ? " used" : ""}" ${done ? "disabled" : `onclick="sbPick(${t})"`}>${esc(w)}</button>`).join("")}</div>
+    <div id="sb-v" style="margin-top:16px">${done ? "" : `<div style="display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn" onclick="sbCheck()" ${q.picked.length ? "" : "disabled"}>${dual("Check","Provjeri")}</button>
+      <button class="btn ghost sm" onclick="sbClear()">${dual("Clear","Očisti")}</button></div>`}</div>`;
+  if(done) sbVerdict();
+}
+function sbPick(t){ const q = BLD.q[BLD.i]; if(q.ans !== undefined || q.picked.includes(t)) return; q.picked.push(t); paintSB(); }
+function sbUnpick(n){ const q = BLD.q[BLD.i]; if(q.ans !== undefined) return; q.picked.splice(n, 1); paintSB(); }
+function sbClear(){ const q = BLD.q[BLD.i]; if(q.ans !== undefined) return; q.picked = []; paintSB(); }
+function sbJudge(q){
+  const got = q.picked.map(t => q.tiles[t].toLowerCase()), want = q.target.map(w => w.toLowerCase());
+  if(got.join(" ") === want.join(" ")) return { ok: true };
+  const extra = got.filter(w => !want.includes(w));
+  if(extra.length) return { ok: false, why: `“${extra[0]}” has the wrong ending here.` };
+  const bag = a => [...a].sort().join(" ");
+  if(bag(got) === bag(want)){
+    const same = want.every((w, i) => !CLITICS.has(w) || got[i] === w) && got.every((w, i) => !CLITICS.has(w) || want[i] === w);
+    return same ? { ok: true, order: true } : { ok: false, why: "Right words, but little words like je, sam, se and bih always go second in the sentence." };
+  }
+  return { ok: false, why: got.length < want.length ? "Some words are missing." : "" };
+}
+function sbCheck(){
+  const q = BLD.q[BLD.i]; if(q.ans !== undefined || !q.picked.length) return;
+  const r = sbJudge(q);
+  q.ans = q.picked.map(t => q.tiles[t]).join(" "); q.ok = r.ok; q.r = r;
+  if(r.ok){ BLD.right++; addXP(1); }
+  BLD.log.push({ q: q.en, ok: r.ok, yours: q.ans, right: q.hr,
+    e: r.order ? "Different order from the course's — Croatian word order is flexible, so this works too." : (r.why || "") });
+  paintSB();
+}
+function sbVerdict(){
+  const q = BLD.q[BLD.i], v = $("#sb-v"); if(!v) return;
+  const last = BLD.i + 1 >= BLD.q.length;
+  v.innerHTML = `<div class="verdict ${q.ok ? "ok" : "no"}">
+      <b style="color:${q.ok ? "var(--olive)" : "var(--madder)"}">${q.ok ? "Correct ✓" : "Not quite ✗"}</b>
+      <span style="font-family:var(--display);font-size:18px;margin-left:6px">${esc(q.hr)}</span> ${spk(q.hr)}
+      ${q.r.order ? `<br><span style="font-size:14px">Your order works too — Croatian is flexible about word order. This is the course's version.</span>`
+        : q.r.why ? `<br><span style="font-size:14px">${esc(q.r.why)}</span>` : ""}
+    </div>
+    <div style="margin-top:12px;display:flex;gap:9px">
+      <button class="btn" id="sb-next" onclick="sbNext()">${last ? dual("See results","Rezultat") : dual("Next","Dalje") + " →"}</button>
+      ${last ? "" : `<button class="btn ghost sm" onclick="sbEnd()">${dual("End round","Kraj")}</button>`}
+    </div>`;
+}
+function sbNext(){ if(BLD.i + 1 >= BLD.q.length) return sbEnd(); BLD.i++; paintSB(); }
+function sbEnd(){
+  if(!BLD.log.length){ BLD = null; return go("provjera"); }
+  if(!BLD.over) countQuiz();
+  BLD.over = true; paintSBResults();
+}
+function paintSBResults(){
+  const card = $("#sb-card"); if(!card) return;
+  const n = BLD.log.length, r = BLD.right;
+  card.innerHTML = `<div class="kicker">round done · gotovo</div>
+    <div style="font-family:var(--display);font-size:40px;margin:4px 0">${r} / ${n}</div>
+    <p style="margin:0 0 12px">${r === n ? "Perfect — every one right." : r / n >= .7 ? "Very good." : "Look over the ones you missed below."}</p>
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn" onclick="newBuildRound();vBuild()">${dual("Another round","Još jednom")}</button>
+      <button class="btn ghost sm" onclick="BLD=null;go('provjera')">${dual("Back to Quiz","Natrag")}</button>
+    </div>`;
+  card.insertAdjacentHTML("afterend", reviewHTML(BLD.log));
+}
+
+/* ---------- 🎧 Listen & write (dictation) ---------- */
+let DT = null;
+// one letter off in a longer word is a typo, not a mistake
+function near(a, b){
+  if(a === b) return true;
+  if(Math.min(a.length, b.length) < 5 || Math.abs(a.length - b.length) > 1) return false;
+  if(a.slice(-2) !== b.slice(-2)) return false;            // the ending is the grammar — that's never "just a typo"
+  let i = 0, j = 0, e = 0;
+  while(i < a.length && j < b.length){
+    if(a[i] === b[j]){ i++; j++; continue; }
+    if(++e > 1) return false;
+    if(a.length > b.length) i++; else if(b.length > a.length) j++; else { i++; j++; }
+  }
+  return e + (a.length - i) + (b.length - j) <= 1;
+}
+// line the typed words up with the sentence — accents, capitals and punctuation never count
+function dtCompare(typed, target){
+  const T = gameWords(target), Y = gameWords(typed);
+  const tn = T.map(norm), yn = Y.map(norm);
+  const m = tn.length, n = yn.length, L = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for(let i = m - 1; i >= 0; i--) for(let j = n - 1; j >= 0; j--)
+    L[i][j] = near(tn[i], yn[j]) ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const words = [];
+  let i = 0, j = 0, extra = 0;
+  while(i < m || j < n){
+    if(i < m && j < n && near(tn[i], yn[j])){ words.push({ w: T[i], ok: true, typo: tn[i] !== yn[j] }); i++; j++; }
+    else if(j < n && (i >= m || L[i][j + 1] >= L[i + 1][j])){ words.push({ w: Y[j], x: true }); extra++; j++; }
+    else { words.push({ w: T[i], ok: false }); i++; }
+  }
+  const ok = !extra && words.every(x => x.ok);
+  const accents = ok && T.join(" ").toLowerCase() !== Y.join(" ").toLowerCase();
+  return { ok, words, accents };
+}
+async function newDictRound(){
+  const pool = gamePool(2, 8);
+  DT = { q: [], i: 0, right: 0, log: [], over: false };
+  if(!pool.length) return;
+  let picks = gameRound(pool);
+  // prefer sentences whose natural-voice audio is already made: they play at once and cost nothing
+  if(S.naturalVoice !== false && navigator.onLine !== false){
+    const cand = shuffle(pool).slice(0, 30), have = [];
+    await Promise.race([
+      Promise.all(cand.map(p => ttsClip(p.hr, null, true).then(() => have.push(p)).catch(() => {}))),
+      new Promise(r => setTimeout(r, 6000))
+    ]);
+    if(have.length){
+      const rest = picks.filter(p => !have.includes(p));
+      picks = [...shuffle(have).slice(0, GAME_LEN), ...rest].slice(0, GAME_LEN);
+      picks = shuffle(picks);
+    }
+  }
+  DT.q = picks.map(p => ({ hr: p.hr, en: p.en, u: p.u }));
+}
+async function vDict(){
+  shell("games · igre", "Slušaj i <i>piši</i>",
+    "Listen to the sentence and type what you hear. Missing č ć š ž đ never count as wrong.",
+    `<div class="card" id="dt-card"><span class="spin"></span> <span style="color:var(--stone-dim)">Getting the audio ready…</span></div>`);
+  if(!DT) await newDictRound();
+  if(CUR !== "slusaj" || !$("#dt-card")) return;
+  if(!DT.q.length){ $("#dt-card").innerHTML = `<p style="margin:0">Finish the first unit's steps to unlock sentences for this game.</p>`; return; }
+  DT.over ? paintDictResults() : paintDict(true);
+}
+function dtPlay(slow){ const q = DT && DT.q[DT.i]; if(q) speak(q.hr, { slow }); }
+function paintDict(autoplay){
+  const card = $("#dt-card"); if(!card) return;
+  const q = DT.q[DT.i], done = q.ans !== undefined;
+  card.innerHTML = `<div class="progressline"><i style="width:${DT.i / DT.q.length * 100}%"></i></div>
+    <div style="font-family:var(--mono);font-size:12px;color:var(--stone-dim);margin:8px 0 16px">Sentence ${DT.i + 1} / ${DT.q.length} · ${DT.right} right</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn" onclick="dtPlay(false)">🔊 ${dual("Play","Pusti")}</button>
+      <button class="btn ghost" onclick="dtPlay(true)">🐢 ${dual("Slower","Sporije")}</button>
+      ${done || q.hint ? "" : `<button class="btn ghost sm" onclick="DT.q[DT.i].hint=1;paintDict()">${dual("Show the English","Prijevod")}</button>`}
+    </div>
+    ${q.hint && !done ? `<div style="color:var(--stone-dim);font-size:15px;margin:-4px 0 12px">${esc(q.en)}</div>` : ""}
+    <input class="answer" id="dt-a" placeholder="Type what you hear…" autocomplete="off" autocapitalize="off" spellcheck="false" ${done ? "disabled" : ""} value="${esc(q.ans || q.draft || "")}">
+    <div id="dt-v" style="margin-top:14px">${done ? "" : `<button class="btn" onclick="dtCheck()">${dual("Check","Provjeri")}</button>`}</div>`;
+  const inp = $("#dt-a");
+  if(!done){
+    inp.addEventListener("keydown", e => { if(e.key === "Enter") dtCheck(); });
+    inp.addEventListener("input", () => { q.draft = inp.value; });
+    inp.focus();
+    if(autoplay) dtPlay(false);
+  } else dtVerdict();
+}
+function dtCheck(){
+  const q = DT.q[DT.i], inp = $("#dt-a"); if(!inp || q.ans !== undefined || !inp.value.trim()) return;
+  q.ans = inp.value.trim(); q.r = dtCompare(q.ans, q.hr); q.ok = q.r.ok;
+  if(q.ok){ DT.right++; addXP(1); }
+  const missed = q.r.words.filter(x => !x.ok && !x.x).map(x => x.w);
+  DT.log.push({ q: "🎧 " + q.en, ok: q.ok, yours: q.ans, right: q.hr, e: q.ok ? "" : missed.length ? "Missed: " + missed.join(", ") : "Some extra words." });
+  paintDict();
+}
+function dtVerdict(){
+  const q = DT.q[DT.i], v = $("#dt-v"), inp = $("#dt-a"); if(!v) return;
+  if(inp){ inp.style.borderWidth = "2px"; inp.style.borderColor = q.ok ? "var(--olive)" : "var(--madder)"; }
+  const last = DT.i + 1 >= DT.q.length;
+  const diff = q.r.words.map(x => `<span class="${x.x ? "dw-x" : x.ok ? "dw-ok" : "dw-no"}">${esc(x.w)}</span>`).join(" ");
+  v.innerHTML = `<div class="verdict ${q.ok ? "ok" : "no"}">
+      <b style="color:${q.ok ? "var(--olive)" : "var(--madder)"}">${q.ok ? "Correct ✓" : "Not quite ✗"}</b>
+      <span style="font-family:var(--display);font-size:18px;margin-left:6px">${esc(q.hr)}</span> ${spk(q.hr)}
+      <div style="color:var(--stone-dim);font-size:14px;margin-top:3px">${esc(q.en)}</div>
+      ${q.ok ? (q.r.accents ? `<div style="font-size:14px;margin-top:6px">Spelled exactly: <b>${esc(q.hr)}</b></div>` : "")
+             : `<div style="font-size:16px;margin-top:8px">The sentence, word by word: ${diff}</div>
+                <div style="font-size:12.5px;color:var(--stone-dim);margin-top:4px">green = you got it · red underlined = missed or misheard · crossed out = not in the sentence</div>`}
+    </div>
+    <div style="margin-top:12px;display:flex;gap:9px">
+      <button class="btn" id="dt-next" onclick="dtNext()">${last ? dual("See results","Rezultat") : dual("Next","Dalje") + " →"}</button>
+      ${last ? "" : `<button class="btn ghost sm" onclick="dtEnd()">${dual("End round","Kraj")}</button>`}
+    </div>`;
+  const nb = $("#dt-next"); if(nb) nb.focus();
+}
+function dtNext(){ if(DT.i + 1 >= DT.q.length) return dtEnd(); DT.i++; paintDict(true); }
+function dtEnd(){
+  if(!DT.log.length){ DT = null; return go("provjera"); }
+  if(!DT.over) countQuiz();
+  DT.over = true; paintDictResults();
+}
+function paintDictResults(){
+  const card = $("#dt-card"); if(!card) return;
+  const n = DT.log.length, r = DT.right;
+  card.innerHTML = `<div class="kicker">round done · gotovo</div>
+    <div style="font-family:var(--display);font-size:40px;margin:4px 0">${r} / ${n}</div>
+    <p style="margin:0 0 12px">${r === n ? "Perfect — you caught every word." : r / n >= .7 ? "Very good ear." : "Listening takes time — the 🐢 button helps."}</p>
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn" onclick="DT=null;vDict()">${dual("Another round","Još jednom")}</button>
+      <button class="btn ghost sm" onclick="DT=null;go('provjera')">${dual("Back to Quiz","Natrag")}</button>
+    </div>`;
+  card.insertAdjacentHTML("afterend", reviewHTML(DT.log));
+}
+
 /* ---------- 2. write a sentence (AI-checked) ---------- */
 let FWR = null;
 function vWrite(){
@@ -7153,6 +7437,14 @@ function vQuiz(){
       <div style="display:flex;gap:9px;flex-wrap:wrap">
         <button class="btn" onclick="go('forms')">✍️ ${dual(FD && (FD.done || FD.q) && !FD.over ? `Endings drill — continue (${FD.done}${FD.len ? " / " + FD.len : ""})` : "Endings drill","Vježbaj nastavke")}</button>
         <button class="btn ghost" onclick="go('fwrite')">💬 ${dual("Write a sentence (AI checks it)","Napiši rečenicu")}</button>
+      </div>
+    </div>
+    <div class="card practise" style="margin-top:14px">
+      <div class="kicker">games · igre</div>
+      <p style="font-size:14.5px;color:var(--stone-dim);margin:2px 0 12px">Sentences from the units you've reached — nothing you haven't learned yet.</p>
+      <div style="display:flex;gap:9px;flex-wrap:wrap">
+        <button class="btn" onclick="go('slozi')">🧩 ${dual(BLD && !BLD.over && BLD.i > 0 ? `Sentence builder — continue (${BLD.i + 1} / ${BLD.q.length})` : "Sentence builder","Složi rečenicu")}</button>
+        <button class="btn ghost" onclick="go('slusaj')">🎧 ${dual(DT && !DT.over && DT.i > 0 ? `Listen & write — continue (${DT.i + 1} / ${DT.q.length})` : "Listen & write","Slušaj i piši")}</button>
       </div>
     </div>
     <div class="card" style="margin-top:14px">
