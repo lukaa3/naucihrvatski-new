@@ -551,7 +551,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.36";
+const VERSION = "10.37";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -4099,6 +4099,42 @@ const SKILLS = [
    VERB OF THE DAY — present (ja, ti, on/ona, mi, vi, oni),
    past (m / f), future (ja). Everyday verbs only.
    ============================================================ */
+/* Quiz explanations name their case — "Neuter never changes" means nothing in a mixed quiz
+   unless you know which case it's about. Units 8–12 are each about one case; the mixed ones are fixed by hand. */
+(function nameCases(){
+  const CASE_OF = {8:"Accusative", 9:"Genitive", 10:"Locative", 11:"Dative", 12:"Instrumental"};
+  const NAMED = /accusative|genitive|locative|dative|instrumental|vocative|nominative|akuzativ|genitiv|lokativ|dativ|vokativ|nominativ|basic form|basic plural/i;
+  const ENDING = /→|drops|grows|never change|doesn't change|don't change|stays|slips|takes? -|alive|inanimate|a thing|soft|becomes|keep|(^|\s)-[a-zčćšž]+/i;
+  const ENG = /^(Feminine|Masculine|Neuter|Alive|A |An |Men|The |Family|More|Girls'|Longer|Every|Inanimate|Soft|Same|Names|Tools|After|Ends|Islands|It |Plain|One|Countries|Words|Some|Here)/;
+  const FIX = [   // [start of the question, explanation] for units that mix cases
+    ["Calling Ana:", "Vocative: Ano! — though many people just say Ana."], ["Call Ana:", "Vocative: Ano!"],
+    ["Calling Ivan:", "Vocative: masculine → -e."], ["Call Marko:", "Vocative: names in -o don't change."], ["Calling Marko:", "Vocative: names in -o don't change."],
+    ["Calling your friend Luka:", "Vocative: men's names ending in -a don't change."], ["Call your brother (brat):", "Vocative: masculine → -e: brate!"],
+    ["Neuter accusative equals", "Accusative: neuter never changes — it's the same as the basic form."],
+    ["Say: with friends", "Instrumental plural: -ima."], ["Say: in the cities", "Locative plural: -ima."],
+    ["Say: Dear Ivan!", "Vocative: Dragi + Ivane."], ["'Oh my God!'", "Vocative: Bog → Bože."], ["Calling a waiter:", "Vocative: -ar → -u."],
+    ["Calling a friend (girl):", "Vocative: -ica → -e."], ["Say: Man! (čovjek)", "Vocative: k → č, then -e."], ["Say: with the women", "Instrumental plural: -ama."],
+    ["'Gospođo!' is calling", "Vocative: gospođa → gospođo."], ["Say: We're going with friends.", "Instrumental plural: Idemo s prijateljima."],
+    ["Say: with good people", "Instrumental plural: describing words → -im."], ["Say: with that woman", "Instrumental, feminine: ta → tom."],
+    ["'Ne znam tog čovjeka.'", "Accusative: alive masculine → tog."], ["'Imam novog psa' — why novog?", "Accusative: alive masculine → -og."],
+    ["'taj ___ grad' (big)", "Basic form: after taj, describing words take the long -i form: veliki."],
+    ["Say: I don't have time.", "Genitive (after nema): vrijeme → vremena."], ["Say: There's no salt.", "Genitive (after nema): sol → soli."],
+    ["Say: I'm going with the brothers.", "Instrumental: braća → s braćom."], ["Genitive of 'ime':", "Genitive: it grows: imena."],
+    ["Genitive of 'vrijeme':", "Genitive: it grows: vremena."], ["Genitive of 'radio':", "Genitive: a j slips in: radija."]
+  ];
+  const fix = (q, u) => {
+    if(!q || typeof q.e !== "string" || !q.q) return;
+    const hit = FIX.find(([start]) => String(q.q).startsWith(start));
+    if(hit){ q.e = hit[1]; return; }
+    const c = CASE_OF[u];
+    if(!c || NAMED.test(q.e) || !ENDING.test(q.e)) return;
+    q.e = c + ": " + (ENG.test(q.e) ? q.e[0].toLowerCase() + q.e.slice(1) : q.e);
+  };
+  UNITS.forEach(u => (u.drills || []).forEach(q => fix(q, u.id)));
+  Object.keys(STEP_Q).forEach(u => (STEP_Q[u] || []).forEach(a => (a || []).forEach(q => fix(q, +u))));
+  Object.keys(FINAL_Q).forEach(u => (FINAL_Q[u] || []).forEach(q => fix(q, +u)));
+})();
+
 const VERBS = [
  {i:"biti", en:"to be", p:["sam","si","je","smo","ste","su"], pm:"bio", pf:"bila", fu:"bit ću", ex:["Umoran sam danas.","I'm tired today."]},
  {i:"imati", en:"to have", p:["imam","imaš","ima","imamo","imate","imaju"], pm:"imao", pf:"imala", fu:"imat ću", ex:["Imam jednog brata.","I have one brother."]},
@@ -6147,7 +6183,7 @@ function finishStep(uid, k){
 function startFinal(id){
   const u = UNITS.find(x => x.id === id);
   D = { unit:id, final:true, title: u.title + " — big quiz",
-        q: shuffle(u.drills.concat(FINAL_Q[id] || []).map(shuffleOpts)), i:0, score:0 };
+        q: shuffle(u.drills.concat(FINAL_Q[id] || [], genForUnit(id, 6)).map(shuffleOpts)), i:0, score:0 };
   paintDrill();
 }
 
@@ -6667,14 +6703,87 @@ const FW = [
   {b:"pismo",en:"letter",g:"n",t:["thing"],A:"pismo",G:"pisma",L:"pismu",I:"pismom",p:["pisma","pisma","pisama","pismima"],
     n:{pG:"An a slips in: pet pisama."}},
   {b:"dijete",en:"child",g:"n",al:1,t:["person"],A:"dijete",G:"djeteta",L:"djetetu",I:"djetetom",V:"dijete",p:null,
-    n:{G:"dijete grows a syllable: djeteta.",L:"dijete grows a syllable: djetetu.",I:"dijete grows a syllable: djetetom.",A:"Neuter never changes — not even dijete."}}
+    n:{G:"dijete grows a syllable: djeteta.",L:"dijete grows a syllable: djetetu.",I:"dijete grows a syllable: djetetom.",A:"Neuter never changes — not even dijete."}},
+  // ---- more nouns (v10.37): every form hand-checked ----
+  {b:"krevet",en:"bed",g:"m",t:["thing","furniture"],A:"krevet",G:"kreveta",L:"krevetu",I:"krevetom",p:["kreveti","krevete","kreveta","krevetima"]},
+  {b:"prozor",en:"window",g:"m",t:["thing"],A:"prozor",G:"prozora",L:"prozoru",I:"prozorom",p:["prozori","prozore","prozora","prozorima"]},
+  {b:"ključ",en:"key",g:"m",t:["thing"],A:"ključ",G:"ključa",L:"ključu",I:"ključem",p:["ključevi","ključeve","ključeva","ključevima"],
+    n:{pN:"After a soft consonant (č) short words take -evi: ključevi.",pA:"After a soft consonant (č) it's -eve: ključeve.",pG:"After a soft consonant (č) it's -eva: ključeva.",pL:"After a soft consonant (č) it's -evima: ključevima.",pD:"After a soft consonant (č) it's -evima: ključevima.",pI:"After a soft consonant (č) it's -evima: ključevima."}},
+  {b:"sat",en:"watch",g:"m",t:["thing"],A:"sat",G:"sata",L:"satu",I:"satom",p:["satovi","satove","satova","satovima"]},
+  {b:"film",en:"film",g:"m",t:["thing"],A:"film",G:"filma",L:"filmu",I:"filmom",p:["filmovi","filmove","filmova","filmovima"]},
+  {b:"laptop",en:"laptop",g:"m",t:["thing"],A:"laptop",G:"laptopa",L:"laptopu",I:"laptopom",p:["laptopi","laptope","laptopa","laptopima"]},
+  {b:"bicikl",en:"bike",g:"m",t:["thing","vehicle"],A:"bicikl",G:"bicikla",L:"biciklu",I:"biciklom",p:["bicikli","bicikle","bicikala","biciklima"],
+    n:{pG:"An a slips in: pet bicikala."}},
+  {b:"avion",en:"plane",g:"m",t:["thing","vehicle"],A:"avion",G:"aviona",L:"avionu",I:"avionom",p:["avioni","avione","aviona","avionima"]},
+  {b:"brod",en:"boat",g:"m",t:["thing","vehicle"],A:"brod",G:"broda",L:"brodu",I:"brodom",p:["brodovi","brodove","brodova","brodovima"]},
+  {b:"tramvaj",en:"tram",g:"m",t:["thing","vehicle"],A:"tramvaj",G:"tramvaja",L:"tramvaju",I:"tramvajem",p:["tramvaji","tramvaje","tramvaja","tramvajima"]},
+  {b:"sir",en:"cheese",g:"m",na:1,t:["food"],A:"sir",G:"sira",L:"siru",I:"sirom",p:null},
+  {b:"čaj",en:"tea",g:"m",na:1,t:["drink"],A:"čaj",G:"čaja",L:"čaju",I:"čajem",p:["čajevi","čajeve","čajeva","čajevima"],
+    n:{pN:"After a soft consonant (j) short words take -evi: čajevi.",pA:"After a soft consonant (j) it's -eve: čajeve.",pG:"After a soft consonant (j) it's -eva: čajeva.",pL:"After a soft consonant (j) it's -evima: čajevima.",pD:"After a soft consonant (j) it's -evima: čajevima.",pI:"After a soft consonant (j) it's -evima: čajevima."}},
+  {b:"park",en:"park",g:"m",t:["place","u"],A:"park",G:"parka",L:"parku",I:"parkom",p:["parkovi","parkove","parkova","parkovima"]},
+  {b:"restoran",en:"restaurant",g:"m",t:["place","u"],A:"restoran",G:"restorana",L:"restoranu",I:"restoranom",p:["restorani","restorane","restorana","restoranima"]},
+  {b:"hotel",en:"hotel",g:"m",t:["place","u"],A:"hotel",G:"hotela",L:"hotelu",I:"hotelom",p:["hoteli","hotele","hotela","hotelima"]},
+  {b:"stan",en:"flat",g:"m",t:["place","u"],A:"stan",G:"stana",L:"stanu",I:"stanom",p:["stanovi","stanove","stanova","stanovima"]},
+  {b:"ured",en:"office",g:"m",t:["place","u"],A:"ured",G:"ureda",L:"uredu",I:"uredom",p:["uredi","urede","ureda","uredima"]},
+  {b:"trg",en:"square",g:"m",t:["place","na"],A:"trg",G:"trga",L:"trgu",I:"trgom",p:["trgovi","trgove","trgova","trgovima"]},
+  {b:"koncert",en:"concert",g:"m",t:["place","na","event"],A:"koncert",G:"koncerta",L:"koncertu",I:"koncertom",p:["koncerti","koncerte","koncerata","koncertima"],
+    n:{pG:"An a slips in: pet koncerata."}},
+  {b:"Dubrovnik",en:"Dubrovnik",g:"m",na:1,t:["place","u","city","name"],A:"Dubrovnik",G:"Dubrovnika",L:"Dubrovniku",I:"Dubrovnikom",p:null},
+  {b:"Osijek",en:"Osijek",g:"m",na:1,t:["place","u","city","name"],A:"Osijek",G:"Osijeka",L:"Osijeku",I:"Osijekom",p:null},
+  {b:"liječnik",en:"doctor",g:"m",al:1,t:["person"],A:"liječnika",G:"liječnika",L:"liječniku",I:"liječnikom",V:"liječniče",p:["liječnici","liječnike","liječnika","liječnicima"],
+    n:{V:"Calling someone, k turns into č: liječniče!",pN:"k turns into c before -i: liječnici.",pL:"k turns into c before -ima: liječnicima.",pD:"k turns into c before -ima: liječnicima.",pI:"k turns into c before -ima: liječnicima."}},
+  {b:"muškarac",en:"man",g:"m",al:1,t:["person"],A:"muškarca",G:"muškarca",L:"muškarcu",I:"muškarcem",p:["muškarci","muškarce","muškaraca","muškarcima"],
+    n:{A:"The a inside drops: muškarac → muškarca.",G:"The a inside drops: muškarac → muškarca.",L:"The a inside drops: muškarac → muškarcu.",I:"The a inside drops, and after c it's -em: muškarcem.",
+       pN:"The a inside drops: muškarci.",pA:"The a inside drops: muškarce.",pG:"Here the a comes back, and another a is added: pet muškaraca.",pL:"The a inside drops: muškarcima.",pD:"The a inside drops: muškarcima.",pI:"The a inside drops: muškarcima."}},
+  {b:"sin",en:"son",g:"m",al:1,t:["person","family"],A:"sina",G:"sina",L:"sinu",I:"sinom",V:"sine",p:["sinovi","sinove","sinova","sinovima"]},
+  {b:"djed",en:"grandpa",g:"m",al:1,na:1,t:["person","family"],A:"djeda",G:"djeda",L:"djedu",I:"djedom",V:"djede",p:null},
+  {b:"Petar",en:"Petar",g:"m",al:1,na:1,t:["person","name"],A:"Petra",G:"Petra",L:"Petru",I:"Petrom",V:"Petre",p:null,
+    n:{A:"The a inside drops: Petar → Petra.",G:"The a inside drops: Petar → Petra.",L:"The a inside drops: Petar → Petru.",I:"The a inside drops: Petar → Petrom.",V:"The a inside drops: Petar → Petre."}},
+  {b:"konj",en:"horse",g:"m",al:1,t:["animal"],A:"konja",G:"konja",L:"konju",I:"konjem",p:["konji","konje","konja","konjima"]},
+  {b:"stolica",en:"chair",g:"f",t:["thing","furniture"],A:"stolicu",G:"stolice",L:"stolici",I:"stolicom",p:["stolice","stolice","stolica","stolicama"]},
+  {b:"olovka",en:"pencil",g:"f",t:["thing"],A:"olovku",G:"olovke",L:"olovci",I:"olovkom",p:["olovke","olovke","olovaka","olovkama"],
+    n:{L:"k turns into c before -i: olovka → olovci.",pG:"An a slips in: pet olovaka."}},
+  {b:"jabuka",en:"apple",g:"f",t:["food"],A:"jabuku",G:"jabuke",L:"jabuci",I:"jabukom",p:["jabuke","jabuke","jabuka","jabukama"],
+    n:{L:"k turns into c before -i: jabuka → jabuci."}},
+  {b:"juha",en:"soup",g:"f",na:1,t:["food"],A:"juhu",G:"juhe",L:"juhi",I:"juhom",p:null},
+  {b:"čokolada",en:"chocolate",g:"f",na:1,t:["food"],A:"čokoladu",G:"čokolade",L:"čokoladi",I:"čokoladom",p:["čokolade","čokolade","čokolada","čokoladama"]},
+  {b:"ulica",en:"street",g:"f",t:["place","na"],A:"ulicu",G:"ulice",L:"ulici",I:"ulicom",p:["ulice","ulice","ulica","ulicama"]},
+  {b:"crkva",en:"church",g:"f",t:["place","u"],A:"crkvu",G:"crkve",L:"crkvi",I:"crkvom",p:["crkve","crkve","crkava","crkvama"],
+    n:{pG:"An a slips in: pet crkava."}},
+  {b:"bolnica",en:"hospital",g:"f",t:["place","u"],A:"bolnicu",G:"bolnice",L:"bolnici",I:"bolnicom",p:["bolnice","bolnice","bolnica","bolnicama"]},
+  {b:"trgovina",en:"store",g:"f",t:["place","u"],A:"trgovinu",G:"trgovine",L:"trgovini",I:"trgovinom",p:["trgovine","trgovine","trgovina","trgovinama"]},
+  {b:"soba",en:"room",g:"f",t:["place","u"],A:"sobu",G:"sobe",L:"sobi",I:"sobom",p:["sobe","sobe","soba","sobama"]},
+  {b:"tržnica",en:"market",g:"f",t:["place","na"],A:"tržnicu",G:"tržnice",L:"tržnici",I:"tržnicom",p:["tržnice","tržnice","tržnica","tržnicama"]},
+  {b:"utakmica",en:"match",g:"f",t:["place","na","event"],A:"utakmicu",G:"utakmice",L:"utakmici",I:"utakmicom",p:["utakmice","utakmice","utakmica","utakmicama"]},
+  {b:"Rijeka",en:"Rijeka",g:"f",na:1,t:["place","u","city","name"],A:"Rijeku",G:"Rijeke",L:"Rijeci",I:"Rijekom",p:null,
+    n:{L:"k turns into c before -i: Rijeka → Rijeci."}},
+  {b:"Njemačka",en:"Germany",g:"f",na:1,t:["place","u","country","name"],A:"Njemačku",G:"Njemačke",L:"Njemačkoj",I:"Njemačkom",p:null,
+    n:{L:"Countries ending in -ska / -čka are really describing words, so they take -oj: u Njemačkoj."}},
+  {b:"Italija",en:"Italy",g:"f",na:1,t:["place","u","country","name"],A:"Italiju",G:"Italije",L:"Italiji",I:"Italijom",p:null},
+  {b:"žena",en:"woman",g:"f",al:1,t:["person"],A:"ženu",G:"žene",L:"ženi",I:"ženom",p:["žene","žene","žena","ženama"]},
+  {b:"djevojka",en:"girl",g:"f",al:1,t:["person"],A:"djevojku",G:"djevojke",L:"djevojci",I:"djevojkom",V:"djevojko",p:["djevojke","djevojke","djevojaka","djevojkama"],
+    n:{L:"k turns into c before -i: djevojka → djevojci.",pG:"An a slips in: pet djevojaka."}},
+  {b:"učiteljica",en:"teacher (f)",g:"f",al:1,t:["person"],A:"učiteljicu",G:"učiteljice",L:"učiteljici",I:"učiteljicom",V:"učiteljice",p:["učiteljice","učiteljice","učiteljica","učiteljicama"],
+    n:{V:"Words ending in -ica take -e when calling: učiteljice!"}},
+  {b:"Ivana",en:"Ivana",g:"f",al:1,na:1,t:["person","name"],A:"Ivanu",G:"Ivane",L:"Ivani",I:"Ivanom",p:null},
+  {b:"mačka",en:"cat",g:"f",al:1,t:["animal"],A:"mačku",G:"mačke",L:"mački",I:"mačkom",p:["mačke","mačke","mačaka","mačkama"],
+    n:{L:"After č the k stays: mački (not mačci).",pG:"An a slips in: pet mačaka."}},
+  {b:"vino",en:"wine",g:"n",na:1,t:["drink"],A:"vino",G:"vina",L:"vinu",I:"vinom",p:["vina","vina","vina","vinima"]},
+  {b:"meso",en:"meat",g:"n",na:1,t:["food"],A:"meso",G:"mesa",L:"mesu",I:"mesom",p:null},
+  {b:"jelo",en:"dish",g:"n",t:["food"],A:"jelo",G:"jela",L:"jelu",I:"jelom",p:["jela","jela","jela","jelima"]},
+  {b:"kazalište",en:"theatre",g:"n",t:["place","u"],A:"kazalište",G:"kazališta",L:"kazalištu",I:"kazalištem",p:["kazališta","kazališta","kazališta","kazalištima"]},
+  {b:"igralište",en:"playground",g:"n",t:["place","na"],A:"igralište",G:"igrališta",L:"igralištu",I:"igralištem",p:["igrališta","igrališta","igrališta","igralištima"]},
+  {b:"jezero",en:"lake",g:"n",t:["place","na"],A:"jezero",G:"jezera",L:"jezeru",I:"jezerom",p:["jezera","jezera","jezera","jezerima"]},
+  {b:"računalo",en:"computer",g:"n",t:["thing"],A:"računalo",G:"računala",L:"računalu",I:"računalom",p:["računala","računala","računala","računalima"]}
 ];
 const FW_HAS = (w, t) => w.t.includes(t);
 const FW_THE = w => w.na ? w.en : FW_HAS(w, "family") ? "my " + w.en : "the " + w.en;
 const FW_EP = {table:"tables",city:"cities",car:"cars",bus:"buses",train:"trains",shop:"shops",juice:"juices",work:"jobs",phone:"phones",
   "friend (m)":"friends","friend (f)":"friends (girls)",dog:"dogs",father:"fathers",waiter:"waiters","teacher (m)":"teachers","neighbour (m)":"neighbours",
   "student (m)":"students",coffee:"coffees",house:"houses",school:"schools",beach:"beaches",book:"books",bank:"banks",sister:"sisters",
-  beer:"beers",sea:"seas",village:"villages",cinema:"cinemas",letter:"letters"};
+  beer:"beers",sea:"seas",village:"villages",cinema:"cinemas",letter:"letters",
+  watch:"watches",man:"men",woman:"women",church:"churches",match:"matches","teacher (f)":"teachers (women)",dish:"dishes"};
+const FW_A = w => w.na ? w.en : (/^[aeiou]/i.test(w.en) ? "an " : "a ") + FW_NAME(w);
 const FW_PL = w => FW_EP[w.en] || w.en + "s";
 const FW_NAME = w => w.en.replace(/ \((m|f)\)$/, "");
 const FW_SA = f => /^(s|š|z|ž)/i.test(f) || /^mn/i.test(f) ? "sa" : "s";
@@ -6689,15 +6798,22 @@ const FF = [
   {c:"A", ok:w=>FW_HAS(w,"person")&&w.b!=="obitelj"||FW_HAS(w,"vehicle"), q:"Čekam ___.", en:w=>`I'm waiting for ${FW_THE(w)}.`},
   {c:"A", ok:w=>FW_HAS(w,"place")&&FW_HAS(w,"u")&&w.b!=="kuća", q:"Idem u ___.", pre:"u", en:w=>`I'm going to ${FW_THE(w)}.`},
   {c:"A", ok:w=>FW_HAS(w,"place")&&FW_HAS(w,"na"), q:"Idem na ___.", pre:"na", en:w=>`I'm going to ${FW_THE(w)}.`},
+  {c:"A", ok:w=>FW_HAS(w,"food"), q:"Jedem ___.", en:w=>`I'm eating ${FW_A(w)}.`},
+  {c:"A", ok:w=>FW_HAS(w,"thing")&&!FW_HAS(w,"vehicle")&&w.b!=="film"||w.b==="auto", q:"Trebam ___.", en:w=>`I need ${FW_A(w)}.`},
+  {c:"A", ok:w=>FW_HAS(w,"thing")&&(!FW_HAS(w,"vehicle")||w.b==="auto"||w.b==="bicikl")||FW_HAS(w,"food")&&w.b!=="jelo", q:"Kupujem ___.", en:w=>`I'm buying ${FW_A(w)}.`},
+  {c:"A", ok:w=>(FW_HAS(w,"person")&&!FW_HAS(w,"name")&&w.b!=="obitelj")||(FW_HAS(w,"thing")&&!FW_HAS(w,"vehicle"))||(FW_HAS(w,"place")&&!FW_HAS(w,"event")&&!FW_HAS(w,"country")), q:"Tražim ___.", en:w=>`I'm looking for ${FW_THE(w)}.`},
   {c:"G", ok:w=>!FW_HAS(w,"place")||w.b==="banka", q:"Nema ___.", en:w=>`There's no ${w.en}.`},
   {c:"G", ok:w=>FW_HAS(w,"drink")||FW_HAS(w,"food")||(FW_HAS(w,"person")&&w.b!=="dijete")||w.b==="mobitel", q:"Ne mogu bez ___.", pre:"bez", en:w=>`I can't do without ${FW_THE(w)}.`},
   {c:"G", ok:w=>FW_HAS(w,"place")&&FW_HAS(w,"u")&&w.b!=="kuća", q:"Dolazim iz ___.", pre:"iz", en:w=>`I'm coming from ${FW_THE(w)}.`},
   {c:"G", ok:w=>FW_HAS(w,"place")&&FW_HAS(w,"na"), q:"Vraćam se s ___.", pre:"s", en:w=>`I'm coming back from ${FW_THE(w)}.`},
+  {c:"G", ok:w=>w.na&&(FW_HAS(w,"food")||FW_HAS(w,"drink")), q:"Imam puno ___.", en:w=>`I have a lot of ${w.en}.`},
+  {c:"G", ok:w=>FW_HAS(w,"person")&&!FW_HAS(w,"name")&&!FW_HAS(w,"family")&&w.b!=="obitelj"&&w.b!=="dijete", q:"Ovo je kuća ___.", en:w=>`This is the ${FW_NAME(w)}'s house.`},
   {c:"G", ok:w=>FW_HAS(w,"person")&&w.b!=="obitelj", q:"Ja sam kod ___.", pre:"kod", en:w=>{const t=FW_THE(w), m=t.match(/ \((m|f)\)$/); return `I'm at ${t.replace(/ \((m|f)\)$/,"")}'s place${m?m[0]:""}.`;}},
-  {c:"G", ok:w=>FW_HAS(w,"place")&&!FW_HAS(w,"country"), q:"Živim blizu ___.", pre:"blizu", en:w=>`I live near ${FW_THE(w)}.`},
+  {c:"G", ok:w=>FW_HAS(w,"place")&&!FW_HAS(w,"country")&&!FW_HAS(w,"event"), q:"Živim blizu ___.", pre:"blizu", en:w=>`I live near ${FW_THE(w)}.`},
   {c:"L", ok:w=>FW_HAS(w,"place")&&FW_HAS(w,"u"), q:"Ja sam u ___.", pre:"u", en:w=>`I'm in ${FW_THE(w)}.`},
   {c:"L", ok:w=>FW_HAS(w,"place")&&FW_HAS(w,"na"), q:"Ja sam na ___.", pre:"na", en:w=>`I'm at ${FW_THE(w)}.`},
   {c:"L", ok:w=>FW_HAS(w,"city")||FW_HAS(w,"country")||w.b==="selo", q:"Živim u ___.", pre:"u", en:w=>`I live in ${FW_THE(w)}.`},
+  {c:"L", ok:w=>["stol","krevet","stolica"].includes(w.b), q:"Mobitel je na ___.", pre:"na", en:w=>`The phone is on the ${w.en}.`},
   {c:"L", ok:w=>!FW_HAS(w,"place")||FW_HAS(w,"name"), q:"Pričamo o ___.", pre:"o", en:w=>`We're talking about ${FW_THE(w)}.`},
   {c:"D", ok:w=>FW_HAS(w,"person")&&w.b!=="obitelj", q:"Pišem ___.", en:w=>`I'm writing to ${FW_THE(w)}.`},
   {c:"D", ok:w=>FW_HAS(w,"person")&&w.b!=="obitelj", q:"Pomažem ___.", en:w=>`I'm helping ${FW_THE(w)}.`},
@@ -6706,6 +6822,7 @@ const FF = [
   {c:"I", ok:w=>FW_HAS(w,"person")||FW_HAS(w,"animal"), q:"Idem ___ ___.", sprep:1, en:w=>`I'm going with ${FW_THE(w)}.`},
   {c:"I", ok:w=>FW_HAS(w,"person")&&w.b!=="obitelj", q:"Pričam ___ ___.", sprep:1, en:w=>`I'm talking with ${FW_THE(w)}.`},
   {c:"I", ok:w=>w.b==="mlijeko", q:"Kava ___ ___.", sprep:1, en:w=>`Coffee with ${w.en}.`},
+  {c:"I", ok:w=>w.b==="sir"||w.b==="meso", q:"Kruh ___ ___.", sprep:1, en:w=>`Bread with ${w.en}.`},
   {c:"I", ok:w=>FW_HAS(w,"vehicle"), q:"Putujem ___.", en:w=>`I'm travelling by ${w.en}.`},
   {c:"V", ok:w=>!!w.V&&w.b!=="pas", q:"Bok, ___!", en:w=>`Hi, ${FW_NAME(w)}!`},
   {c:"V", ok:w=>!!w.V&&w.b!=="pas", q:"Hvala, ___!", en:w=>`Thanks, ${FW_NAME(w)}!`},
@@ -6747,15 +6864,15 @@ const FA = [
   {m:"velik", st:"velik", en:"big",       fit:w => (FW_HAS(w,"place") && !FW_HAS(w,"abstract") && !FW_HAS(w,"name")) || ["stol","auto","pas","obitelj","knjiga"].includes(w.b)},
   {m:"nov",   st:"nov",   en:"new",       fit:w => FW_HAS(w,"thing") || ["dućan","škola","kino","kuća","grad"].includes(w.b)},
   {m:"star",  st:"star",  en:"old",       fit:w => (FW_HAS(w,"thing") || (FW_HAS(w,"place") && !FW_HAS(w,"name") && !FW_HAS(w,"abstract")) || ["prijatelj","prijateljica","susjed","pas"].includes(w.b)) && w.b !== "more"},
-  {m:"lijep", st:"lijep", en:"beautiful", fit:w => ["grad","selo","plaža","kuća","more"].includes(w.b)},
-  {m:"dobar", st:"dobr",  en:"good",      fit:w => (FW_HAS(w,"person") && !FW_HAS(w,"name") && w.b !== "obitelj") || w.b === "kruh" || w.b === "knjiga" || w.b === "pas"},
-  {m:"mlad",  st:"mlad",  en:"young",     fit:w => ["prijatelj","prijateljica","konobar","učitelj","student","susjed","otac"].includes(w.b)},
-  {m:"mali",  st:"mal",   en:"little",    fit:w => ["pas","dijete","selo","stol","grad"].includes(w.b), longOnly:1},
+  {m:"lijep", st:"lijep", en:"beautiful", fit:w => ["grad","selo","plaža","kuća","more","park","trg","jezero","restoran","hotel","crkva","ulica","stan","soba"].includes(w.b)},
+  {m:"dobar", st:"dobr",  en:"good",      fit:w => (FW_HAS(w,"person") && !FW_HAS(w,"name") && w.b !== "obitelj") || ["kruh","knjiga","pas","vino","jelo","film","restoran","čaj"].includes(w.b)},
+  {m:"mlad",  st:"mlad",  en:"young",     fit:w => ["prijatelj","prijateljica","konobar","učitelj","student","susjed","otac","liječnik","muškarac","djevojka","žena","učiteljica","sin"].includes(w.b)},
+  {m:"mali",  st:"mal",   en:"little",    fit:w => ["pas","dijete","selo","stol","grad","mačka","konj","stan","soba","park","sat","jabuka"].includes(w.b), longOnly:1},
   {m:"hladan",st:"hladn", en:"cold",      fit:w => FW_HAS(w,"drink")},
-  {m:"vruć",  st:"vruć",  en:"hot",       fit:w => ["kava","mlijeko","voda"].includes(w.b), soft:1},
+  {m:"vruć",  st:"vruć",  en:"hot",       fit:w => ["kava","mlijeko","voda","čaj","juha"].includes(w.b), soft:1},
   {m:"brz",   st:"brz",   en:"fast",      fit:w => FW_HAS(w,"vehicle")},
-  {m:"skup",  st:"skup",  en:"expensive", fit:w => ["auto","mobitel","knjiga","stol"].includes(w.b)},
-  {m:"svjež", st:"svjež", en:"fresh",     fit:w => w.b === "kruh" || w.b === "mlijeko", soft:1}
+  {m:"skup",  st:"skup",  en:"expensive", fit:w => ["auto","mobitel","knjiga","stol","hotel","restoran","sat","laptop","bicikl","računalo","vino","stan"].includes(w.b)},
+  {m:"svjež", st:"svjež", en:"fresh",     fit:w => ["kruh","mlijeko","sir","meso","jabuka"].includes(w.b), soft:1}
 ];
 // every correct spelling of the describing word in this slot (the first is the one the course teaches)
 function adjForms(a, c, w){
@@ -6783,11 +6900,16 @@ function adjReason(a, c, w){
   else if(c === "G") r = g === "f" ? "feminine → -e" : "masculine and neuter → " + og;
   else if(c === "L" || c === "D") r = g === "f" ? "feminine → -oj" : "masculine and neuter → " + om;
   else if(c === "I") r = g === "f" ? "feminine → -om" : "masculine and neuter → -im";
-  return "Describing word: " + r + ".";
+  return r + ".";
 }
+// every explanation starts by naming the case, so it still makes sense in a mixed round
+const CASE_LABEL = {A:"Accusative",G:"Genitive",L:"Locative",D:"Dative",I:"Instrumental",V:"Vocative",
+  pN:"Basic plural",pA:"Accusative plural",pG:"Genitive plural",pL:"Locative plural",pD:"Dative plural",pI:"Instrumental plural"};
+const lc1 = t => /^(Feminine|Masculine|Neuter|Alive|A |An |Men|The |This|More|After|Ends|Short|Plural|Words|Family|Names|Girls'|Countries|Here|Some|Every)/.test(t) ? t[0].toLowerCase() + t.slice(1) : t;
 
 // Plain-English reason, built from the kind of word, plus any note for that exact word.
-function formReason(w, c){
+function formReason(w, c){ return CASE_LABEL[c] + ": " + lc1(formReasonText(w, c)); }
+function formReasonText(w, c){
   const f = formForm(w, c) || "", b = w.b, endA = /a$/.test(b), mA = w.g === "m" && w.al && endA;
   const kind = w.g === "f" ? (endA ? "fA" : "fC") : w.g === "n" ? "n" : (mA ? "mA" : w.al ? "mAl" : "mT");
   let r = "";
@@ -6857,7 +6979,7 @@ function fqEn(q){
   else if(!vowel && / an $/.test(pre)) pre = pre.replace(/ an $/, " a ");
   return pre + q.a.en + " " + e.slice(i);
 }
-const fqReason = q => (q.a ? adjReason(q.a, q.c, q.w) + " Noun: " : "") + formReason(q.w, q.c);
+const fqReason = q => q.a ? `${CASE_LABEL[q.c]}: describing word — ${adjReason(q.a, q.c, q.w)} Noun — ${lc1(formReasonText(q.w, q.c))}` : formReason(q.w, q.c);
 const fqLabel = q => (q.c[0] === "p" ? (q.c === "pN" ? "basic plural" : FCASE[plCase(q.c)].name.toLowerCase() + " · more than one") : FCASE[q.c].name.toLowerCase()) + (q.a ? " · + describing word" : "");
 
 /* ---------- 1. endings drill ---------- */
@@ -7278,6 +7400,126 @@ function paintDictResults(){
   card.insertAdjacentHTML("afterend", reviewHTML(DT.log));
 }
 
+/* ============================================================
+   FRESH QUESTIONS — made from the word lists each time, so the big
+   quizzes and the Quiz tab don't keep showing the same ones.
+   Each kind only uses what its own unit (and earlier ones) teach.
+   ============================================================ */
+const pickOne = a => a[Math.floor(Math.random() * a.length)];
+const GEN_CASES = { 8:["A"], 9:["G"], 10:["L"], 11:["D"], 12:["I"], 13:["A","G","L","D","I","V"] };
+const PRON = ["ja","ti","on","mi","vi","oni"];
+
+// cases: a gap to fill, the word given in its basic form
+function genCaseQ(cases){
+  let q = buildFQ(cases, true, true);
+  // the basic plural ("Ovdje su gradovi") isn't a case — keep it out of a one-case unit's quiz
+  for(let k = 0; q && q.c === "pN" && cases.length === 1 && k < 8; k++) q = buildFQ(cases, true, true);
+  if(!q || (q.c === "pN" && cases.length === 1)) return null;
+  const word = (q.a ? q.a.m + " + " : "") + q.w.b + (q.c[0] === "p" ? ", more than one" : "");
+  const prompt = `${q.shown} (${word}) — ${fqEn(q)}`;
+  if(!q.a && !q.fr.pre && !q.fr.sprep && Math.random() < 0.5){
+    const forms = [...new Set([q.w.b, q.w.A, q.w.G, q.w.L, q.w.I, ...(q.w.p || [])].filter(Boolean))].filter(f => f !== q.form);
+    const wrong = shuffle(forms).slice(0, 3);
+    if(wrong.length >= 2){ const o = shuffle([q.form, ...wrong]); return { t:"mc", q: prompt, o, a: o.indexOf(q.form), e: fqReason(q), gen: 1 }; }
+  }
+  return { t:"type", q: prompt, a: q.accept, e: fqReason(q), gen: 1 };
+}
+
+// gender and the basic plural (Gender and plurals)
+function genGenderQ(){
+  const w = pickOne(FW.filter(x => !FW_HAS(x, "name")));
+  const G = { m:"masculine", f:"feminine", n:"neuter" };
+  if(w.p && Math.random() < 0.5)
+    return { t:"type", q:`More than one: '${w.b}' (${FW_NAME(w)}) →`, a:[w.p[0]], e:"Basic plural: " + lc1(formReasonText(w, "pN")), gen: 1 };
+  const ends = /a$/.test(w.b) ? "-a" : /[oe]$/.test(w.b) ? "-" + w.b.slice(-1) : "a consonant";
+  const guess = /a$/.test(w.b) ? "f" : /[oe]$/.test(w.b) ? "n" : "m";
+  const e = w.g === guess ? `Ends in ${ends} → ${G[w.g]}.`
+    : w.g === "m" && /a$/.test(w.b) ? `Ends in -a, but it means a man — so it's masculine.`
+    : `${w.b} is ${G[w.g]} even though it ends in ${ends} — one of the few to learn by heart.`;
+  return { t:"mc", q:`What gender is '${w.b}' (${FW_NAME(w)})?`, o:["masculine","feminine","neuter"], a:["m","f","n"].indexOf(w.g), e, gen: 1 };
+}
+
+// present tense: the everyday "doing it" verbs, no se-verbs
+let PRES_VERBS = null;
+function genPresentQ(){
+  PRES_VERBS = PRES_VERBS || VERBS.slice(0, 60).filter(v => !/ se$/.test(v.i) && !(ASPECT.get(v.i) && ASPECT.get(v.i).pf === v.i));
+  const v = pickOne(PRES_VERBS), i = Math.floor(Math.random() * 6);
+  const who = i === 2 && Math.random() < 0.5 ? "ona" : PRON[i];
+  const f = v.p[i];
+  const e = `Present tense, ${who}: ${f}. (${v.i}: ${v.p.slice(0, 3).join(", ")}, ${v.p.slice(3).join(", ")})`;
+  if(Math.random() < 0.5){
+    const o = shuffle([...new Set(v.p)]).slice(0, 4);
+    if(!o.includes(f)) o[0] = f;
+    const oo = shuffle(o);
+    return { t:"mc", q:`${who} ___ — ${v.i} (${v.en})`, o: oo, a: oo.indexOf(f), e, gen: 1 };
+  }
+  return { t:"type", q:`${who} ___ — ${v.i} (${v.en})`, a:[f, who + " " + f], e, gen: 1 };
+}
+
+// past tense: -o / -la / -li + sam, si, je, smo, ste, su
+function genPastQ(){
+  const v = pickOne(VERBS.filter(x => !/ se$/.test(x.i) && x.i !== "biti"));
+  const opts = [["ja","m","sam","I (a man)"],["ja","f","sam","I (a woman)"],["ti","m","si","you (to a guy)"],["ti","f","si","you (to a girl)"],
+                ["on","m","je","he"],["ona","f","je","she"],["mi","pl","smo","we"],["oni","pl","su","they"]];
+  const [who, g, aux, en] = pickOne(opts);
+  const part = g === "m" ? v.pm : g === "f" ? v.pf : v.pf.replace(/la$/, "li");
+  const ans = [`${part} ${aux}`, `${who} ${aux} ${part}`];
+  const e = `Past tense: ${g === "m" ? "a man → -o" : g === "f" ? "a woman → -la" : "a group → -li"} (${part}), plus ${aux}.`;
+  return { t:"type", q:`Past of ${v.i} (${v.en}) — ${en}:`, a: ans, e, gen: 1 };
+}
+
+// future tense: ću, ćeš, će, ćemo, ćete, će
+function genFutureQ(){
+  const v = pickOne(VERBS.filter(x => !/ se$/.test(x.i) && / ću$/.test(x.fu)));
+  const aux = ["ću","ćeš","će","ćemo","ćete","će"], i = Math.floor(Math.random() * 6);
+  const stem = v.fu.replace(/ ću$/, "");
+  const ans = [`${stem} ${aux[i]}`, `${PRON[i]} ${aux[i]} ${v.i}`];
+  const e = `Future: ${PRON[i]} → ${aux[i]}. ` + (/ti$/.test(v.i) ? `Starting with the verb, -ti loses its -i: ${stem} ${aux[i]}.` : `-ći verbs keep their ending: ${stem} ${aux[i]}.`);
+  return { t:"type", q:`Future of ${v.i} (${v.en}) — ${PRON[i]}:`, a: ans, e, gen: 1 };
+}
+
+// counting: 2–4 and 5+ decide the ending
+function genCountQ(){
+  const w = pickOne(FW.filter(x => x.p && !x.na && !FW_HAS(x, "name") && !FW_HAS(x, "abstract")));
+  const n = pickOne([2, 3, 4, 5, 6, 7, 10]);
+  const num = { 2: w.g === "f" ? "dvije" : "dva", 3:"tri", 4:"četiri", 5:"pet", 6:"šest", 7:"sedam", 10:"deset" }[n];
+  const form = n <= 4 ? w.G : w.p[2];
+  const e = n <= 4
+    ? `2–4: ${w.g === "f" ? "feminine → -e, and 2 is dvije" : (w.g === "m" ? "masculine" : "neuter") + " → -a, and 2 is dva"} (${num} ${form}).`
+    : `5 and up: ${lc1(formReasonText(w, "pG"))}`;
+  return { t:"type", q:`Say: ${n} ${FW_PL(w)} (${w.b})`, a:[`${num} ${form}`, `${n} ${form}`], e, gen: 1 };
+}
+
+// describing words in the basic form (Putting a sentence together)
+function genAdjQ(){
+  const pairs = [];
+  FW.forEach(w => { if(!FW_HAS(w, "name") && !FW_HAS(w, "country")) FA.forEach(a => { if(a.fit(w)) pairs.push([a, w]); }); });
+  const [a, w] = pickOne(pairs);
+  const pl = !!w.p && Math.random() < 0.35;
+  const st = a.st, o = a.soft ? "e" : "o";
+  let forms, e;
+  if(pl){ forms = [st + { m:"i", f:"e", n:"a" }[w.g] + " " + w.p[0]]; e = `More than one: the describing word copies the noun — masculine -i, feminine -e, neuter -a.`; }
+  else if(w.g === "m"){ forms = a.longOnly ? [a.m + " " + w.b] : [a.m + " " + w.b, st + "i " + w.b]; e = `Masculine: the describing word has no ending (${a.m} ${w.b}).`; }
+  else if(w.g === "f"){ forms = [st + "a " + w.b]; e = `Feminine: the describing word ends in -a, like the noun.`; }
+  else { forms = [st + o + " " + w.b]; e = `Neuter: the describing word ends in -${o}, like the noun.`; }
+  return { t:"type", q:`Say: ${pl || w.na ? "" : (/^[aeiou]/i.test(a.en) ? "an " : "a ")}${a.en} ${pl ? FW_PL(w) : FW_NAME(w)} (${a.m} + ${w.b}${pl ? ", more than one" : ""})`, a: forms, e, gen: 1 };
+}
+
+const GEN_KIND = { 4: genGenderQ, 5: genPresentQ, 37: genPresentQ, 14: genPastQ, 15: genFutureQ, 39: genCountQ, 27: genAdjQ };
+// n fresh questions for a unit (none for units whose material can't be made this way)
+function genForUnit(id, n){
+  const make = GEN_CASES[id] ? () => genCaseQ(GEN_CASES[id]) : GEN_KIND[id];
+  if(!make) return [];
+  const out = [], seen = new Set();
+  for(let k = 0; k < n * 4 && out.length < n; k++){
+    const q = make(); if(!q) continue;
+    if(seen.has(q.q)) continue;
+    seen.add(q.q); out.push(q);
+  }
+  return out;
+}
+const hasGen = id => !!(GEN_CASES[id] || GEN_KIND[id]);
+
 /* ---------- 2. write a sentence (AI-checked) ---------- */
 let FWR = null;
 function vWrite(){
@@ -7478,6 +7720,11 @@ function vQuiz(){
 }
 function localQuiz(){
   let pool = QSEL.unit==="mix" ? UNITS.flatMap(u=>u.drills) : UNITS.find(u=>u.id==QSEL.unit).drills;
+  // fresh questions made from the word lists (only from units you've reached when it's a mix)
+  const fresh = QSEL.unit==="mix"
+    ? shuffle(UNITS.filter(u => hasGen(u.id) && unitState(u) !== "locked")).slice(0, 5).flatMap(u => genForUnit(u.id, 2))
+    : genForUnit(+QSEL.unit, 10);
+  pool = pool.concat(fresh);
   if(QSEL.type==="mc" || QSEL.type==="type") pool = pool.filter(q=>q.t===QSEL.type);
   if(!pool.length){ $("#qout").innerHTML = `<div class="err">No questions of that type in this selection. Try Mješovito.</div>`; return; }
   D = {unit:null, title:"Quick quiz", q:shuffle(pool).slice(0,10), i:0, score:0};
@@ -7500,6 +7747,7 @@ Write 8 questions. Use these two shapes only:
 {"t":"mc","q":"<question in English>","o":["a","b","c","d"],"a":<index of correct option>,"e":"<one sentence explanation in English>"}
 {"t":"type","q":"<instruction in English, e.g. Say: I'd like a coffee>","a":["<accepted answer>","<another accepted variant>"],"e":"<explanation>"}
 For "type", list every reasonable correct variant (with and without the pronoun, both word orders).
+When an explanation is about an ending, start it with the case's name, e.g. "Accusative: feminine -a → -u." — never just "neuter never changes".
 When a question gives the learner a Croatian word in brackets to use, always give its dictionary form — singular basic form for nouns (grad, not gradovi or gradove), infinitive for verbs — and say "more than one" if the answer needs the plural.
 Return ONLY a JSON array of 8 objects. No markdown, no commentary.`}], 1600);
     const arr = parseJSON(txt).filter(q=>q && q.q && (q.t==="mc" ? Array.isArray(q.o) : Array.isArray(q.a)));
