@@ -551,7 +551,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.35";
+const VERSION = "10.36";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -3158,8 +3158,8 @@ EXTRA_STEPS.forEach(x => {
     SQm("five people =",["pet čovjeka","pet ljudi"],1,"The other odd one: ljudi.")]);
   PHR[7][1] = [["jedna kava · dvije kave · pet kava","1 · 2 · 5 coffees"],["jedan stol · dva stola · pet stolova","1 · 2 · 5 tables"],["jedno pivo · dva piva · pet piva","1 · 2 · 5 beers"]];
   PHR[7].splice(2, 0, [["jedan dan · dva dana · pet dana","1 · 2 · 5 days"],["jedna godina · dvije godine · pet godina","1 · 2 · 5 years"],["jedan sat · dva sata · pet sati","1 · 2 · 5 hours"],["jedan euro · dva eura · pet eura","1 · 2 · 5 euros"],["Za pet minuta.","In five minutes."]]);
-  STEP_Q[8][1].push(SQm("'I see the cities.' (gradovi) =",["Vidim gradovi.","Vidim gradove.","Vidim grade."],1,"More than one, as the object: masculine -i → -e."),
-     SQm("'I love villages.' (sela) =",["Volim sela.","Volim sele."],0,"Neuter plural stays the same as the object."));
+  STEP_Q[8][1].push(SQm("'I see the cities.' (grad, more than one) =",["Vidim gradovi.","Vidim gradove.","Vidim grade."],1,"More than one, as the object: masculine -i → -e."),
+     SQm("'I love villages.' (selo, more than one) =",["Volim sela.","Volim sele."],0,"Neuter plural stays the same as the object."));
   FINAL_Q[8].push(SQm("'I see the cities.' =",["Vidim gradovi.","Vidim gradove."],1,"More than one, as the object: masculine -i → -e."),
      SQm("'I'm drinking cold water.' =",["Pijem hladna voda.","Pijem hladnu vodu.","Pijem hladnu voda."],1,"Feminine object → -u on both words."));
   FINAL_Q[9].push(SQm("'a lot of cities' =",["puno grada","puno gradova"],1,"Genitive, more than one: short masculine words → -ova."),
@@ -6924,24 +6924,34 @@ function paintForm(){
       <span>${FD.len ? `Question ${num} / ${FD.len} · ` : ""}${FD.right} right${FD.streak > 2 ? ` · 🔥 ${FD.streak} in a row` : ""}</span><span>${esc(label)}</span></div>
     <div class="q" style="font-size:24px">${esc(q.shown).replace("___", q.a ? `<span class="fgap">___</span> <span class="fgap">___</span>` : `<span class="fgap">___</span>`)}</div>
     <div style="color:var(--stone-dim);font-size:14px;margin:-4px 0 10px">${esc(fqEn(q))}</div>
-    <div style="font-size:14px;margin-bottom:10px">${q.a ? "Words" : "Word"}: ${q.a ? `<b class="hr" style="font-family:var(--display);font-size:18px">${esc(q.a.m)}</b> <span style="color:var(--stone-dim)">(${esc(q.a.en)})</span> + ` : ""}<b class="hr" style="font-family:var(--display);font-size:18px">${esc(q.c[0] === "p" ? q.w.p[0] : q.w.b)}</b>
+    <div style="font-size:14px;margin-bottom:10px">${q.a ? "Words" : "Word"}: ${q.a ? `<b class="hr" style="font-family:var(--display);font-size:18px">${esc(q.a.m)}</b> <span style="color:var(--stone-dim)">(${esc(q.a.en)})</span> + ` : ""}<b class="hr" style="font-family:var(--display);font-size:18px">${esc(q.w.b)}</b>
       <span style="color:var(--stone-dim)">· ${{m:"masculine",f:"feminine",n:"neuter"}[q.w.g]}${q.w.al ? " · alive" : ""}${q.c[0] === "p" ? " · more than one" : ""}</span></div>
     <input class="answer" id="fd-a" placeholder="${q.a ? "Type both missing words…" : "Type the missing word…"}" autocomplete="off" autocapitalize="off" spellcheck="false">
     <div style="margin-top:12px;display:flex;gap:9px;flex-wrap:wrap">
       <button class="btn" onclick="checkForm()">${dual("Check","Provjeri")}</button>
-      <button class="btn ghost sm" onclick="formHint()">${dual("Hint","Pomoć")}</button>
+      <button class="btn ghost sm" id="fd-hint" onclick="formHint()">${dual("Hint","Pomoć")}</button>
     </div>
     <div id="fd-v"></div>`;
   const a = $("#fd-a");
   if(q.ans !== undefined){ a.value = q.ans; showFormVerdict(); return; }
   if(q.typed) a.value = q.typed;
+  if(q.hints) paintFormHint();
   a.addEventListener("input", () => { q.typed = a.value; });
   a.focus(); a.addEventListener("keydown", e => { if(e.key === "Enter") checkForm(); });
 }
 function formHint(){
-  const q = FD.q, v = $("#fd-v"); if(!q || !v) return;
-  const c = q.c === "pN" ? null : FCASE[q.c[0] === "p" ? plCase(q.c) : q.c];
-  v.innerHTML = `<div class="verdict" style="border:1px dashed var(--line)">${c ? `<b>${c.name}:</b> ${esc(c.role)}.<br>` : ""}${esc(fqReason(q).replace(/→[^.]*/g, "→ …"))}</div>`;
+  const q = FD.q; if(!q || q.ans !== undefined) return;
+  q.hints = Math.min(2, (q.hints || 0) + 1);
+  paintFormHint();
+}
+function paintFormHint(){
+  const q = FD.q, v = $("#fd-v"), b = $("#fd-hint"); if(!q || !v) return;
+  const pl = q.c[0] === "p";
+  const c = q.c === "pN" ? null : FCASE[pl ? plCase(q.c) : q.c];
+  const first = c ? `<b>${c.name}${pl ? ", more than one" : ""}</b> — ${esc(c.role)}.`
+                  : `<b>Basic plural</b> — more than one, and it's the one doing it (the subject).`;
+  v.innerHTML = `<div class="verdict" style="border:1px dashed var(--line)">${first}${q.hints > 1 ? `<div style="margin-top:6px">${esc(fqReason(q))}</div>` : ""}</div>`;
+  if(b){ if(q.hints > 1){ b.disabled = true; b.innerHTML = dual("No more hints", "Kraj"); } else b.innerHTML = dual("Another hint", "Još pomoći"); }
 }
 function checkForm(){
   const q = FD.q, inp = $("#fd-a"); if(!q || !inp || q.ans !== undefined) return;
@@ -6952,7 +6962,7 @@ function checkForm(){
   if(r.ok){ FD.right++; FD.streak++; addXP(1); }
   else FD.streak = 0;
   if(q.c !== "pN"){ const a = actRec(); a.fc = a.fc || {}; const t = a.fc[q.c] || [0, 0]; a.fc[q.c] = [t[0] + (r.ok ? 1 : 0), t[1] + 1]; }
-  (FD.log = FD.log || []).push({ q: q.shown + "  (" + (q.a ? q.a.m + " + " : "") + (q.c[0] === "p" ? q.w.p[0] : q.w.b) + ")", qEn: fqEn(q), ok: r.ok, yours: inp.value, right: q.full, e: fqReason(q) });
+  (FD.log = FD.log || []).push({ q: q.shown + "  (" + (q.a ? q.a.m + " + " : "") + q.w.b + (q.c[0] === "p" ? ", more than one" : "") + ")", qEn: fqEn(q), ok: r.ok, yours: inp.value, right: q.full, e: fqReason(q) });
   showFormVerdict();
   const top = $("#fd-card span"); if(top) top.innerHTML = `${FD.len ? `Question ${FD.done} / ${FD.len} · ` : ""}${FD.right} right${FD.streak > 2 ? ` · 🔥 ${FD.streak} in a row` : ""}`;
   const bar = $("#fd-card .progressline i"); if(bar) bar.style.width = Math.min(100, FD.done / FD.len * 100) + "%";
@@ -7490,6 +7500,7 @@ Write 8 questions. Use these two shapes only:
 {"t":"mc","q":"<question in English>","o":["a","b","c","d"],"a":<index of correct option>,"e":"<one sentence explanation in English>"}
 {"t":"type","q":"<instruction in English, e.g. Say: I'd like a coffee>","a":["<accepted answer>","<another accepted variant>"],"e":"<explanation>"}
 For "type", list every reasonable correct variant (with and without the pronoun, both word orders).
+When a question gives the learner a Croatian word in brackets to use, always give its dictionary form — singular basic form for nouns (grad, not gradovi or gradove), infinitive for verbs — and say "more than one" if the answer needs the plural.
 Return ONLY a JSON array of 8 objects. No markdown, no commentary.`}], 1600);
     const arr = parseJSON(txt).filter(q=>q && q.q && (q.t==="mc" ? Array.isArray(q.o) : Array.isArray(q.a)));
     if(!arr.length) throw new Error("empty");
