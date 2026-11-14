@@ -551,7 +551,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.37";
+const VERSION = "10.38";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -3018,14 +3018,19 @@ EXTRA_STEPS.push(
   p:[["…zar ne?","…right?"],["Je li tako?","Is that so?"]],
   f:[SQm("'jel tako?' is…",["a casual 'je li tako?'","a spelling mistake"],0,"The spoken short form.")]},
  {u:9, g:{h:"Some, none, and when",
-   b:"<b>1 · 'some' or 'any' of something</b>: when you don't mean a whole one, use the genitive:<br>Imaš li kruha? — Do you have any bread? · Ima li mlijeka? — Is there any milk? · Pijem malo vode. — I'm drinking a bit of water.<br>Compare: Imam kruh. — I have bread (a loaf of it).<br><br><b>2 · 'have no…' — nemam + genitive</b>:<br>Nemam vremena. — I don't have time. · Nemam novca. — I have no money.<br><br><b>3 · 'when', with no preposition</b>: a few time phrases are just the genitive. Learn them as chunks:<table><tr><th>Croatian</th><th>means</th></tr><tr><td class='cs'>prošle godine</td><td class='hr'>last year</td></tr><tr><td class='cs'>ove godine</td><td class='hr'>this year</td></tr><tr><td class='cs'>sljedeće godine</td><td class='hr'>next year</td></tr><tr><td class='cs'>prošlog tjedna</td><td class='hr'>last week</td></tr><tr><td class='cs'>jednog dana</td><td class='hr'>one day (someday)</td></tr></table><b>4 · more odd plurals after 5+</b>: mjesec → pet <b>mjeseci</b> (months) · gost → pet <b>gostiju</b> (guests) · prst → pet <b>prstiju</b> (fingers), on top of sati, ljudi and djece."},
+   b:"<b>1 · 'some' or 'any' of something</b>: when you don't mean a whole one, use the genitive:<br>Imaš li kruha? — Do you have any bread? · Ima li mlijeka? — Is there any milk? · Pijem malo vode. — I'm drinking a bit of water.<br>Compare: Imam kruh. — I have bread (a loaf of it).<br><br><b>2 · nema and nemam</b>:<br>• <b>nema</b> (“there is no…”) always takes the <b>genitive</b>: Nema kruha. · Nema problema.<br>• <b>nemam</b> (“I don't have…”) takes the <b>genitive</b> for amounts and abstract things: Nemam vremena. · Nemam novca. · Nemam pojma.<br>• <b>nemam + one countable thing</b>: in everyday speech most people use the <b>accusative</b>: Nemam auto. · Nemam sestru. The genitive (nemam auta, nemam sestre) is still correct, just more formal and less common in speech.<br><br><b>3 · 'when', with no preposition</b>: a few time phrases are just the genitive. Learn them as chunks:<table><tr><th>Croatian</th><th>means</th></tr><tr><td class='cs'>prošle godine</td><td class='hr'>last year</td></tr><tr><td class='cs'>ove godine</td><td class='hr'>this year</td></tr><tr><td class='cs'>sljedeće godine</td><td class='hr'>next year</td></tr><tr><td class='cs'>prošlog tjedna</td><td class='hr'>last week</td></tr><tr><td class='cs'>jednog dana</td><td class='hr'>one day (someday)</td></tr></table><b>4 · more odd plurals after 5+</b>: mjesec → pet <b>mjeseci</b> (months) · gost → pet <b>gostiju</b> (guests) · prst → pet <b>prstiju</b> (fingers), on top of sati, ljudi and djece."},
   q:[SQm("'Do you have any bread?' =",["Imaš li kruh?","Imaš li kruha?"],1,"'any / some' → genitive."),
-     SQt("Say: I have no money.",["nemam novca","nemam novaca"],"nemam + genitive."),
+     SQt("Say: I have no money.",["nemam novca","nemam novaca"],"Genitive: nemam + an amount or something abstract."),
+     SQm("'I don't have a car.' (everyday) =",["Nemam auto.","Nemam auta."],0,"Accusative: nemam + one countable thing — that's how people say it. Nemam auta is correct but formal."),
+     SQm("'There's no bread.' =",["Nema kruh.","Nema kruha."],1,"Genitive: nema (there is no) always takes the genitive."),
+     SQt("Say: I have no idea.",["nemam pojma"],"Genitive: nemam + something abstract → pojma."),
      SQm("'prošle godine' means…",["last year","next year"],0,"prošle = last."),
      SQm("'five months' =",["pet mjeseca","pet mjeseci"],1,"mjesec → mjeseci."),
      SQm("'next year' =",["sljedeće godine","sljedeća godina"],0,"Time with no preposition → genitive.")],
   p:[["Nemam vremena.","I don\'t have time."],["Imaš li kruha?","Do you have any bread?"],["prošle godine","last year"]],
-  f:[SQm("'Ima li mlijeka?' means…",["Is there any milk?","Is the milk here?"],0,"Genitive = some / any.")]},
+  f:[SQm("'Ima li mlijeka?' means…",["Is there any milk?","Is the milk here?"],0,"Genitive = some / any."),
+     SQm("'I don't have a sister.' (everyday) =",["Nemam sestru.","Nemam sestre."],0,"Accusative: nemam + one countable thing. Nemam sestre is correct but formal."),
+     SQm("'There's no milk.' =",["Nema mlijeko.","Nema mlijeka."],1,"Genitive: nema always takes the genitive.")]},
  {u:38, g:{h:"People from places, and braća",
    b:"<b>-anin → -ani</b>: words for people from a place often end in -anin and drop the -in when there's more than one:<table><tr><th>one</th><th>more than one</th></tr><tr><td class='cs'>građanin (citizen)</td><td class='hr'>građani</td></tr><tr><td class='cs'>Zagrepčanin</td><td class='hr'>Zagrepčani</td></tr><tr><td class='cs'>Splićanin</td><td class='hr'>Splićani</td></tr></table>A woman is <b>-anka</b>: Zagrepčanka · Splićanka.<br><br><b>braća</b> (brothers) changes like a feminine -a word but takes a plural verb: Braća su ovdje. · Idem s braćom. · Vidim braću.<br><b>gospodin → gospoda</b> (gentlemen): Dame i gospodo! — Ladies and gentlemen!"},
   q:[SQm("'citizens' =",["građanini","građani"],1,"-anin → -ani."),
@@ -5530,6 +5535,7 @@ const CHECK_RULES = `How to judge:
 - Small slips are fine if the sentence is understandable.
 - Never mark a sentence wrong for grammar from a unit the learner hasn't reached yet. If they used later grammar, accept it; if it's slightly off, set ok to true, put the correct version in "fixed" and mention the unit in a few words.
 - Set ok to false only for a real mistake in what's being practised, or a sentence that doesn't make sense.
+- nema ("there is no") always takes the genitive. nemam ("I don't have") takes the genitive for amounts and abstract things (Nemam vremena, Nemam novca), but with one countable thing the course teaches the everyday accusative (Nemam auto, Nemam sestru): if the learner used the genitive there, set ok to false, put the accusative in "fixed" and explain it's correct but formal.
 - Write "note" and "en" in ENGLISH only, never in Croatian — the learner is a beginner. Croatian words appear only as the examples you're explaining.`;
 function courseContext(){
   const cur = unitNo(firstOpen());
@@ -6798,6 +6804,7 @@ const FF = [
   {c:"A", ok:w=>FW_HAS(w,"person")&&w.b!=="obitelj"||FW_HAS(w,"vehicle"), q:"Čekam ___.", en:w=>`I'm waiting for ${FW_THE(w)}.`},
   {c:"A", ok:w=>FW_HAS(w,"place")&&FW_HAS(w,"u")&&w.b!=="kuća", q:"Idem u ___.", pre:"u", en:w=>`I'm going to ${FW_THE(w)}.`},
   {c:"A", ok:w=>FW_HAS(w,"place")&&FW_HAS(w,"na"), q:"Idem na ___.", pre:"na", en:w=>`I'm going to ${FW_THE(w)}.`},
+  {c:"A", needs:"G", ok:w=>(FW_HAS(w,"thing")&&!w.na&&(!FW_HAS(w,"vehicle")||w.b==="auto"||w.b==="bicikl"))||FW_HAS(w,"animal")||(FW_HAS(w,"family")&&!w.na), q:"Nemam ___.", note:"nemam + one countable thing → accusative, the everyday way (Nemam auto). Amounts and abstract things take the genitive: Nemam vremena.", en:w=>`I don't have ${FW_A(w)}.`},
   {c:"A", ok:w=>FW_HAS(w,"food"), q:"Jedem ___.", en:w=>`I'm eating ${FW_A(w)}.`},
   {c:"A", ok:w=>FW_HAS(w,"thing")&&!FW_HAS(w,"vehicle")&&w.b!=="film"||w.b==="auto", q:"Trebam ___.", en:w=>`I need ${FW_A(w)}.`},
   {c:"A", ok:w=>FW_HAS(w,"thing")&&(!FW_HAS(w,"vehicle")||w.b==="auto"||w.b==="bicikl")||FW_HAS(w,"food")&&w.b!=="jelo", q:"Kupujem ___.", en:w=>`I'm buying ${FW_A(w)}.`},
@@ -6935,6 +6942,7 @@ function buildFQ(cases, plural, adj){
     const pool = [];
     FF.forEach(fr => {
       if((fr.c[0] === "p") !== pl || !fOpen(fr.c, cases)) return;
+      if(fr.needs && !caseOpen(fr.needs)) return;
       if(ad && fr.c === "V") return;
       FW.forEach(w => {
         if(!fr.ok(w) || !formForm(w, fr.c)) return;
@@ -6979,7 +6987,8 @@ function fqEn(q){
   else if(!vowel && / an $/.test(pre)) pre = pre.replace(/ an $/, " a ");
   return pre + q.a.en + " " + e.slice(i);
 }
-const fqReason = q => q.a ? `${CASE_LABEL[q.c]}: describing word — ${adjReason(q.a, q.c, q.w)} Noun — ${lc1(formReasonText(q.w, q.c))}` : formReason(q.w, q.c);
+const fqReason = q => q.fr && q.fr.note ? CASE_LABEL[q.c] + ": " + q.fr.note + " " + fqReason0(q).replace(/^[^:]+: /, "").replace(/^./, c => c.toUpperCase()) : fqReason0(q);
+const fqReason0 = q => q.a ? `${CASE_LABEL[q.c]}: describing word — ${adjReason(q.a, q.c, q.w)} Noun — ${lc1(formReasonText(q.w, q.c))}` : formReason(q.w, q.c);
 const fqLabel = q => (q.c[0] === "p" ? (q.c === "pN" ? "basic plural" : FCASE[plCase(q.c)].name.toLowerCase() + " · more than one") : FCASE[q.c].name.toLowerCase()) + (q.a ? " · + describing word" : "");
 
 /* ---------- 1. endings drill ---------- */
@@ -7747,6 +7756,7 @@ Write 8 questions. Use these two shapes only:
 {"t":"mc","q":"<question in English>","o":["a","b","c","d"],"a":<index of correct option>,"e":"<one sentence explanation in English>"}
 {"t":"type","q":"<instruction in English, e.g. Say: I'd like a coffee>","a":["<accepted answer>","<another accepted variant>"],"e":"<explanation>"}
 For "type", list every reasonable correct variant (with and without the pronoun, both word orders).
+For "nema" use the genitive; for "nemam" + one countable thing the course teaches the everyday accusative (Nemam auto), and the genitive only for amounts and abstract things (Nemam vremena).
 When an explanation is about an ending, start it with the case's name, e.g. "Accusative: feminine -a → -u." — never just "neuter never changes".
 When a question gives the learner a Croatian word in brackets to use, always give its dictionary form — singular basic form for nouns (grad, not gradovi or gradove), infinitive for verbs — and say "more than one" if the answer needs the plural.
 Return ONLY a JSON array of 8 objects. No markdown, no commentary.`}], 1600);
