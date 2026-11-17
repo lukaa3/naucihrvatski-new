@@ -674,7 +674,7 @@ html,body{max-width:100%;overflow-x:hidden}
    Standard Croatian only: ijekavian, Croatian lexicon.
    ============================================================ */
 
-const VERSION = "10.40";
+const VERSION = "10.41";
 
 /* ============================================================
    CONFIG — fill these in after creating your Supabase project.
@@ -4838,8 +4838,9 @@ async function ttsClipFetch(text, voice, only, strict){
   if(!blob.size || !/audio/.test(blob.type || r.headers.get("content-type") || "")) throw new Error("TTS not audio");
   // save it under the voice that actually said it, so next time it plays straight from the phone
   try{ if(c) await c.put(fallback ? ttsKey(fallback, text) : key, new Response(blob, { headers:{ "Content-Type":"audio/wav" } })); }catch(e){}
-  return fallback ? blob : keep(blob);
+  return keep(blob);                                     // even a stand-in voice replays instantly this visit
 }
+try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}   // ask the phone not to clear saved voice clips
 async function speakNatural(text, only, strict){
   const my = ++TTS.seq;
   try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
@@ -7333,32 +7334,64 @@ function goWeak(){
    ============================================================ */
 let MP = null, MP_T = 0;
 const MP_N = 6;
-function mpWords(){
-  const out = [], hrs = new Set(), ens = new Set();
-  UNITS.forEach(u => {
-    if(unitState(u) === "locked") return;
-    (u.vocab || []).forEach(([hr, en]) => {
-      hr = String(hr).trim(); en = String(en).replace(/\s*\([^)]*\)\s*/g, " ").split(/\s*[\/;,]\s*/)[0].trim();
-      if(!hr || !en || /[\/()…]/.test(hr) || hr.length > 15 || en.length > 18) return;
-      const h = hr.toLowerCase(), e = en.toLowerCase();
-      if(hrs.has(h) || ens.has(e)) return;
-      hrs.add(h); ens.add(e);
-      out.push({ hr, en, cur: unitState(u) !== "done" });
-    });
-  });
+// the first spelling and first meaning, short enough for a card
+const mpHr = h => String(h).split(" / ")[0].trim();
+const mpEn = e => String(e).replace(/\s*\([^)]*\)\s*/g, " ").split(/\s*[\/;,]\s*/)[0].trim();
+const mpOk = (hr, en) => hr && en && !/[\/()…?!.]/.test(hr) && hr.split(/\s+/).length <= 2 && hr.length <= 15 && en.length <= 18 && !gramOnly(en);
+// words you've met in units you've reached
+function mpReached(){
+  const out = [];
+  UNITS.forEach(u => { if(unitState(u) !== "locked") (u.vocab || []).forEach(([h, e]) => out.push({ hr: mpHr(h), en: mpEn(e) })); });
+  return out;
+}
+// brand-new everyday words: the word packs and the units you haven't reached yet, minus anything you've seen
+const MP_BASIC = new Set(["da","ne","bok","hvala","molim","ja","ti","on","ona","mi","vi","oni","i","a","ali","ili","je","su","sam","dobro","jedan","dva","tri"]);
+function mpNew(seen){
+  const out = [], add = (h, e) => { const hr = mpHr(h), en = mpEn(e), k = hr.toLowerCase();
+    if(mpOk(hr, en) && hr.length >= 3 && !seen.has(k) && !MP_BASIC.has(k)){ seen.add(k); out.push({ hr, en, kind: "new" }); } };
+  PACKS.forEach(p => p.w.forEach(([h, e]) => add(h, e)));
+  UNITS.forEach(u => { if(unitState(u) === "locked") (u.vocab || []).forEach(([h, e]) => add(h, e)); });
+  return out;
+}
+// words from your flashcards you're still learning — the lower the box, the more likely
+function mpCards(){
+  return Object.entries(S.cards || {}).map(([k, c]) => {
+    const [h, e] = splitCard(k);
+    return { hr: mpHr(h), en: mpEn(e), k, kind: "card", w: Math.pow(6 - Math.min(5, c.box || 1), 2), box: c.box || 1, pos: c.pos };
+  }).filter(x => x.box < 5 && x.pos !== "phrase" && mpOk(x.hr, x.en));
+}
+function weightedPick(list, n, used){
+  const out = [], pool = list.slice();
+  while(out.length < n && pool.length){
+    const tot = pool.reduce((t, x) => t + (x.w || 1), 0);
+    let r = Math.random() * tot, i = 0;
+    for(; i < pool.length - 1; i++){ r -= pool[i].w || 1; if(r <= 0) break; }
+    const x = pool.splice(i, 1)[0];
+    const k1 = x.hr.toLowerCase(), k2 = x.en.toLowerCase();
+    if(used.has(k1) || used.has(k2)) continue;
+    used.add(k1); used.add(k2); out.push(x);
+  }
   return out;
 }
 function newPairs(){
-  const pool = mpWords();
-  const pick = [], seen = new Set();
-  shuffle(pool.flatMap(p => p.cur ? [p, p, p] : [p])).forEach(p => { if(pick.length < MP_N && !seen.has(p.hr)){ seen.add(p.hr); pick.push(p); } });
-  const cards = shuffle(pick.flatMap((p, i) => [{ pair: i, side: "hr", t: p.hr }, { pair: i, side: "en", t: p.en }]));
+  const used = new Set();
+  const seen = new Set([...mpReached(), ...Object.keys(S.cards || {}).map(k => ({ hr: mpHr(splitCard(k)[0]) }))].map(x => x.hr.toLowerCase()));
+  let pick = weightedPick(mpCards(), 3, used);
+  // not enough flashcards yet: words from the units you've done
+  if(pick.length < 3) pick = pick.concat(weightedPick(shuffle(mpReached().filter(x => mpOk(x.hr, x.en))).map(x => Object.assign(x, { kind: "review" })), 3 - pick.length, used));
+  pick = pick.concat(weightedPick(shuffle(mpNew(seen)), MP_N - pick.length, used));
+  pick = shuffle(pick);
+  const cards = shuffle(pick.flatMap((p, i) => [{ pair: i, side: "hr", t: p.hr, isNew: p.kind === "new" }, { pair: i, side: "en", t: p.en }]));
   MP = { cards, words: pick, up: [], ok: [], moves: 0, t0: 0, t1: 0, busy: false };
+}
+function mpAddNew(){
+  MP.words.filter(w => w.kind === "new").forEach(w => { const k = cardKey(w.hr, w.en); if(!S.cards[k]) putCard(k, { src: "Match pairs", added: Date.now() }); });
+  save(); toast("New words added to your flashcards ★"); paintPairs();
 }
 function vPairs(){
   if(!MP) newPairs();
   shell("games · igre", "Nađi <i>parove</i>",
-    "Flip two cards at a time and find each Croatian word's English partner.",
+    "Flip two at a time and match each Croatian word with its English partner. Half the words come from your flashcards, half are new.",
     `<div class="card mp-wrap" id="mp-card"></div>`);
   paintPairs();
 }
@@ -7372,11 +7405,12 @@ function paintPairs(){
       <span id="mp-stat">${MP.ok.length / 2} / ${MP.cards.length / 2} pairs · ${MP.moves} ${MP.moves === 1 ? "move" : "moves"} · <span id="mp-time">${MP.t0 ? mpTime() : 0}</span>s</span>
       <span>${best ? `best ${best}s` : ""}</span></div>
     <div class="mp-grid">${MP.cards.map((c, i) => `<button class="mp${MP.up.includes(i) || MP.ok.includes(i) ? " up" : ""}${MP.ok.includes(i) ? " ok" : ""}" onclick="mpFlip(${i})" aria-label="card">
-      <span class="in"><span class="b"><i>⚽</i></span><span class="f ${c.side}"><small>${c.side === "hr" ? "HR" : "EN"}</small>${esc(c.t)}</span></span></button>`).join("")}</div>
+      <span class="in"><span class="b"><i>⚽</i></span><span class="f ${c.side}"><small>${c.side === "hr" ? (c.isNew ? "HR · NEW" : "HR") : "EN"}</small>${esc(c.t)}</span></span></button>`).join("")}</div>
     ${done ? `<div style="text-align:center;margin-top:18px">
         <div style="font-family:var(--display);font-size:26px">Svaka čast! 🇭🇷</div>
         <p style="color:var(--stone-dim);margin:4px 0 14px">${MP.moves} ${MP.moves === 1 ? "move" : "moves"} · ${mpTime()} seconds${MP.best ? " · new best!" : ""}</p>
-        <div class="wordlist" style="text-align:left;margin-bottom:14px">${MP.words.map(w => wordRow(w.hr, w.en)).join("")}</div>
+        <div class="wordlist" style="text-align:left;margin-bottom:10px">${MP.words.map(w => (w.k ? wordRow(...splitCard(w.k), true) : wordRow(w.hr, w.en, true)).replace('<span class="en">', `<span class="en"><span class="gtag" style="margin:0 6px 0 0">${w.kind === "new" ? "new" : w.kind === "card" ? "your card" : "review"}</span>`)).join("")}</div>
+        ${MP.words.some(w => w.kind === "new" && !(S.cards || {})[cardKey(w.hr, w.en)]) ? `<button class="btn ghost sm" style="margin-bottom:12px" onclick="mpAddNew()">★ ${dual("Add the new words to my flashcards","Dodaj nove riječi")}</button>` : ""}
         <div style="display:flex;gap:9px;justify-content:center;flex-wrap:wrap">
           <button class="btn" onclick="newPairs();paintPairs()">${dual("Another board","Još jednom")}</button>
           <button class="btn ghost sm" onclick="MP=null;go('provjera')">${dual("Back to Quiz","Natrag")}</button></div></div>` : ""}`;
@@ -7697,30 +7731,89 @@ function dtCompare(typed, target){
   const accents = ok && T.join(" ").toLowerCase() !== Y.join(" ").toLowerCase();
   return { ok, words, accents };
 }
+const DT_LV = { easy: ["Easy","Lako"], medium: ["Medium","Srednje"], hard: ["Hard","Teško"] };
+const dtLevel = () => DT_LV[S.dtLevel] ? S.dtLevel : "medium";
+// the AI writes new sentences at your level; they're kept, so their audio is made once and reused
+async function dtWrite(level, n){
+  const units = UNITS.filter(u => unitState(u) !== "locked").map(u => u.title).join("; ");
+  const shape = level === "hard"
+    ? "two short connected sentences said together (a tiny everyday situation), 12–18 words in total"
+    : "one natural everyday sentence of 6–10 words";
+  const txt = await ask(STYLE_RULES + "You write listening practice for an English speaker learning Croatian.",
+    [{ role:"user", content:`Write ${n} items. Each is ${shape}, the kind of thing people really say: family, food, plans, the city, school, sport, weather, shopping.
+Use ONLY grammar from these units the learner has reached: ${units}. Everyday A2 words. Standard Croatian (ijekavian), spelled perfectly with č ć š ž đ.
+Vary the topics, verbs and cases. Double-check every ending.
+Return ONLY a JSON array: [{"hr":"…","en":"…"}] with a natural English translation.` }], 1400);
+  const j = parseJSON(txt);
+  const want = level === "hard" ? [10, 22] : [5, 12];
+  return (Array.isArray(j) ? j : []).map(x => ({ hr: String(x.hr || "").replace(/\s+/g, " ").trim(), en: String(x.en || "").trim() }))
+    .filter(x => { const n = gameWords(x.hr).length; return x.en && n >= want[0] && n <= want[1] && !/[\/()\[\]{}"<>]/.test(x.hr) && !/[čćšžđ]/i.test(x.en); });
+}
+function dtBank(level){ S.lb = S.lb || {}; return (S.lb[level] = S.lb[level] || []); }
+function dtBankAdd(level, items){
+  const b = dtBank(level), have = new Set(b.map(x => x.hr));
+  items.forEach(x => { if(!have.has(x.hr)){ have.add(x.hr); b.push({ hr: x.hr, en: x.en, n: 0 }); } });
+  while(b.length > 80){ const i = b.findIndex(x => x.n > 0); b.splice(i < 0 ? 0 : i, 1); }
+  save();
+}
+// ask the server to make the audio for these in its spare time, so the next rounds play at once
+function dtQueueAudio(texts){
+  if(!texts.length || navigator.onLine === false) return;
+  fetch("/api/tts", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ queue: texts.slice(0, 40), voice: ttsVoice() }) }).catch(() => {});
+}
+let DT_TOPUP = null;
+function dtTopUp(level){
+  if(DT_TOPUP || level === "easy") return;
+  if(dtBank(level).filter(x => !x.n).length >= 15) return dtQueueAudio(dtBank(level).filter(x => !x.n).map(x => x.hr));
+  DT_TOPUP = dtWrite(level, 10).then(items => { dtBankAdd(level, items); dtQueueAudio(dtBank(level).filter(x => !x.n).map(x => x.hr)); })
+    .catch(() => {}).finally(() => { DT_TOPUP = null; });
+}
+// which of these already have audio made (on the phone or the server) — checked quickly, nothing new is made
+async function dtVoiced(list, ms){
+  const have = new Set();
+  if(S.naturalVoice === false || navigator.onLine === false) return have;
+  await Promise.race([Promise.all(list.map(p => ttsClip(p.hr, null, true).then(() => have.add(p.hr)).catch(() => {}))), new Promise(r => setTimeout(r, ms))]);
+  return have;
+}
 async function newDictRound(){
-  const pool = gamePool(2, 8);
-  DT = { q: [], i: 0, right: 0, log: [], over: false };
-  if(!pool.length) return;
-  let picks = gameRound(pool);
-  // prefer sentences whose natural-voice audio is already made: they play at once and cost nothing
-  if(S.naturalVoice !== false && navigator.onLine !== false){
-    const cand = shuffle(pool).slice(0, 30), have = [];
-    await Promise.race([
-      Promise.all(cand.map(p => ttsClip(p.hr, null, true).then(() => have.push(p)).catch(() => {}))),
-      new Promise(r => setTimeout(r, 6000))
-    ]);
-    if(have.length){
-      const rest = picks.filter(p => !have.includes(p));
-      picks = [...shuffle(have).slice(0, GAME_LEN), ...rest].slice(0, GAME_LEN);
-      picks = shuffle(picks);
+  const level = dtLevel();
+  DT = { q: [], i: 0, right: 0, log: [], over: false, level };
+  let pool;
+  if(level === "easy") pool = gamePool(2, 5);
+  else {
+    let bank = dtBank(level).filter(x => x.n < 2);
+    if(bank.length < GAME_LEN){
+      const st = $("#dt-card"); if(st) st.innerHTML = `<span class="spin"></span> <span style="color:var(--stone-dim)">Writing new sentences at your level…</span>`;
+      try{ dtBankAdd(level, await dtWrite(level, 12)); }catch(e){}
+      bank = dtBank(level).filter(x => x.n < 2);
     }
+    pool = bank.length ? bank : gamePool(3, 8);
   }
+  if(!pool.length) return;
+  // sentences whose audio is already made go first — they play straight away
+  const cand = shuffle(pool).slice(0, 40);
+  const have = await dtVoiced(cand, 2500);
+  const ready = cand.filter(p => have.has(p.hr)), rest = cand.filter(p => !have.has(p.hr));
+  const picks = [...shuffle(ready), ...rest].slice(0, GAME_LEN);
   DT.q = picks.map(p => ({ hr: p.hr, en: p.en, u: p.u }));
+  dtTopUp(level);                                          // write and voice the next ones in the background
+}
+// while you type, the next sentence's audio is made, so it's ready when you get there
+function dtPrepNext(){
+  const nx = DT && DT.q[DT.i + 1];
+  if(!nx || S.naturalVoice === false || Date.now() < TTS.failUntil || navigator.onLine === false) return;
+  ttsClip(nx.hr).catch(() => {});
+}
+function dtSetLevel(lv){
+  if(lv === dtLevel() && DT) return;
+  S.dtLevel = lv; save(); DT = null; vDict();
 }
 async function vDict(){
   shell("games · igre", "Slušaj i <i>piši</i>",
-    "Listen to the sentence and type what you hear. Missing č ć š ž đ never count as wrong.",
-    `<div class="card" id="dt-card"><span class="spin"></span> <span style="color:var(--stone-dim)">Getting the audio ready…</span></div>`);
+    "Listen and type what you hear. Missing č ć š ž đ never count as wrong.",
+    `<div class="chips" style="margin:0 0 12px">${Object.keys(DT_LV).map(k => `<button class="chip" aria-pressed="${dtLevel() === k}" onclick="dtSetLevel('${k}')">${dual(DT_LV[k][0], DT_LV[k][1])}</button>`).join("")}</div>
+    <div class="card" id="dt-card"><span class="spin"></span> <span style="color:var(--stone-dim)">Getting the audio ready…</span></div>`);
+  if(DT && DT.level && DT.level !== dtLevel()) DT = null;
   if(!DT) await newDictRound();
   if(CUR !== "slusaj" || !$("#dt-card")) return;
   if(!DT.q.length){ $("#dt-card").innerHTML = `<p style="margin:0">Finish the first unit's steps to unlock sentences for this game.</p>`; return; }
@@ -7735,7 +7828,7 @@ function paintDict(autoplay){
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
       <button class="btn" onclick="dtPlay(false)">🔊 ${dual("Play","Pusti")}</button>
       <button class="btn ghost" onclick="dtPlay(true)">🐢 ${dual("Slower","Sporije")}</button>
-      ${done || q.hint ? "" : `<button class="btn ghost sm" onclick="DT.q[DT.i].hint=1;paintDict()">${dual("Show the English","Prijevod")}</button>`}
+      ${done || q.hint || DT.level === "hard" ? "" : `<button class="btn ghost sm" onclick="DT.q[DT.i].hint=1;paintDict()">${dual("Show the English","Prijevod")}</button>`}
     </div>
     ${q.hint && !done ? `<div style="color:var(--stone-dim);font-size:15px;margin:-4px 0 12px">${esc(q.en)}</div>` : ""}
     <input class="answer" id="dt-a" placeholder="Type what you hear…" autocomplete="off" autocapitalize="off" spellcheck="false" ${done ? "disabled" : ""} value="${esc(q.ans || q.draft || "")}">
@@ -7746,11 +7839,13 @@ function paintDict(autoplay){
     inp.addEventListener("input", () => { q.draft = inp.value; });
     inp.focus();
     if(autoplay) dtPlay(false);
+    setTimeout(dtPrepNext, 1500);
   } else dtVerdict();
 }
 function dtCheck(){
   const q = DT.q[DT.i], inp = $("#dt-a"); if(!inp || q.ans !== undefined || !inp.value.trim()) return;
   q.ans = inp.value.trim(); q.r = dtCompare(q.ans, q.hr); q.ok = q.r.ok;
+  if(DT.level !== "easy"){ const bi = dtBank(DT.level).find(x => x.hr === q.hr); if(bi){ bi.n++; save(); } }
   if(q.ok){ DT.right++; addXP(1); }
   const missed = q.r.words.filter(x => !x.ok && !x.x).map(x => x.w);
   DT.log.push({ q: "🎧 " + q.en, ok: q.ok, yours: q.ans, right: q.hr, e: q.ok ? "" : missed.length ? "Missed: " + missed.join(", ") : "Some extra words." });
@@ -7790,6 +7885,7 @@ function paintDictResults(){
     <p style="margin:0 0 12px">${r === n ? "Perfect — you caught every word." : r / n >= .7 ? "Very good ear." : "Listening takes time — the 🐢 button helps."}</p>
     <div style="display:flex;gap:9px;flex-wrap:wrap">
       <button class="btn" onclick="DT=null;vDict()">${dual("Another round","Još jednom")}</button>
+      ${DT.level !== "hard" && r / n >= 0.8 ? `<button class="btn ghost" onclick="dtSetLevel('${DT.level === "easy" ? "medium" : "hard"}')">${dual("Try a harder level","Teže")} →</button>` : ""}
       <button class="btn ghost sm" onclick="DT=null;go('provjera')">${dual("Back to Quiz","Natrag")}</button>
     </div>`;
   card.insertAdjacentHTML("afterend", reviewHTML(DT.log));
@@ -9246,6 +9342,10 @@ function mergeState(a, b){
     delete out.removed[k];
   });
 
+  out.lb = {};
+  ["medium","hard"].forEach(l => { const x = (a.lb || {})[l] || [], y = (b.lb || {})[l] || []; const m = new Map();
+    [...y, ...x].forEach(it => { const o = m.get(it.hr); m.set(it.hr, o ? Object.assign({}, it, { n: Math.max(o.n || 0, it.n || 0) }) : it); });
+    if(m.size) out.lb[l] = [...m.values()].slice(-80); });
   out.wk = {};
   keys("wk").forEach(k => { const x = (a.wk || {})[k] || [0, 0], y = (b.wk || {})[k] || [0, 0]; out.wk[k] = x[1] >= y[1] ? x : y; });
   const ga = a.games || {}, gb = b.games || {};

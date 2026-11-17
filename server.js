@@ -411,6 +411,11 @@ async function handleTts(request, env, ctx){
   if(!originOk(request, env)) return json(403, { error:"Forbidden" });
   if(!env.GEMINI_API_KEY) return json(500, { error:"NOKEY" });
   let body; try{ body = await request.json(); }catch(e){ return json(400, { error:"Bad JSON" }); }
+  if(Array.isArray(body.queue)){
+    if(!env.PUSH) return json(200, { queued: 0 });
+    const v = TTS_VOICES.has(body.voice) ? body.voice : TTS_VOICE;
+    return json(200, { queued: await ttsQueueAdd(env, body.queue.slice(0, 40), v) });
+  }
   const text = String(body.text || "").replace(/\s+/g, " ").trim();
   if(!text) return json(400, { error:"No text" });
   if(text.length > TTS_MAX) return json(413, { error:"Too long" });
@@ -448,6 +453,22 @@ async function handleTts(request, env, ctx){
   const limited = rateLimit(ip);
   if(limited) return json(429, { error: limited });
 
+  const made = await ttsMake(env, voice, text, models, waits);
+  if(made.wav){
+    if(env.PUSH && ctx && ctx.waitUntil) ctx.waitUntil(env.PUSH.put(kvKey, made.wav).catch(e => console.warn("tts kv:", e && e.message)));
+    if(made.waitChanged && env.PUSH && ctx && ctx.waitUntil) ctx.waitUntil(saveWaits(env, waits));
+    return wavResponse(made.wav, { "X-Model-Used": made.model });
+  }
+  const last = made.last;
+  if(made.waitChanged && env.PUSH){ if(ctx && ctx.waitUntil) ctx.waitUntil(saveWaits(env, waits)); }
+  const fb = await fallback();
+  if(fb) return fb;
+  const quota = /429|RESOURCE_EXHAUSTED|quota/i.test(last || "");
+  return new Response(JSON.stringify({ error: (quota ? "QUOTA: " : "TTS_FAILED: ") + (last || "") }),
+    { status: quota ? 429 : 502, headers:{ "Content-Type":"application/json", "X-Quota-Until": String(quotaUntil()) } });
+}
+// make one clip with the first model that still has allowance left
+async function ttsMake(env, voice, text, models, waits){
   const prompt = "Read this aloud in standard Croatian, in a warm, natural, clear voice at a relaxed pace, like a friendly Croatian teacher:\n" + text;
   let last = null, waitChanged = false;
   for(const model of models){
@@ -472,18 +493,46 @@ async function handleTts(request, env, ctx){
       const rate = +((/rate=(\d+)/.exec(part.inlineData.mimeType || "") || [])[1] || 24000);
       const bin = atob(part.inlineData.data), pcm = new Uint8Array(bin.length);
       for(let i = 0; i < bin.length; i++) pcm[i] = bin.charCodeAt(i);
-      const wav = wavFromPcm(pcm, rate);
-      if(env.PUSH && ctx && ctx.waitUntil) ctx.waitUntil(env.PUSH.put(kvKey, wav).catch(e => console.warn("tts kv:", e && e.message)));
-      if(waitChanged && env.PUSH && ctx && ctx.waitUntil) ctx.waitUntil(saveWaits(env, waits));
-      return wavResponse(wav, { "X-Model-Used": model });
+      return { wav: wavFromPcm(pcm, rate), model, waitChanged };
     }catch(e){ last = String(e && e.message); }
   }
-  if(waitChanged && env.PUSH){ if(ctx && ctx.waitUntil) ctx.waitUntil(saveWaits(env, waits)); }
-  const fb = await fallback();
-  if(fb) return fb;
-  const quota = /429|RESOURCE_EXHAUSTED|quota/i.test(last || "");
-  return new Response(JSON.stringify({ error: (quota ? "QUOTA: " : "TTS_FAILED: ") + (last || "") }),
-    { status: quota ? 429 : 502, headers:{ "Content-Type":"application/json", "X-Quota-Until": String(quotaUntil()) } });
+  return { last, waitChanged };
+}
+
+/* Sentences waiting for audio (Listen & write gets its next rounds ready this way).
+   The hourly job makes a few at a time, early in the day right after the allowance resets. */
+async function ttsQueueAdd(env, list, voice){
+  const q = (await env.PUSH.get("tts:queue", "json")) || [];
+  const have = new Set(q.map(x => x.v + "|" + x.t));
+  let added = 0;
+  for(const raw of list){
+    const t = String(raw || "").replace(/\s+/g, " ").trim();
+    if(!t || t.length > 300 || have.has(voice + "|" + t)) continue;
+    if(await env.PUSH.get(await ttsKvKey(voice, t), "arrayBuffer")) continue;     // already made
+    have.add(voice + "|" + t); q.push({ t, v: voice }); added++;
+  }
+  await env.PUSH.put("tts:queue", JSON.stringify(q.slice(-200)));
+  return added;
+}
+async function ttsFill(env, t){
+  const h = +new Intl.DateTimeFormat("en-US", { timeZone:"America/New_York", hour:"numeric", hourCycle:"h23" }).format(new Date(t));
+  if(h < 3 || h > 10) return;                                // leave the rest of the day's allowance for live use
+  const q = (await env.PUSH.get("tts:queue", "json")) || [];
+  if(!q.length) return;
+  const waits = await ttsWaits(env);
+  let made = 0, changed = false;
+  while(q.length && made < 2){
+    const models = TTS_MODELS.filter(m => !(waits[m] > Date.now()));
+    if(!models.length) break;
+    const it = q[0], key = await ttsKvKey(it.v, it.t);
+    if(await env.PUSH.get(key, "arrayBuffer")){ q.shift(); continue; }
+    const r = await ttsMake(env, it.v, it.t, models, waits);
+    if(r.waitChanged) changed = true;
+    if(!r.wav) break;
+    await env.PUSH.put(key, r.wav); q.shift(); made++;
+  }
+  await env.PUSH.put("tts:queue", JSON.stringify(q));
+  if(changed) await saveWaits(env, waits);
 }
 function saveWaits(env, waits){
   const o = {}; TTS_MODELS.forEach(m => { if(waits[m] > Date.now()) o[m] = waits[m]; });
@@ -740,5 +789,6 @@ export default {
   // Runs every hour (Cron Trigger "0 * * * *") and sends whatever reminders are due.
   async scheduled(event, env, ctx){
     if(env.PUSH) ctx.waitUntil(runSchedule(env, event.scheduledTime || Date.now()));
+    if(env.PUSH && env.GEMINI_API_KEY) ctx.waitUntil(ttsFill(env, event.scheduledTime || Date.now()).catch(e => console.warn("tts fill:", e && e.message)));
   }
 };
